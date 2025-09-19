@@ -10,6 +10,9 @@ from src.data.datasets import GRefCocoTorchDataset, grefcoco_collate_fn
 from src.models.hires_model import HiRes_Full_Model
 from src.utils.losses import hungarian_loss_for_sample
 from datasets import load_dataset
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 def setup(rank, world_size):
     os.environ['MASTER_ADDR'] = 'localhost'
