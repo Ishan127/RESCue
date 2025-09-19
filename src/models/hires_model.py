@@ -26,10 +26,10 @@ class Stage1_FusionModule(nn.Module):
         text_features_proj = self.text_projector(text_features) + self.text_pos_embed
         updated_image_features, updated_text_features = image_features_proj, text_features_proj
         for img_layer, txt_layer in zip(self.image_fusion_layers, self.text_fusion_layers):
-            temp_img = img_layer(tgt=updated_image_features, memory=updated_text_features, memory_key_padding_mask=text_inputs.attention_mask == 0)
+            temp_img = img_layer(tgt=updated_image_features, memory=updated_text_features, memory_key_padding_mask=text_inputs["attention_mask"] == 0)
             temp_txt = txt_layer(tgt=updated_text_features, memory=updated_image_features)
             updated_image_features, updated_text_features = temp_img, temp_txt
-        return torch.cat([updated_image_features, updated_text_features], dim=1), text_inputs.attention_mask == 0
+        return torch.cat([updated_image_features, updated_text_features], dim=1), text_inputs["attention_mask"] == 0
 
 class Stage2_ObjectReasoner(nn.Module):
     def __init__(self, hidden_dim: int = 256, num_queries: int = 10):
