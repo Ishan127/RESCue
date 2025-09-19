@@ -19,9 +19,8 @@ class Stage1_FusionModule(nn.Module):
         self.text_fusion_layers = nn.ModuleList([nn.TransformerDecoderLayer(d_model=hidden_dim, nhead=8, dim_feedforward=hidden_dim * 4, batch_first=True) for _ in range(2)])
         self.text_pos_embed = nn.Parameter(torch.randn(1, self.text_encoder.config.max_position_embeddings, hidden_dim))
 
-    def forward(self, images: torch.Tensor, texts: list[str]):
+    def forward(self, images: torch.Tensor, text_inputs):
         image_features = self.vit_encoder.forward_features(images)[:, 1:, :]
-        text_inputs = self.text_tokenizer(texts, padding='max_length', return_tensors='pt', max_length=self.text_encoder.config.max_position_embeddings).to(images.device)
         text_features = self.text_encoder(**text_inputs).last_hidden_state
         image_features_proj = self.image_projector(image_features)
         text_features_proj = self.text_projector(text_features) + self.text_pos_embed
@@ -52,8 +51,8 @@ class HiRes_Core_Model(nn.Module):
         self.num_text_tokens = self.stage1.text_encoder.config.max_position_embeddings
         self.stage2 = Stage2_ObjectReasoner(hidden_dim=self.stage1.hidden_dim)
 
-    def forward(self, images: torch.Tensor, texts: list[str]):
-        fused_tokens, text_padding_mask = self.stage1(images, texts)
+    def forward(self, images: torch.Tensor, text_inputs):
+        fused_tokens, text_padding_mask = self.stage1(images, text_inputs)
         image_padding_mask = torch.zeros(fused_tokens.shape[0], self.num_image_patches, dtype=torch.bool, device=fused_tokens.device)
         full_padding_mask = torch.cat([image_padding_mask, text_padding_mask], dim=1)
         return self.stage2(fused_tokens, full_padding_mask)
@@ -172,9 +171,9 @@ class HiRes_Full_Model(nn.Module):
         )
         self.mask_decoder = Stage4_Mask2FormerDecoder(hidden_dim=hidden_dim, num_queries=num_queries)
 
-    def forward(self, images: torch.Tensor, texts: List[str]) -> Dict[str, torch.Tensor]:
+    def forward(self, images: torch.Tensor, text_inputs) -> Dict[str, torch.Tensor]:
         multi_scale_features = self.feature_extractor(images)
         pixel_embeddings = self.pixel_decoder(multi_scale_features)
-        object_tokens = self.reasoning_core(images, texts)
+        object_tokens = self.reasoning_core(images, text_inputs)
         predicted_masks = self.mask_decoder(object_tokens, pixel_embeddings)
         return {"pred_masks": predicted_masks}
