@@ -16,9 +16,7 @@ from src.utils.losses import hungarian_loss_for_sample
 # Replace the above with your actual dataset loading
 train_loader = None  # TODO: Replace with actual DataLoader
 
-def train_model(model, train_loader, optimizer, device, num_epochs=1):
-    from transformers import CLIPTokenizer
-    tokenizer = CLIPTokenizer.from_pretrained('openai/clip-vit-base-patch16')
+def train_model(model, train_loader, optimizer, device, num_epochs=1, tokenizer=None):
     model.train()
     for epoch in range(num_epochs):
         loop = tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}")

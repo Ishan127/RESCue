@@ -12,12 +12,14 @@ def denorm_image(tensor_img):
     img = img.clamp(0,1).cpu().permute(1,2,0).numpy()
     return img
 
-def evaluate_model(model, val_loader, device):
+def evaluate_model(model, val_loader, device, tokenizer):
     model.eval()
     with torch.no_grad():
         for images, texts, gt_masks_list in val_loader:
             images = images.to(device)
-            out = model(images, texts)
+            text_inputs = tokenizer(texts, padding='max_length', return_tensors='pt', max_length=77)
+            text_inputs = {k: v.to(device) for k, v in text_inputs.items()}
+            out = model(images, texts, text_inputs)
             preds = out["pred_masks"]
             B, Q, H, W = preds.shape
             for b in range(min(2, B)):
