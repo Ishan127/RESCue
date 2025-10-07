@@ -53,7 +53,12 @@ def train_model(model, train_loader, optimizer, device, num_epochs=1):
             # 3. Call the model with the corrected, tensor-only inputs.
             # The raw 'texts' list is no longer passed to the model's forward pass.
             try:
-                out = model(images, text_inputs, run_stage3_mask)
+                out = model(
+                    images=images,
+                    input_ids=text_inputs['input_ids'],
+                    attention_mask=text_inputs['attention_mask'],
+                    run_stage3_mask=run_stage3_mask
+                )
             except Exception as e:
                 print("Error in model forward:", e)
                 raise
