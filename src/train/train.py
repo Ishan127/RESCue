@@ -25,7 +25,7 @@ def train_model(model, train_loader, optimizer, device, num_epochs=1, tokenizer=
             images = images.to(device)
             text_inputs = tokenizer(texts, padding='max_length', return_tensors='pt', max_length=77)
             text_inputs = {k: v.to(device) for k, v in text_inputs.items()}
-            out = model(images, text_inputs)
+            out = model(images, texts, text_inputs)
             pred_masks = out["pred_masks"].to(device)
             B, Q, H, W = pred_masks.shape
             total_loss = torch.tensor(0.0, device=device)
