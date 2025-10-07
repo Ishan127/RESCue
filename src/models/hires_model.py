@@ -164,45 +164,47 @@ class RESCUE_Model(nn.Module):
         # --- PHASE I: FEATURE EXTRACTION ---
         high_res_image_embeddings = self.stage0_encoder(images)
         fused_tokens, text_padding_mask = self.stage1_fusion(images, text_inputs)
+        full_padding_mask = self._create_full_padding_mask(fused_tokens, text_padding_mask)
 
-        # --- PHASE II: REASONING PIPELINE ---
+        # --- PHASE II: REASONING PIPELINE (UNCONDITIONAL EXECUTION) ---
         
         # Stage 2: Always run to find primary objects
-        full_padding_mask = self._create_full_padding_mask(fused_tokens, text_padding_mask)
         object_centric_tokens = self.stage2_reasoner(fused_tokens, full_padding_mask)
 
-        # Stage 3: Conditional execution for granular reasoning
+        # Stage 3: Always run to find potential parts
+        # We use the first object token from Stage 2 as the assumed "parent" for all items.
+        # This is a simplification; a more advanced model could use the highest-confidence token.
+        parent_tokens = object_centric_tokens[:, 0:1, :] 
+        part_centric_tokens = self.stage3_reasoner(
+            parent_object_token=parent_tokens,
+            fused_tokens=fused_tokens,
+            padding_mask=full_padding_mask
+        )
+        
+        # --- CONDITIONAL SELECTION OF FINAL TARGETS ---
         run_stage3_mask = detect_granular_cue(texts).to(images.device)
-        final_target_tokens = object_centric_tokens # Default target for RES/gRES tasks
+        
+        # Create a placeholder for the final target tokens
+        final_target_tokens = torch.zeros_like(object_centric_tokens)
+        
 
-        if run_stage3_mask.any():
-            batch_indices_to_run = run_stage3_mask.nonzero(as_tuple=False).squeeze(-1)
+        
+        # Expand the mask for broadcasting: (B,) -> (B, num_queries, hidden_dim)
+        selection_mask = run_stage3_mask.view(-1, 1, 1).expand_as(object_centric_tokens)
+        
+        # For mRES tasks, we replace the first query's output with the part token.
+        # For this to work correctly, we need to prepare a tensor for where()
+        mres_targets = object_centric_tokens.clone()
+        mres_targets[:, 0:1, :] = part_centric_tokens
 
-            print("run_stage3_mask:", run_stage3_mask)
-            print("batch_indices_to_run:", batch_indices_to_run)
-            print("object_centric_tokens.shape:", object_centric_tokens.shape)
-            print("fused_tokens.shape:", fused_tokens.shape)
-            print("full_padding_mask.shape:", full_padding_mask.shape)
-            
-            # For simplicity, we assume the FIRST object token is the parent object.
-            parent_tokens_subset = object_centric_tokens[batch_indices_to_run, 0:1, :]
-            fused_tokens_subset = fused_tokens[batch_indices_to_run]
-            padding_mask_subset = full_padding_mask[batch_indices_to_run]
-            
-            part_centric_tokens = self.stage3_reasoner(
-                parent_object_token=parent_tokens_subset,
-                fused_tokens=fused_tokens_subset,
-                padding_mask=padding_mask_subset
-            )
-            
-            # For mRES tasks, we replace the first query's output with the part token.
-            # This maintains a consistent tensor shape for the final decoder.
-            final_target_tokens[batch_indices_to_run, 0:1, :] = part_centric_tokens
+        # Use torch.where for safe, parallel-friendly selection.
+        # If the mask is True (is mRES), use the mres_targets.
+        # If the mask is False (is RES/gRES), use the original object_centric_tokens.
+        final_target_tokens = torch.where(selection_mask, mres_targets, object_centric_tokens)
 
         # --- PHASE III: RENDERING ---
         final_mask_logits = self.stage4_decoder(high_res_image_embeddings, final_target_tokens)
         
-        # Final upsampling to match the exact input image size
         final_masks = F.interpolate(
             final_mask_logits,
             size=(self.image_size, self.image_size),
