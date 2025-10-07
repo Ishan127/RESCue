@@ -1,5 +1,5 @@
 import torch
-from src.models.hires_model import HiRes_Full_Model
+from src.models.hires_model import RESCUE_Model
 from src.data.datasets import GRefCocoTorchDataset, grefcoco_collate_fn
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
