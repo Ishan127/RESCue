@@ -31,7 +31,7 @@ def main():
     if args.mode == 'train':
         from torch.optim import AdamW
         optimizer = AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=3e-4, weight_decay=1e-2)
-        train_model(model, train_loader, optimizer, device, num_epochs=1, tokenizer=tokenizer)
+        train_model(model, train_loader, optimizer, device, num_epochs=1)
     elif args.mode == 'eval':
         evaluate_model(model, val_loader, device, tokenizer)
 
