@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 from torch.optim import AdamW
 from tqdm import tqdm
 from src.data.datasets import GRefCocoTorchDataset, grefcoco_collate_fn
-from src.models.hires_model import HiRes_Full_Model
+from src.models.hires_model import RESCUE_Model
 from src.utils.losses import hungarian_loss_for_sample
 
 # Placeholder for loading your dataset
@@ -46,12 +46,12 @@ def train_model(model, train_loader, optimizer, device, num_epochs=1, tokenizer=
             loop.set_postfix(loss=total_loss.item())
         print(f"Epoch {epoch+1} avg loss: {epoch_loss / len(train_loader):.4f}")
 
-if __name__ == "__main__":
+"""if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = HiRes_Full_Model(image_size=224, patch_size=16, hidden_dim=256, num_queries=10)
+    model = RESCUE_Model(image_size=224, patch_size=16, hidden_dim=256, num_queries=10)
     model = model.to(device)
     if torch.cuda.device_count() > 1:
         print(f"Using {torch.cuda.device_count()} GPUs for training.")
         model = torch.nn.DataParallel(model)
     optimizer = AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=3e-4, weight_decay=1e-2)
-    # train_model(model, train_loader, optimizer, device, num_epochs=1)  # Uncomment when train_loader is ready
+    # train_model(model, train_loader, optimizer, device, num_epochs=1)  # Uncomment when train_loader is ready"""
