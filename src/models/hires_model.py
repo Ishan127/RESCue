@@ -177,6 +177,12 @@ class RESCUE_Model(nn.Module):
 
         if run_stage3_mask.any():
             batch_indices_to_run = run_stage3_mask.nonzero(as_tuple=False).squeeze(-1)
+
+            print("run_stage3_mask:", run_stage3_mask)
+            print("batch_indices_to_run:", batch_indices_to_run)
+            print("object_centric_tokens.shape:", object_centric_tokens.shape)
+            print("fused_tokens.shape:", fused_tokens.shape)
+            print("full_padding_mask.shape:", full_padding_mask.shape)
             
             # For simplicity, we assume the FIRST object token is the parent object.
             parent_tokens_subset = object_centric_tokens[batch_indices_to_run, 0:1, :]
