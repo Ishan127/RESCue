@@ -22,28 +22,49 @@ def train_model(model, train_loader, optimizer, device, num_epochs=1, tokenizer=
         loop = tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}")
         epoch_loss = 0.0
         for images, texts, gt_masks_list in loop:
+            print("Batch start")
+            print(f"images.shape: {images.shape}")
+            print(f"texts: {texts}")
+            print(f"gt_masks_list: {[gt.shape if isinstance(gt, torch.Tensor) else None for gt in gt_masks_list]}")
             images = images.to(device)
             text_inputs = tokenizer(texts, padding='max_length', return_tensors='pt', max_length=77)
             text_inputs = {k: v.to(device) for k, v in text_inputs.items()}
-            out = model(images, texts, text_inputs)
+            print(f"text_inputs shapes: {{k: v.shape for k, v in text_inputs.items()}}")
+            try:
+                out = model(images, texts, text_inputs)
+            except Exception as e:
+                print("Error in model forward:", e)
+                raise
             pred_masks = out["pred_masks"].to(device)
+            print(f"pred_masks.shape: {pred_masks.shape}")
             B, Q, H, W = pred_masks.shape
             total_loss = torch.tensor(0.0, device=device)
             for b in range(B):
+                print(f"Sample {b}: pred_masks[{b}].shape: {pred_masks[b].shape}")
                 pred_logits_q_hw = pred_masks[b].view(Q, -1)
                 gt_masks = gt_masks_list[b].to(device)
-                if gt_masks.shape[0] == 0:
-                    loss_b = hungarian_loss_for_sample(pred_logits_q_hw, torch.zeros((0, H*W), device=device))
-                else:
-                    gt_flat = gt_masks.view(gt_masks.shape[0], -1)
-                    loss_b = hungarian_loss_for_sample(pred_logits_q_hw, gt_flat)
+                print(f"Sample {b}: gt_masks.shape: {gt_masks.shape}")
+                try:
+                    if gt_masks.shape[0] == 0:
+                        loss_b = hungarian_loss_for_sample(pred_logits_q_hw, torch.zeros((0, H*W), device=device))
+                    else:
+                        gt_flat = gt_masks.view(gt_masks.shape[0], -1)
+                        loss_b = hungarian_loss_for_sample(pred_logits_q_hw, gt_flat)
+                except Exception as e:
+                    print(f"Error in hungarian_loss_for_sample for sample {b}: {e}")
+                    raise
                 total_loss = total_loss + loss_b
             total_loss = total_loss / B
             optimizer.zero_grad()
-            total_loss.backward()
+            try:
+                total_loss.backward()
+            except Exception as e:
+                print("Error in backward:", e)
+                raise
             optimizer.step()
             epoch_loss += total_loss.item()
             loop.set_postfix(loss=total_loss.item())
+            print("Batch end\n")
         print(f"Epoch {epoch+1} avg loss: {epoch_loss / len(train_loader):.4f}")
 
 """if __name__ == "__main__":
