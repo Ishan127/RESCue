@@ -65,18 +65,22 @@ class Stage1_FusionModule(nn.Module):
         self.text_fusion_layers = nn.ModuleList([fusion_layer for _ in range(2)])
         self.text_pos_embed = nn.Parameter(torch.randn(1, self.text_encoder.config.max_position_embeddings, hidden_dim))
 
-    def forward(self, images: torch.Tensor, text_inputs: Dict[str, torch.Tensor]):
+    def forward(self, images: torch.Tensor, input_ids: torch.Tensor, attention_mask: torch.Tensor):
         image_features = self.vit_encoder.forward_features(images)[:, 1:, :]
-        text_features = self.text_encoder(**text_inputs).last_hidden_state
+        
+        # <<< FIX APPLIED HERE: Pass tensors directly, not a dictionary >>>
+        text_features = self.text_encoder(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state
+        
         image_features_proj = self.image_projector(image_features)
         text_features_proj = self.text_projector(text_features) + self.text_pos_embed
         updated_image_features, updated_text_features = image_features_proj, text_features_proj
         for img_layer, txt_layer in zip(self.image_fusion_layers, self.text_fusion_layers):
-            temp_img = img_layer(tgt=updated_image_features, memory=updated_text_features, memory_key_padding_mask=text_inputs["attention_mask"] == 0)
+            # <<< FIX APPLIED HERE: Use the attention_mask tensor directly >>>
+            temp_img = img_layer(tgt=updated_image_features, memory=updated_text_features, memory_key_padding_mask=attention_mask == 0)
             temp_txt = txt_layer(tgt=updated_text_features, memory=updated_image_features)
             updated_image_features, updated_text_features = temp_img, temp_txt
         fused_tokens = torch.cat([updated_image_features, updated_text_features], dim=1)
-        return fused_tokens, text_inputs["attention_mask"] == 0
+        return fused_tokens, attention_mask == 0
 
 class Stage2_ObjectReasoner(nn.Module):
     """Finds primary objects (for RES/gRES) from the fused context."""
@@ -151,66 +155,28 @@ class RESCUE_Model(nn.Module):
         # Helper attributes
         self.num_image_patches = (image_size // self.stage1_fusion.vit_encoder.patch_embed.patch_size[0]) ** 2
         
-    def forward(self, images: torch.Tensor, texts: List[str], text_inputs: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
-        """
-        The full forward pass implementing the conditional reasoning workflow.
-        
-        Args:
-            images (torch.Tensor): The input images.
-            texts (List[str]): The raw text prompts (used for conditional logic).
-            text_inputs (Dict[str, torch.Tensor]): The pre-tokenized text from a Hugging Face tokenizer.
-        """
+    def forward(self, images: torch.Tensor, input_ids: torch.Tensor, attention_mask: torch.Tensor, run_stage3_mask: torch.Tensor) -> Dict[str, torch.Tensor]:
         
         # --- PHASE I: FEATURE EXTRACTION ---
         high_res_image_embeddings = self.stage0_encoder(images)
-        fused_tokens, text_padding_mask = self.stage1_fusion(images, text_inputs)
+        # <<< FIX APPLIED HERE: Pass tensors directly >>>
+        fused_tokens, text_padding_mask = self.stage1_fusion(images, input_ids, attention_mask)
         full_padding_mask = self._create_full_padding_mask(fused_tokens, text_padding_mask)
 
-        # --- PHASE II: REASONING PIPELINE (UNCONDITIONAL EXECUTION) ---
-        
-        # Stage 2: Always run to find primary objects
+        # --- PHASE II: REASONING PIPELINE ---
         object_centric_tokens = self.stage2_reasoner(fused_tokens, full_padding_mask)
-
-        # Stage 3: Always run to find potential parts
-        # We use the first object token from Stage 2 as the assumed "parent" for all items.
-        # This is a simplification; a more advanced model could use the highest-confidence token.
         parent_tokens = object_centric_tokens[:, 0:1, :] 
-        part_centric_tokens = self.stage3_reasoner(
-            parent_object_token=parent_tokens,
-            fused_tokens=fused_tokens,
-            padding_mask=full_padding_mask
-        )
+        part_centric_tokens = self.stage3_reasoner(parent_object_token=parent_tokens, fused_tokens=fused_tokens, padding_mask=full_padding_mask)
         
-        # --- CONDITIONAL SELECTION OF FINAL TARGETS ---
-        run_stage3_mask = detect_granular_cue(texts).to(images.device)
-        
-        # Create a placeholder for the final target tokens
-        final_target_tokens = torch.zeros_like(object_centric_tokens)
-        
-
-        
-        # Expand the mask for broadcasting: (B,) -> (B, num_queries, hidden_dim)
+        # --- CONDITIONAL SELECTION ---
         selection_mask = run_stage3_mask.view(-1, 1, 1).expand_as(object_centric_tokens)
-        
-        # For mRES tasks, we replace the first query's output with the part token.
-        # For this to work correctly, we need to prepare a tensor for where()
         mres_targets = object_centric_tokens.clone()
         mres_targets[:, 0:1, :] = part_centric_tokens
-
-        # Use torch.where for safe, parallel-friendly selection.
-        # If the mask is True (is mRES), use the mres_targets.
-        # If the mask is False (is RES/gRES), use the original object_centric_tokens.
         final_target_tokens = torch.where(selection_mask, mres_targets, object_centric_tokens)
 
         # --- PHASE III: RENDERING ---
         final_mask_logits = self.stage4_decoder(high_res_image_embeddings, final_target_tokens)
-        
-        final_masks = F.interpolate(
-            final_mask_logits,
-            size=(self.image_size, self.image_size),
-            mode='bilinear',
-            align_corners=False
-        )
+        final_masks = F.interpolate(final_mask_logits, size=(self.image_size, self.image_size), mode='bilinear', align_corners=False)
         
         return {"pred_masks": final_masks}
 
