@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import timm
-from transformers import CLIPTokenizer, CLIPTextModel
+from transformers import CLIPTokenizer, CLIPTextModel, BertModel
 import warnings
 from typing import List, Dict
 import numpy as np
@@ -52,12 +52,12 @@ class Stage0_SAM_Like_Encoder(nn.Module):
 
 class Stage1_FusionModule(nn.Module):
     """The entry point to the reasoning pipeline; fuses lightweight image and text features."""
-    def __init__(self, hidden_dim: int = 256, vit_model_name: str = 'vit_base_patch16_224_in21k', clip_model_name: str = 'openai/clip-vit-base-patch32'):
+    def __init__(self, hidden_dim: int = 256, vit_model_name: str = 'vit_base_patch16_224_in21k', text_model_name: str = 'bert-base-uncased'):
         super().__init__()
         self.hidden_dim = hidden_dim
         self.vit_encoder = timm.create_model(vit_model_name, pretrained=True)
         # Note: Tokenizer is now expected to be used outside the model
-        self.text_encoder = CLIPTextModel.from_pretrained(clip_model_name)
+        self.text_encoder = BertModel.from_pretrained(text_model_name)
         self.image_projector = nn.Linear(self.vit_encoder.embed_dim, hidden_dim)
         self.text_projector = nn.Linear(self.text_encoder.config.hidden_size, hidden_dim)
         fusion_layer = nn.TransformerDecoderLayer(d_model=hidden_dim, nhead=8, dim_feedforward=hidden_dim * 4, batch_first=True)
