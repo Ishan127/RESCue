@@ -23,7 +23,9 @@ class Stage1_FusionModule(nn.Module):
         image_features = self.vit_encoder.forward_features(images)[:, 1:, :]
         text_features = self.text_encoder(**text_inputs).last_hidden_state
         image_features_proj = self.image_projector(image_features)
-        text_features_proj = self.text_projector(text_features) + self.text_pos_embed
+        seq_len = text_features.shape[1]
+        pos_embed = self.text_pos_embed[:, :seq_len, :]
+        text_features_proj = self.text_projector(text_features) + pos_embed
         updated_image_features, updated_text_features = image_features_proj, text_features_proj
         for img_layer, txt_layer in zip(self.image_fusion_layers, self.text_fusion_layers):
             temp_img = img_layer(tgt=updated_image_features, memory=updated_text_features, memory_key_padding_mask=text_inputs["attention_mask"] == 0)
