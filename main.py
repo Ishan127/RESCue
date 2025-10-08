@@ -23,6 +23,8 @@ def main():
     parser.add_argument('--viz-train-dir', type=str, default='viz_train', help='Directory to save training previews (if viz-mode=save)')
     parser.add_argument('--viz-eval-dir', type=str, default='viz_eval', help='Directory to save evaluation previews (if viz-mode=save)')
     parser.add_argument('--eval-vis-batches', type=int, default=1, help='Number of batches to visualize during evaluation')
+    parser.add_argument('--progress', choices=['auto','tqdm','plain'], default='auto', help='Progress display mode: auto (tqdm if TTY), tqdm, or plain (print lines)')
+    parser.add_argument('--log-every', type=int, default=50, help='When progress=plain, print metrics every N steps')
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = HiRes_Full_Model(image_size=224, patch_size=16, hidden_dim=256, num_queries=10)
@@ -36,7 +38,8 @@ def main():
         train_model(
             model, train_loader, optimizer, device,
             num_epochs=1, viz_every=args.viz_every,
-            viz_mode=args.viz_mode, viz_dir=args.viz_train_dir
+            viz_mode=args.viz_mode, viz_dir=args.viz_train_dir,
+            progress_mode=args.progress, log_every=args.log_every
         )
     elif args.mode == 'eval':
         evaluate_model(

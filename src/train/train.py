@@ -8,6 +8,7 @@ from src.utils.losses import hungarian_loss_for_sample
 from src.utils.metrics import batch_miou_ap_from_logits
 from src.utils.visualize import show_or_save
 import matplotlib.pyplot as plt
+import sys
 
 # Placeholder for loading your dataset
 # from datasets import load_dataset
@@ -47,18 +48,36 @@ def _show_train_preview(images, pred_logits_b_q_h_w, gt_masks_list, step_idx, ma
         show_or_save(fig, viz_dir, fname, mode=viz_mode)
 
 
-def train_model(model, train_loader, optimizer, device, num_epochs=1, viz_every=50, viz_mode="save", viz_dir="viz_train"):
+def train_model(
+    model,
+    train_loader,
+    optimizer,
+    device,
+    num_epochs=1,
+    viz_every=50,
+    viz_mode="save",
+    viz_dir="viz_train",
+    progress_mode: str = "auto",  # 'auto'|'tqdm'|'plain'
+    log_every: int = 50,
+):
     from transformers import AutoTokenizer
     tokenizer = AutoTokenizer.from_pretrained('google-bert/bert-base-uncased')
     model.train()
     global_step = 0
     for epoch in range(num_epochs):
-        loop = tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}")
+        use_tqdm = (progress_mode == 'tqdm') or (progress_mode == 'auto' and sys.stdout.isatty())
+        loop = tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}", dynamic_ncols=True) if use_tqdm else train_loader
         epoch_loss = 0.0
         miou_running = 0.0
         ap_running = 0.0
         ap_count = 0
-        for images, texts, gt_masks_list in loop:
+        for step_idx, (images, texts, gt_masks_list) in enumerate(loop if use_tqdm else enumerate(loop, start=1), start=1 if use_tqdm else 0):
+            if not use_tqdm:
+                # when not using tqdm, ensure we have correct step_idx and batch
+                if isinstance(images, int):
+                    # adjust unpack from enumerate(loop, start=1)
+                    step_idx, batch = images, texts
+                    images, texts, gt_masks_list = batch
             images = images.to(device)
             text_inputs = tokenizer(texts, padding='max_length', return_tensors='pt', max_length=77, truncation=True)
             text_inputs = {k: v.to(device) for k, v in text_inputs.items()}
@@ -97,7 +116,12 @@ def train_model(model, train_loader, optimizer, device, num_epochs=1, viz_every=
                     global_step, viz_mode=viz_mode, viz_dir=viz_dir
                 )
 
-            loop.set_postfix(loss=total_loss.item(), mIoU=f"{miou_b:.3f}", AP=f"{ap_b:.3f}" if ap_b == ap_b else 'nan')
+            if use_tqdm:
+                loop.set_postfix(loss=total_loss.item(), mIoU=f"{miou_b:.3f}", AP=f"{ap_b:.3f}" if ap_b == ap_b else 'nan')
+            else:
+                if (step_idx % max(1, log_every)) == 0:
+                    ap_str = f"{ap_b:.3f}" if ap_b == ap_b else 'nan'
+                    print(f"Epoch {epoch+1}/{num_epochs} Step {step_idx}/{len(train_loader)} | loss={total_loss.item():.3f} mIoU={miou_b:.3f} AP={ap_str}")
 
         avg_loss = epoch_loss / max(1, len(train_loader))
         avg_miou = miou_running / max(1, len(train_loader))
