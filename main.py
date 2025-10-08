@@ -18,6 +18,7 @@ val_loader = DataLoader(val_ds, batch_size=16, shuffle=False, collate_fn=grefcoc
 def main():
     parser = argparse.ArgumentParser(description="Train or evaluate HiRes model.")
     parser.add_argument('--mode', choices=['train', 'eval'], required=True, help='Mode: train or eval')
+    parser.add_argument('--viz-every', type=int, default=50, help='Show matplotlib previews every N steps during training')
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = HiRes_Full_Model(image_size=224, patch_size=16, hidden_dim=256, num_queries=10)
@@ -28,9 +29,9 @@ def main():
     if args.mode == 'train':
         from torch.optim import AdamW
         optimizer = AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=3e-4, weight_decay=1e-2)
-        train_model(model, train_loader, optimizer, device, num_epochs=1)
+        train_model(model, train_loader, optimizer, device, num_epochs=1, viz_every=args.viz_every)
     elif args.mode == 'eval':
-        evaluate_model(model, val_loader, device)
+        evaluate_model(model, val_loader, device, max_vis_batches=5)
 
 if __name__ == "__main__":
     main()
