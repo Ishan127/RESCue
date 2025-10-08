@@ -48,8 +48,8 @@ def _show_train_preview(images, pred_logits_b_q_h_w, gt_masks_list, step_idx, ma
 
 
 def train_model(model, train_loader, optimizer, device, num_epochs=1, viz_every=50, viz_mode="save", viz_dir="viz_train"):
-    from transformers import CLIPTokenizer
-    tokenizer = CLIPTokenizer.from_pretrained('openai/clip-vit-base-patch16')
+    from transformers import AutoTokenizer
+    tokenizer = AutoTokenizer.from_pretrained('google-bert/bert-base-uncased')
     model.train()
     global_step = 0
     for epoch in range(num_epochs):
