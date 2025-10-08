@@ -51,7 +51,13 @@ def evaluate_model(model, val_loader, device, max_vis_batches=1):
                     axs[0].imshow(img_np); axs[0].axis('off'); axs[0].set_title("Image")
                     axs[1].imshow(img_np); axs[1].imshow(gt_overlay, alpha=0.6, cmap='Reds'); axs[1].axis('off'); axs[1].set_title("GT")
                     axs[2].imshow(img_np); axs[2].imshow(pred_best, alpha=0.6, cmap='Blues'); axs[2].axis('off'); axs[2].set_title("Pred")
-                    plt.show()
+                    try:
+                        from IPython.display import display
+                        display(fig)
+                    except Exception:
+                        plt.show()
+                    finally:
+                        plt.close(fig)
 
     avg_miou = total_miou / max(1, num_batches)
     avg_ap = (total_ap / ap_count) if ap_count > 0 else float('nan')

@@ -26,6 +26,15 @@ def _denorm_image(t):
 
 
 def _show_train_preview(images, pred_logits_b_q_h_w, gt_masks_list, step_idx, max_show=2):
+    def _display_fig(fig):
+        try:
+            from IPython.display import display
+            display(fig)
+        except Exception:
+            plt.show()
+        finally:
+            plt.close(fig)
+
     probs = torch.sigmoid(pred_logits_b_q_h_w)
     best = probs.max(dim=1).values  # [B,H,W]
     B = best.shape[0]
@@ -42,7 +51,7 @@ def _show_train_preview(images, pred_logits_b_q_h_w, gt_masks_list, step_idx, ma
         axs[0].imshow(img_np); axs[0].axis('off'); axs[0].set_title(f"Step {step_idx} Image")
         axs[1].imshow(img_np); axs[1].imshow(gt_np, alpha=0.6, cmap='Reds'); axs[1].axis('off'); axs[1].set_title("GT")
         axs[2].imshow(img_np); axs[2].imshow(pred_np, alpha=0.6, cmap='Blues'); axs[2].axis('off'); axs[2].set_title("Pred")
-        plt.show()
+        _display_fig(fig)
 
 
 def train_model(model, train_loader, optimizer, device, num_epochs=1, viz_every=50):
