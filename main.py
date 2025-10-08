@@ -12,8 +12,8 @@ train_split = grefcoco["train"]
 val_split = grefcoco["train"]
 train_ds = GRefCocoTorchDataset(train_split, image_size=224, train=True)
 val_ds = GRefCocoTorchDataset(val_split, image_size=224, train=False)
-train_loader = DataLoader(train_ds, batch_size=16, shuffle=True, collate_fn=grefcoco_collate_fn, num_workers=2)
-val_loader = DataLoader(val_ds, batch_size=16, shuffle=False, collate_fn=grefcoco_collate_fn, num_workers=2)
+train_loader = DataLoader(train_ds, batch_size=8, shuffle=True, collate_fn=grefcoco_collate_fn, num_workers=2)
+val_loader = DataLoader(val_ds, batch_size=8, shuffle=False, collate_fn=grefcoco_collate_fn, num_workers=2)
 
 def main():
     parser = argparse.ArgumentParser(description="Train or evaluate HiRes model.")
