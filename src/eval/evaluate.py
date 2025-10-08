@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 import numpy as np
 from src.utils.metrics import batch_miou_ap_from_logits
+from src.utils.visualize import show_or_save
 from transformers import CLIPTokenizer
 
 def denorm_image(tensor_img):
@@ -14,7 +15,7 @@ def denorm_image(tensor_img):
     img = img.clamp(0,1).cpu().permute(1,2,0).numpy()
     return img
 
-def evaluate_model(model, val_loader, device, max_vis_batches=1):
+def evaluate_model(model, val_loader, device, max_vis_batches=1, viz_mode="save", viz_dir="viz_eval"):
     model.eval()
     tokenizer = CLIPTokenizer.from_pretrained('openai/clip-vit-base-patch16')
     total_miou = 0.0
@@ -51,13 +52,8 @@ def evaluate_model(model, val_loader, device, max_vis_batches=1):
                     axs[0].imshow(img_np); axs[0].axis('off'); axs[0].set_title("Image")
                     axs[1].imshow(img_np); axs[1].imshow(gt_overlay, alpha=0.6, cmap='Reds'); axs[1].axis('off'); axs[1].set_title("GT")
                     axs[2].imshow(img_np); axs[2].imshow(pred_best, alpha=0.6, cmap='Blues'); axs[2].axis('off'); axs[2].set_title("Pred")
-                    try:
-                        from IPython.display import display
-                        display(fig)
-                    except Exception:
-                        plt.show()
-                    finally:
-                        plt.close(fig)
+                    fname = f"batch_{bi:04d}_b{b}.png"
+                    show_or_save(fig, viz_dir, fname, mode=viz_mode)
 
     avg_miou = total_miou / max(1, num_batches)
     avg_ap = (total_ap / ap_count) if ap_count > 0 else float('nan')

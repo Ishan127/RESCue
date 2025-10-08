@@ -6,6 +6,7 @@ from src.data.datasets import GRefCocoTorchDataset, grefcoco_collate_fn
 from src.models.hires_model import HiRes_Full_Model
 from src.utils.losses import hungarian_loss_for_sample
 from src.utils.metrics import batch_miou_ap_from_logits
+from src.utils.visualize import show_or_save
 import matplotlib.pyplot as plt
 
 # Placeholder for loading your dataset
@@ -25,16 +26,7 @@ def _denorm_image(t):
     return x
 
 
-def _show_train_preview(images, pred_logits_b_q_h_w, gt_masks_list, step_idx, max_show=2):
-    def _display_fig(fig):
-        try:
-            from IPython.display import display
-            display(fig)
-        except Exception:
-            plt.show()
-        finally:
-            plt.close(fig)
-
+def _show_train_preview(images, pred_logits_b_q_h_w, gt_masks_list, step_idx, max_show=2, viz_mode="save", viz_dir="viz_train"):
     probs = torch.sigmoid(pred_logits_b_q_h_w)
     best = probs.max(dim=1).values  # [B,H,W]
     B = best.shape[0]
@@ -51,10 +43,11 @@ def _show_train_preview(images, pred_logits_b_q_h_w, gt_masks_list, step_idx, ma
         axs[0].imshow(img_np); axs[0].axis('off'); axs[0].set_title(f"Step {step_idx} Image")
         axs[1].imshow(img_np); axs[1].imshow(gt_np, alpha=0.6, cmap='Reds'); axs[1].axis('off'); axs[1].set_title("GT")
         axs[2].imshow(img_np); axs[2].imshow(pred_np, alpha=0.6, cmap='Blues'); axs[2].axis('off'); axs[2].set_title("Pred")
-        _display_fig(fig)
+        fname = f"step_{step_idx:06d}_b{b}.png"
+        show_or_save(fig, viz_dir, fname, mode=viz_mode)
 
 
-def train_model(model, train_loader, optimizer, device, num_epochs=1, viz_every=50):
+def train_model(model, train_loader, optimizer, device, num_epochs=1, viz_every=50, viz_mode="save", viz_dir="viz_train"):
     from transformers import CLIPTokenizer
     tokenizer = CLIPTokenizer.from_pretrained('openai/clip-vit-base-patch16')
     model.train()
@@ -99,7 +92,10 @@ def train_model(model, train_loader, optimizer, device, num_epochs=1, viz_every=
             global_step += 1
             # Visualize every viz_every steps for Kaggle notebook
             if viz_every and (global_step % viz_every == 0):
-                _show_train_preview(images.detach(), pred_masks.detach(), gt_masks_list, global_step)
+                _show_train_preview(
+                    images.detach(), pred_masks.detach(), gt_masks_list,
+                    global_step, viz_mode=viz_mode, viz_dir=viz_dir
+                )
 
             loop.set_postfix(loss=total_loss.item(), mIoU=f"{miou_b:.3f}", AP=f"{ap_b:.3f}" if ap_b == ap_b else 'nan')
 

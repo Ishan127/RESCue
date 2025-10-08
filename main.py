@@ -19,6 +19,10 @@ def main():
     parser = argparse.ArgumentParser(description="Train or evaluate HiRes model.")
     parser.add_argument('--mode', choices=['train', 'eval'], required=True, help='Mode: train or eval')
     parser.add_argument('--viz-every', type=int, default=50, help='Show matplotlib previews every N steps during training')
+    parser.add_argument('--viz-mode', choices=['save','display','off'], default='save', help='Visualization mode for previews when running as a script')
+    parser.add_argument('--viz-train-dir', type=str, default='viz_train', help='Directory to save training previews (if viz-mode=save)')
+    parser.add_argument('--viz-eval-dir', type=str, default='viz_eval', help='Directory to save evaluation previews (if viz-mode=save)')
+    parser.add_argument('--eval-vis-batches', type=int, default=1, help='Number of batches to visualize during evaluation')
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = HiRes_Full_Model(image_size=224, patch_size=16, hidden_dim=256, num_queries=10)
@@ -29,9 +33,17 @@ def main():
     if args.mode == 'train':
         from torch.optim import AdamW
         optimizer = AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=3e-4, weight_decay=1e-2)
-        train_model(model, train_loader, optimizer, device, num_epochs=1, viz_every=args.viz_every)
+        train_model(
+            model, train_loader, optimizer, device,
+            num_epochs=1, viz_every=args.viz_every,
+            viz_mode=args.viz_mode, viz_dir=args.viz_train_dir
+        )
     elif args.mode == 'eval':
-        evaluate_model(model, val_loader, device, max_vis_batches=5)
+        evaluate_model(
+            model, val_loader, device,
+            max_vis_batches=args.eval_vis_batches,
+            viz_mode=args.viz_mode, viz_dir=args.viz_eval_dir
+        )
 
 if __name__ == "__main__":
     main()
