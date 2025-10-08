@@ -2,17 +2,17 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import timm
-from transformers import CLIPTokenizer, CLIPTextModel
+from transformers import AutoTokenizer, AutoModel
 import numpy as np
 from typing import List, Dict
 
 class Stage1_FusionModule(nn.Module):
-    def __init__(self, hidden_dim: int = 256, vit_model_name='vit_small_patch16_224',clip_model_name='openai/clip-vit-base-patch16'):
+    def __init__(self, hidden_dim: int = 256, vit_model_name='vit_small_patch16_224',clip_model_name='google-bert/bert-base-uncased'):
         super().__init__()
         self.hidden_dim = hidden_dim
         self.vit_encoder = timm.create_model(vit_model_name, pretrained=True)
-        self.text_tokenizer = CLIPTokenizer.from_pretrained(clip_model_name)
-        self.text_encoder = CLIPTextModel.from_pretrained(clip_model_name)
+        self.text_tokenizer = AutoTokenizer.from_pretrained(clip_model_name)
+        self.text_encoder = AutoModel.from_pretrained(clip_model_name)
         self.image_projector = nn.Linear(self.vit_encoder.embed_dim, hidden_dim)
         self.text_projector = nn.Linear(self.text_encoder.config.hidden_size, hidden_dim)
         self.image_fusion_layers = nn.ModuleList([nn.TransformerDecoderLayer(d_model=hidden_dim, nhead=8, dim_feedforward=hidden_dim * 4, batch_first=True) for _ in range(2)])
