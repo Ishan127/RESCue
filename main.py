@@ -37,7 +37,7 @@ def main():
         optimizer = AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=3e-4, weight_decay=1e-2)
         train_model(
             model, train_loader, optimizer, device,
-            num_epochs=1, viz_every=args.viz_every,
+            num_epochs=4, viz_every=args.viz_every,
             viz_mode=args.viz_mode, viz_dir=args.viz_train_dir,
             progress_mode=args.progress, log_every=args.log_every
         )
