@@ -36,6 +36,7 @@ class GRefCocoTorchDataset(data.Dataset):
         record = self.ds[idx]
         pil_img = record["images"][0].convert("RGB")
         orig_w, orig_h = pil_img.size
+        original_image = pil_img.copy()
         img_t = self.img_transform(pil_img)
         txt = record.get("problem", "")
         seg_str = record.get("answer", "")
@@ -53,6 +54,7 @@ class GRefCocoTorchDataset(data.Dataset):
             "image": img_t,
             "text": txt,
             "gt_masks": gt_masks,
+            "original_image": original_image,
             "orig_size": (orig_h, orig_w),
             "id": record.get("id", None),
         }
@@ -61,4 +63,6 @@ def grefcoco_collate_fn(batch):
     images = torch.stack([b["image"] for b in batch], dim=0)
     texts = [b["text"] for b in batch]
     gt_masks_list = [b["gt_masks"] for b in batch]
-    return images, texts, gt_masks_list
+    original_images = [b["original_image"] for b in batch]
+
+    return images, texts, gt_masks_list, original_images
