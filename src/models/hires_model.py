@@ -29,7 +29,7 @@ class RESCUE_Model(nn.Module):
         # Helper attribute
         self.num_image_patches = (image_size // self.stage1_fusion.vit_encoder.patch_embed.patch_size[0]) ** 2
         
-    def forward(self, images: torch.Tensor, texts: List[str], text_inputs: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+    def forward(self, images: torch.Tensor, text_inputs: Dict[str, torch.Tensor], run_stage3_mask: torch.Tensor) -> Dict[str, torch.Tensor]:
         """
         The full forward pass implementing the conditional reasoning workflow.
         """
@@ -49,7 +49,7 @@ class RESCUE_Model(nn.Module):
         )
         
         # --- CONDITIONAL SELECTION OF FINAL TARGETS ---
-        run_stage3_mask = detect_granular_cue(texts).to(images.device)
+        #run_stage3_mask = detect_granular_cue(texts).to(images.device)
         selection_mask = run_stage3_mask.view(-1, 1, 1).expand_as(object_centric_tokens)
         
         mres_targets = object_centric_tokens.clone()

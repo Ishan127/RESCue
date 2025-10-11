@@ -109,9 +109,9 @@ def train_model(model, train_loader, optimizer, device, num_epochs=1):
             # The raw 'texts' list is no longer passed to the model's forward pass.
             try:
                 out = model(
-                    images=images,
-                    texts= texts,
-                    text_inputs= text_inputs
+                    images=images, 
+                    text_inputs=text_inputs, 
+                    run_stage3_mask=run_stage3_mask
                 )
 
             except Exception as e:
