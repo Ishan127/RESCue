@@ -22,33 +22,29 @@ from transformers import BertTokenizer
 # train_loader = DataLoader(train_ds, batch_size=16, shuffle=True, collate_fn=grefcoco_collate_fn, num_workers=2)
 train_loader = None  # TODO: Replace with actual DataLoader
 
-def visualize_predictions(images, texts, true_masks, pred_logits, indices, num_samples=4):
-    """Shows a comparison of ground truth and best-matched predicted masks."""
+def visualize_predictions(original_images, texts, true_masks, pred_logits, indices, num_samples=4):
+    """
+    Shows a comparison of ground truth and best-matched predicted masks.
+    MODIFIED to accept original PIL images for cleaner visualization.
+    """
     print("\n--- Visualizing Predictions ---")
-    num_samples = min(num_samples, len(images))
+    num_samples = min(num_samples, len(original_images))
     if num_samples == 0: return
 
     pred_masks_prob = pred_logits.sigmoid()
 
-    # Create a figure to display the results
     fig, axes = plt.subplots(num_samples, 2, figsize=(10, num_samples * 5))
     if num_samples == 1: axes = [axes]
 
     for i in range(num_samples):
-        # We need to un-normalize the image for correct display
-        img = images[i].permute(1, 2, 0).cpu().numpy()
-        mean = np.array([0.485, 0.456, 0.406])
-        std = np.array([0.229, 0.224, 0.225])
-        img = std * img + mean
-        img = np.clip(img, 0, 1)
-
+        # Use the original, un-normalized image
+        img = original_images[i] 
+        
         true_mask_np = true_masks[i][0].cpu().numpy().squeeze()
         
         pred_idx, pred_mask_np = "N/A", np.zeros_like(true_mask_np)
         
-        # Check if the Hungarian algorithm found any matches for this sample
-        if len(indices[i][0]) > 0:
-            # Get the index of the best matching prediction
+        if indices and i < len(indices) and len(indices[i][0]) > 0:
             pred_idx = indices[i][0][0].item()
             pred_mask_np = (pred_masks_prob[i, pred_idx] > 0.5).cpu().numpy().squeeze()
 
@@ -66,10 +62,9 @@ def visualize_predictions(images, texts, true_masks, pred_logits, indices, num_s
         ax.set_title(f"Prediction (Query #{pred_idx})")
         ax.axis('off')
         
-        # Add the text prompt as a title for the row
-        fig.text(0.5, 0.95 - i/num_samples, f'Prompt: "{texts[i]}"', ha='center', fontsize=12, wrap=True)
+        fig.text(0.5, 0.95 - (i / num_samples) * (0.95/num_samples if num_samples > 1 else 0.95) , f'Prompt: "{texts[i]}"', ha='center', fontsize=12, wrap=True)
     
-    plt.tight_layout(rect=[0, 0, 1, 0.95])
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.show()
 
 def train_model(model, train_loader, optimizer, device, num_epochs=1):
