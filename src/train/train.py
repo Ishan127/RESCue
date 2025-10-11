@@ -153,6 +153,7 @@ def train_model(model, train_loader, optimizer, device, num_epochs=1):
             loop.set_postfix(loss=total_loss.item())
 
             if step_counter % 100 == 0 or step_counter == len(train_loader):
+                print(f"\n--- Visualizing at Step {step_counter} ---")
                 model.eval()
                 with torch.no_grad():
                     viz_out = model(
