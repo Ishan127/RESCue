@@ -10,7 +10,8 @@ from src.models.hires_model import RESCUE_Model, detect_granular_cue
 from src.data.datasets import GRefCocoTorchDataset, grefcoco_collate_fn
 from src.utils.losses import hungarian_loss_for_sample
 
-# Import the tokenizer
+# Import the tokenizer, which is now needed in the training script
+from transformers import CLIPTokenizer
 from transformers import BertTokenizer
 
 # Placeholder for your actual dataset loading
@@ -21,29 +22,33 @@ from transformers import BertTokenizer
 # train_loader = DataLoader(train_ds, batch_size=16, shuffle=True, collate_fn=grefcoco_collate_fn, num_workers=2)
 train_loader = None  # TODO: Replace with actual DataLoader
 
-def visualize_predictions(original_images, texts, true_masks, pred_logits, indices, num_samples=4):
-    """
-    Shows a comparison of ground truth and best-matched predicted masks.
-    MODIFIED to accept original PIL images for cleaner visualization.
-    """
+def visualize_predictions(images, texts, true_masks, pred_logits, indices, num_samples=4):
+    """Shows a comparison of ground truth and best-matched predicted masks."""
     print("\n--- Visualizing Predictions ---")
-    num_samples = min(num_samples, len(original_images))
+    num_samples = min(num_samples, len(images))
     if num_samples == 0: return
 
     pred_masks_prob = pred_logits.sigmoid()
 
+    # Create a figure to display the results
     fig, axes = plt.subplots(num_samples, 2, figsize=(10, num_samples * 5))
     if num_samples == 1: axes = [axes]
 
     for i in range(num_samples):
-        # Use the original, un-normalized image
-        img = original_images[i] 
-        
+        # We need to un-normalize the image for correct display
+        img = images[i].permute(1, 2, 0).cpu().numpy()
+        mean = np.array([0.485, 0.456, 0.406])
+        std = np.array([0.229, 0.224, 0.225])
+        img = std * img + mean
+        img = np.clip(img, 0, 1)
+
         true_mask_np = true_masks[i][0].cpu().numpy().squeeze()
         
         pred_idx, pred_mask_np = "N/A", np.zeros_like(true_mask_np)
         
-        if indices and i < len(indices) and len(indices[i][0]) > 0:
+        # Check if the Hungarian algorithm found any matches for this sample
+        if len(indices[i][0]) > 0:
+            # Get the index of the best matching prediction
             pred_idx = indices[i][0][0].item()
             pred_mask_np = (pred_masks_prob[i, pred_idx] > 0.5).cpu().numpy().squeeze()
 
@@ -61,51 +66,65 @@ def visualize_predictions(original_images, texts, true_masks, pred_logits, indic
         ax.set_title(f"Prediction (Query #{pred_idx})")
         ax.axis('off')
         
-        fig.text(0.5, 0.95 - (i / num_samples) * (0.95/num_samples if num_samples > 1 else 0.95) , f'Prompt: "{texts[i]}"', ha='center', fontsize=12, wrap=True)
+        # Add the text prompt as a title for the row
+        fig.text(0.5, 0.95 - i/num_samples, f'Prompt: "{texts[i]}"', ha='center', fontsize=12, wrap=True)
     
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
     plt.show()
 
 def train_model(model, train_loader, optimizer, device, num_epochs=1):
     """
-    Main training loop for the RESCUE model, with periodic visualization.
+    Main training loop for the RESCUE model.
     """
+    # The tokenizer is now managed by the training script, not passed in.
+    # Ensure this model name matches the one used inside your Stage1_FusionModule.
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
     
     model.train()
     for epoch in range(num_epochs):
         loop = tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}")
         epoch_loss = 0.0
-        
-        # <<< CHANGE APPLIED HERE: Step counter for periodic visualization >>>
         step_counter = 0
 
-        # <<< CHANGE APPLIED HERE: The loop now unpacks original_images >>>
+        last_batch_for_viz = None
+
         for images, texts, gt_masks_list, original_images in loop:
             step_counter += 1
             images = images.to(device)
             
-            # --- Text processing ---
+            # --- FIX APPLIED HERE ---
+            # 1. Tokenize the raw text in the training loop before calling the model.
             text_inputs = tokenizer(
-                texts, padding='max_length', return_tensors='pt',
-                max_length=512, truncation=True
+                texts, 
+                padding='max_length', 
+                return_tensors='pt',
+                #max_length=77, # Max length for CLIP's text encoder
+                truncation=True
             )
             text_inputs = {k: v.to(device) for k, v in text_inputs.items()}
+
+            # 2. Calculate the conditional mask in the training loop.
             run_stage3_mask = detect_granular_cue(texts).to(device)
+            # This tensor can be correctly scattered by DataParallel.
             
-            # --- Forward pass ---
+            # 3. Call the model with the corrected, tensor-only inputs.
+            # The raw 'texts' list is no longer passed to the model's forward pass.
             try:
-                out = model(images, text_inputs['input_ids'], text_inputs['attention_mask'], run_stage3_mask)
+                out = model(
+                    images=images, 
+                    text_inputs=text_inputs, 
+                    run_stage3_mask=run_stage3_mask
+                )
+
             except Exception as e:
-                print("Error in model forward:", e); raise
+                print("Error in model forward:", e)
+                raise
                 
-            pred_masks = out["pred_masks"]
-            
-            # --- Loss Calculation ---
+            pred_masks = out["pred_masks"].to(device)
+            indices = out.get("indices")
             B, Q, H, W = pred_masks.shape
             total_loss = torch.tensor(0.0, device=device)
-            
-            # <<< CHANGE APPLIED HERE: Collect indices for the batch >>>
+
             batch_indices = []
             
             for b in range(B):
@@ -113,40 +132,52 @@ def train_model(model, train_loader, optimizer, device, num_epochs=1):
                 gt_masks = gt_masks_list[b].to(device)
                 
                 try:
-                    gt_flat = gt_masks.view(gt_masks.shape[0], -1)
-                    loss_dict = hungarian_loss_for_sample(pred_logits_q_hw, gt_flat)
+                    if gt_masks.shape[0] == 0:
+                        loss_b = hungarian_loss_for_sample(pred_logits_q_hw, torch.zeros((0, H*W), device=device))
+                    else:
+                        gt_flat = gt_masks.view(gt_masks.shape[0], -1)
+                        loss_b = hungarian_loss_for_sample(pred_logits_q_hw, gt_flat)
                 except Exception as e:
-                    print(f"Error in hungarian_loss_for_sample for sample {b}: {e}"); raise
+                    print(f"Error in hungarian_loss_for_sample for sample {b}: {e}")
+                    raise
                     
-                total_loss += loss_dict['loss']
-                batch_indices.append(loss_dict['indices'])
-            
+                total_loss = total_loss + loss_b['loss']
+                batch_indices.append(loss_b['indices'])
+                
             total_loss = total_loss / B
-            
-            # --- Backward Pass ---
             optimizer.zero_grad()
+            
             try:
                 total_loss.backward()
             except Exception as e:
-                print("Error in backward:", e); raise
+                print("Error in backward:", e)
+                raise
+                
             optimizer.step()
-            
             epoch_loss += total_loss.item()
             loop.set_postfix(loss=total_loss.item())
 
-            # <<< CHANGE APPLIED HERE: Periodic Visualization >>>
-            # Visualize every 100 steps, or on the very last step of the epoch
             if step_counter % 100 == 0 or step_counter == len(train_loader):
-                # We need to switch to eval mode for visualization to disable things like dropout
                 model.eval()
                 with torch.no_grad():
-                    # It's better to re-run inference on the same batch for a clean visualization
-                    viz_out = model(images, text_inputs['input_ids'], text_inputs['attention_mask'], run_stage3_mask)
-                    visualize_predictions(original_images, texts, gt_masks_list, viz_out['pred_masks'], batch_indices)
-                # Switch back to train mode
+                    viz_out = model(
+                        images=images, 
+                        text_inputs=text_inputs, 
+                        run_stage3_mask=run_stage3_mask
+                    )
+                    visualize_predictions(original_images, texts, gt_masks_list, viz_out["pred_masks"].detach(), batch_indices)
                 model.train()
+
             
         print(f"Epoch {epoch+1} avg loss: {epoch_loss / len(train_loader):.4f}")
 
-# Your main execution block...
-
+# Your main execution block remains the same. The tokenizer is no longer passed to train_model.
+"""if __name__ == "__main__":
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = RESCUE_Model(image_size=224, patch_size=16, hidden_dim=256, num_queries=10)
+    model = model.to(device)
+    if torch.cuda.device_count() > 1:
+        print(f"Using {torch.cuda.device_count()} GPUs for training.")
+        model = torch.nn.DataParallel(model)
+    optimizer = AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=3e-4, weight_decay=1e-2)
+    # train_model(model, train_loader, optimizer, device, num_epochs=1) # Uncomment when train_loader is ready"""
