@@ -111,8 +111,7 @@ def train_model(model, train_loader, optimizer, device, num_epochs=1):
                 out = model(
                     images=images,
                     input_ids=text_inputs['input_ids'],
-                    attention_mask=text_inputs['attention_mask'],
-                    run_stage3_mask=run_stage3_mask
+                    attention_mask=text_inputs['attention_mask']
                 )
 
             except Exception as e:
