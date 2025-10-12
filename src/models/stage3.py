@@ -44,7 +44,7 @@ class DeformableTransformerDecoderLayer(nn.Module):
         
         return query
 
-class Stage2_ObjectReasoner_Deformable(nn.Module):
+class Stage3_ObjectReasoner_Deformable(nn.Module):
     """
     An upgraded Stage 2 that uses Deformable Attention.
     """
