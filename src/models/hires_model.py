@@ -6,7 +6,7 @@ from typing import List, Dict
 # Use relative imports for a clean repository structure
 from .stage1 import Stage1_SAM_Like_Encoder
 from .stage2 import Stage2_FusionModule
-from .stage3 import Stage3_ObjectReasoner
+from .stage3 import Stage3_ObjectReasoner_Deformable
 from .stage4 import Stage4_GranularReasoner, detect_granular_cue
 from .stage5 import Stage5_MaskDecoder
 
@@ -22,7 +22,7 @@ class RESCUE_Model(nn.Module):
         # --- Initialize all stages by importing them ---
         self.stage0_encoder = Stage1_SAM_Like_Encoder(image_size=image_size)
         self.stage1_fusion = Stage2_FusionModule(hidden_dim=hidden_dim)
-        self.stage2_reasoner = Stage3_ObjectReasoner(hidden_dim=hidden_dim, num_queries=num_object_queries)
+        self.stage2_reasoner = Stage3_ObjectReasoner_Deformable(hidden_dim=hidden_dim, num_queries=num_object_queries)
         self.stage3_reasoner = Stage4_GranularReasoner(hidden_dim=hidden_dim)
         self.stage4_decoder = Stage5_MaskDecoder(reasoning_dim=hidden_dim, hires_embedding_dim=self.stage0_encoder.embed_dim)
 
