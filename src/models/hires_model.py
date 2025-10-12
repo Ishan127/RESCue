@@ -27,7 +27,13 @@ class RESCUE_Model(nn.Module):
         self.stage4_decoder = Stage5_MaskDecoder(reasoning_dim=hidden_dim, hires_embedding_dim=self.stage0_encoder.embed_dim)
 
         # Helper attribute
-        self.num_image_patches = (image_size // self.stage1_fusion.vit_encoder.patch_embed.patch_size[0]) ** 2
+        patch_size = self.stage1_fusion.vit_encoder.patch_embed.patch_size[0]
+        self.num_image_patches = (image_size // patch_size) ** 2
+        
+        # <<< FIX APPLIED HERE: Define the missing attribute >>>
+        self.image_grid_size = image_size // patch_size
+        
+        self.num_text_tokens = self.stage1_fusion.text_encoder.config.max_position_embeddings
         
     def forward(self, images: torch.Tensor, text_inputs: Dict[str, torch.Tensor], run_stage3_mask: torch.Tensor) -> Dict[str, torch.Tensor]:
         """
