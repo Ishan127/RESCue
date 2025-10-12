@@ -6,7 +6,7 @@ from typing import List, Dict
 # Use relative imports for a clean repository structure
 from .stage1 import Stage1_SAM_Like_Encoder
 from .stage2 import Stage2_FusionModule
-from .stage3 import Stage3_ObjectReasoner_Deformable
+from .stage3 import Stage3_ObjectReasoner
 from .stage4 import Stage4_GranularReasoner, detect_granular_cue
 from .stage5 import Stage5_MaskDecoder
 
@@ -22,18 +22,12 @@ class RESCUE_Model(nn.Module):
         # --- Initialize all stages by importing them ---
         self.stage0_encoder = Stage1_SAM_Like_Encoder(image_size=image_size)
         self.stage1_fusion = Stage2_FusionModule(hidden_dim=hidden_dim)
-        self.stage2_reasoner = Stage3_ObjectReasoner_Deformable(hidden_dim=hidden_dim, num_queries=num_object_queries)
+        self.stage2_reasoner = Stage3_ObjectReasoner(hidden_dim=hidden_dim, num_queries=num_object_queries)
         self.stage3_reasoner = Stage4_GranularReasoner(hidden_dim=hidden_dim)
         self.stage4_decoder = Stage5_MaskDecoder(reasoning_dim=hidden_dim, hires_embedding_dim=self.stage0_encoder.embed_dim)
 
         # Helper attribute
-        patch_size = self.stage1_fusion.vit_encoder.patch_embed.patch_size[0]
-        self.num_image_patches = (image_size // patch_size) ** 2
-        
-        # <<< FIX APPLIED HERE: Define the missing attribute >>>
-        self.image_grid_size = image_size // patch_size
-        
-        self.num_text_tokens = self.stage1_fusion.text_encoder.config.max_position_embeddings
+        self.num_image_patches = (image_size // self.stage1_fusion.vit_encoder.patch_embed.patch_size[0]) ** 2
         
     def forward(self, images: torch.Tensor, text_inputs: Dict[str, torch.Tensor], run_stage3_mask: torch.Tensor) -> Dict[str, torch.Tensor]:
         """
@@ -46,16 +40,7 @@ class RESCUE_Model(nn.Module):
         full_padding_mask = self._create_full_padding_mask(fused_tokens, text_padding_mask)
 
         # --- PHASE II: REASONING PIPELINE (UNCONDITIONAL EXECUTION) ---
-        spatial_shapes = torch.tensor([
-            [self.image_grid_size, self.image_grid_size],
-            [1, self.num_text_tokens]
-        ], dtype=torch.long, device=images.device)
-
-        object_centric_tokens = self.stage2_reasoner(
-            fused_tokens=fused_tokens, 
-            fused_tokens_padding_mask=full_padding_mask,
-            spatial_shapes=spatial_shapes
-        )
+        object_centric_tokens = self.stage2_reasoner(fused_tokens, full_padding_mask)
         parent_tokens = object_centric_tokens[:, 0:1, :] 
         part_centric_tokens = self.stage3_reasoner(
             parent_object_token=parent_tokens,
