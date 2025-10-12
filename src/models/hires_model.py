@@ -40,7 +40,16 @@ class RESCUE_Model(nn.Module):
         full_padding_mask = self._create_full_padding_mask(fused_tokens, text_padding_mask)
 
         # --- PHASE II: REASONING PIPELINE (UNCONDITIONAL EXECUTION) ---
-        object_centric_tokens = self.stage2_reasoner(fused_tokens, full_padding_mask)
+        spatial_shapes = torch.tensor([
+            [self.image_grid_size, self.image_grid_size],
+            [1, self.num_text_tokens]
+        ], dtype=torch.long, device=images.device)
+
+        object_centric_tokens = self.stage2_reasoner(
+            fused_tokens=fused_tokens, 
+            fused_tokens_padding_mask=full_padding_mask,
+            spatial_shapes=spatial_shapes
+        )
         parent_tokens = object_centric_tokens[:, 0:1, :] 
         part_centric_tokens = self.stage3_reasoner(
             parent_object_token=parent_tokens,
