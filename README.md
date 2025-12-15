@@ -77,6 +77,25 @@ python scripts/evaluate.py --fraction 0.1 --N 4
 ```
 - `--fraction`: Proportion of the dataset to evaluate (e.g., `0.1` for 10%).
 
+## Docker Support
+
+You can run the entire workflow in a Docker container, pre-configured with ROCm support.
+
+### 1. Build the Image
+```bash
+docker build -t rescue-app .
+```
+
+### 2. Run with ROCm GPU Support
+To ensure the container can access the AMD MI325X GPU, you must pass the DRI and KFD devices and the video group:
+
+```bash
+docker run --device=/dev/kfd --device=/dev/dri --group-add video \
+    -e HF_TOKEN=$HF_TOKEN \
+    rescue-app
+```
+*Note: Pass your Hugging Face token as an environment variable.*
+
 ## Architecture
 
 - **Planner**: `Qwen2-VL-72B-Instruct` generates bounding box hypotheses via Visual Chain-of-Thought (vCoT).
