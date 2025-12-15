@@ -1,20 +1,24 @@
 from .planner import Planner
 from .executor import Executor
 from .verifier import Verifier
-from .utils import load_image, plot_results
+from .utils import load_image, plot_results, get_device
 import numpy as np
 
 class RESCuePipeline:
     def __init__(self, 
                  planner_model="Qwen/Qwen2.5-VL-72B-Instruct",
                  executor_model="facebook/sam3",
-                 device="cuda"):
+                 device=None,
+                 dtype="auto",
+                 quantization=None):
         
         print("Initializing RESCue Pipeline...")
+        self.device = device or get_device()
+        print(f"Pipeline using device: {self.device}")
         
-        self.planner = Planner(model_path=planner_model, device=device)
+        self.planner = Planner(model_path=planner_model, device=self.device, dtype=dtype, quantization=quantization)
         
-        self.executor = Executor(model_path=executor_model, device=device)
+        self.executor = Executor(model_path=executor_model, device=self.device)
         
         self.verifier = Verifier(llm_instance=self.planner.llm)
         

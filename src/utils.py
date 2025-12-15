@@ -1,10 +1,31 @@
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
+import torch
 import cv2
 import os
+import requests
+from io import BytesIO
+
+def get_device():
+    if torch.cuda.is_available():
+        if hasattr(torch.version, 'hip') and torch.version.hip:
+            print(f"Device: ROCm (HIP) detected. Using 'cuda' device alias mapping to {torch.cuda.get_device_name(0)}.")
+            return "cuda" 
+        else:
+            print(f"Device: CUDA detected. Using {torch.cuda.get_device_name(0)}.")
+            return "cuda"
+    return "cpu"
 
 def load_image(image_path):
+    if image_path.startswith("http://") or image_path.startswith("https://"):
+        try:
+            response = requests.get(image_path)
+            response.raise_for_status()
+            return Image.open(BytesIO(response.content)).convert("RGB")
+        except Exception as e:
+            print(f"Error loading image from URL: {e}")
+            raise
     return Image.open(image_path).convert("RGB")
 
 def apply_red_alpha_overlay(image, mask, alpha=0.5):
@@ -15,7 +36,6 @@ def apply_red_alpha_overlay(image, mask, alpha=0.5):
         mask = np.array(mask)
     
     mask = mask > 0
-    
     overlay = image.copy()
     
     red_channel = image[:, :, 0]
@@ -62,16 +82,6 @@ def save_mask(mask, output_path):
     mask.save(output_path)
 
 def calculate_iou(mask1, mask2):
-    """
-    Calculates Intersection over Union (IoU) between two binary masks.
-    
-    Args:
-        mask1: boolean numpy array or 0/1 integers
-        mask2: boolean numpy array or 0/1 integers
-        
-    Returns:
-        float: IoU score
-    """
     intersection = np.logical_and(mask1, mask2).sum()
     union = np.logical_or(mask1, mask2).sum()
     
@@ -79,4 +89,3 @@ def calculate_iou(mask1, mask2):
         return 0.0
         
     return intersection / union
-

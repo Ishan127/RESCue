@@ -13,10 +13,12 @@ def main():
     parser.add_argument("--query", required=True, help="Text query")
     parser.add_argument("--N", type=int, default=4, help="Number of reasoning paths")
     parser.add_argument("--output", default="output.jpg", help="Path to save result image")
+    parser.add_argument("--dtype", default="auto", help="Model data type (auto, float16, etc.)")
+    parser.add_argument("--quantization", default=None, help="Model quantization (awq, gptq, int8, etc.)")
     
     args = parser.parse_args()
     
-    pipeline = RESCuePipeline()
+    pipeline = RESCuePipeline(dtype=args.dtype, quantization=args.quantization)
     
     result = pipeline.run(args.image, args.query, N=args.N)
     

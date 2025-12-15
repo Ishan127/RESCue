@@ -39,6 +39,13 @@ This codebase is optimized for **AMD MI325X** GPUs running **ROCm 6.3.0**.
     ```
     > [!IMPORTANT]
     > **Do NOT reinstall torch/vllm from PyPI.** The `requirements.txt` has `torch` and `vllm` commented out to preserve your pre-installed ROCm versions. If you need to install them manually, use the ROCm-specific index url (e.g., `--index-url https://download.pytorch.org/whl/rocm6.2`).
+    
+    > [!WARNING]
+    > **If you encounter "Found no NVIDIA driver" errors:**
+    > This means you have installed the wrong (Nvidia) PyTorch/vLLM. Run the fix script:
+    > ```bash
+    > bash scripts/fix_env.sh
+    > ```
 
     *Note: `sam3` is installed directly from the official GitHub repository.*
 

@@ -1,20 +1,31 @@
 import re
 import numpy as np
 import torch
+from .utils import get_device
+
 try:
     from vllm import LLM, SamplingParams
 except ImportError:
     LLM = None
     SamplingParams = None
+except RuntimeError as e:
+    if "Found no NVIDIA driver" in str(e) or "libcuda.so" in str(e):
+        print("\n\nCRITICAL ERROR: ROCm/NVIDIA Mismatch Detected!")
+        print("it appears you have the NVIDIA version of PyTorch/vLLM installed on an AMD system.")
+        print("Please run 'pip uninstall torch torchvision torchaudio vllm' and reinstall the ROCm versions.")
+        print("See README.md for details.\n")
+        raise e
+    else:
+        raise e
 
 class Planner:
-    def __init__(self, model_path="Qwen/Qwen2.5-VL-72B-Instruct", device="cuda"):
-        self.device = device
+    def __init__(self, model_path="Qwen/Qwen2.5-VL-72B-Instruct", device=None, dtype="auto", quantization=None):
+        self.device = device or get_device()
         self.model_path = model_path
         
         if LLM is not None:
-            print(f"Loading Planner (vLLM): {model_path}")
-            self.llm = LLM(model=model_path, trust_remote_code=True, tensor_parallel_size=1) 
+            print(f"Loading Planner (vLLM): {model_path} [dtype={dtype}, quantization={quantization}]")
+            self.llm = LLM(model=model_path, trust_remote_code=True, tensor_parallel_size=1, dtype=dtype, quantization=quantization) 
         else:
             raise ImportError("vLLM is not installed. Please install vllm to use the Planner.")
 
