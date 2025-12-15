@@ -37,6 +37,9 @@ This codebase is optimized for **AMD MI325X** GPUs running **ROCm 6.3.0**.
     ```bash
     pip install -r requirements.txt
     ```
+    > [!IMPORTANT]
+    > **Do NOT reinstall torch/vllm from PyPI.** The `requirements.txt` has `torch` and `vllm` commented out to preserve your pre-installed ROCm versions. If you need to install them manually, use the ROCm-specific index url (e.g., `--index-url https://download.pytorch.org/whl/rocm6.2`).
+
     *Note: `sam3` is installed directly from the official GitHub repository.*
 
 ## Usage
