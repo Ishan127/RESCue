@@ -14,7 +14,8 @@ from src.utils import calculate_iou
 def evaluate(fraction=0.1, N=4):
     print(f"Loading ReasonSeg dataset (Validation)...")
     try:
-        ds = load_dataset("Ricky06662/ReasonSeg_val", split="validation")
+        # Note: The dataset repo is named ReasonSeg_val but the internal split is named 'test'
+        ds = load_dataset("Ricky06662/ReasonSeg_val", split="test")
     except Exception as e:
         print(f"Failed to load dataset: {e}")
         return

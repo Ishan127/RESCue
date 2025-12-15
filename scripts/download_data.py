@@ -5,7 +5,8 @@ def download_reasonseg():
     print("Downloading ReasonSeg Validation Set...")
     try:
         # Using the HF Hub dataset
-        ds = load_dataset("Ricky06662/ReasonSeg_val", split="validation")
+        # Note: The dataset repo is named ReasonSeg_val but the internal split is named 'test'
+        ds = load_dataset("Ricky06662/ReasonSeg_val", split="test")
         print(f"Dataset downloaded successfully. Size: {len(ds)} samples.")
         
         # Print sample structure
