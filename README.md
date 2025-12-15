@@ -47,12 +47,25 @@ Download the required model weights (Qwen2.5-VL and SAM 3 checkpoints):
 python scripts/download_models.py
 ```
 
-### 2. Run Inference
+### 2. Download Data
+Download the **ReasonSeg** validation dataset for evaluation:
+```bash
+python scripts/download_data.py
+```
+
+### 3. Run Inference (Single Image)
 Run the RESCue pipeline on an image with a text query:
 ```bash
 python scripts/run_inference.py --image "access/demo.jpg" --query "the object that would break if the boy jumps" --N 4
 ```
 - `--N`: Number of reasoning paths to sample (Inference-time scaling parameter).
+
+### 4. Run Evaluation (Dataset)
+Evaluate the model on a fraction of the ReasonSeg dataset:
+```bash
+python scripts/evaluate.py --fraction 0.1 --N 4
+```
+- `--fraction`: Proportion of the dataset to evaluate (e.g., `0.1` for 10%).
 
 ## Architecture
 
@@ -72,6 +85,8 @@ RESCue/
 ├── scripts/
 │   ├── setup_environment.sh
 │   ├── download_models.py
+│   ├── download_data.py
+│   ├── evaluate.py
 │   └── run_inference.py
 ├── tests/
 └── requirements.txt

@@ -60,3 +60,23 @@ def save_mask(mask, output_path):
     if not isinstance(mask, Image.Image):
         mask = Image.fromarray((mask * 255).astype(np.uint8))
     mask.save(output_path)
+
+def calculate_iou(mask1, mask2):
+    """
+    Calculates Intersection over Union (IoU) between two binary masks.
+    
+    Args:
+        mask1: boolean numpy array or 0/1 integers
+        mask2: boolean numpy array or 0/1 integers
+        
+    Returns:
+        float: IoU score
+    """
+    intersection = np.logical_and(mask1, mask2).sum()
+    union = np.logical_or(mask1, mask2).sum()
+    
+    if union == 0:
+        return 0.0
+        
+    return intersection / union
+
