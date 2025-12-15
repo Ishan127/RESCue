@@ -1,0 +1,14 @@
+torch
+torchvision
+torchaudio
+# vLLM for Qwen2.5-VL inference (using user's pre-installed version is preferred, but listing for completeness)
+vllm>=0.6.4
+# SAM 3 (Official Repo)
+git+https://github.com/facebookresearch/sam3.git
+opencv-python
+pillow
+numpy
+transformers
+huggingface_hub
+termcolor
+matplotlib
