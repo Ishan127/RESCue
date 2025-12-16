@@ -1,13 +1,8 @@
 import torch
 import numpy as np
 from .utils import get_device
-
-try:
-    import sam3
-    from sam3 import SAM3Predictor
-except ImportError:
-    print("Warning: sam3 not found. Executor will fail unless sam3 is installed.")
-    SAM3Predictor = None
+import sam3
+from sam3 import SAM3Predictor
 
 class Executor:
     def __init__(self, model_path="facebook/sam3", device=None):
