@@ -6,8 +6,8 @@ echo "Installing dependencies (requirements.txt)..."
 pip install -r requirements.txt
 
 # Force reinstall of torch with ROCm support AFTER requirements to prevent overwrite
-echo "Uninstalling any wrong torch/vllm versions..."
-pip uninstall -y torch torchvision torchaudio vllm
+echo "Uninstalling any wrong torch/vllm/amdsmi versions..."
+pip uninstall -y torch torchvision torchaudio vllm amdsmi
 
 echo "Installing PyTorch for ROCm (v2.4.0)..."
 # Explicitly pin version to match vLLM requirements and prevent drift

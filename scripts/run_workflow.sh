@@ -2,6 +2,7 @@ set -e
 
 echo "Starting RESCue Workflow"
 export CUDA_VISIBLE_DEVICES=0
+export PYTHONPATH=$PYTHONPATH:/opt/rocm/share/amdsmi
 
 echo "Verifying Environment..."
 python scripts/verify_env.py || {
