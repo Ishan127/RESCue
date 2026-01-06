@@ -3,6 +3,15 @@ set -e
 echo "Starting RESCue Workflow"
 export CUDA_VISIBLE_DEVICES=0
 
+echo "Verifying Environment..."
+python scripts/verify_env.py || {
+    echo "Environment Verification FAILED. Running setup to fix dependencies..."
+    bash scripts/setup_environment.sh
+    
+    echo "Re-verifying Environment..."
+    python scripts/verify_env.py || { echo "Setup failed to fix environment. Exiting."; exit 1; }
+}
+
 echo "Downloading Models..."
 python scripts/download_models.py
 
