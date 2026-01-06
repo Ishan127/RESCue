@@ -9,7 +9,7 @@ echo "Downloading Data (ReasonSeg)..."
 python scripts/download_data.py
 
 echo "Deploying Models on Endpoints (Testing Load)..."
-python scripts/test_models.py --dtype float16 --quantization int8
+python scripts/test_models.py --dtype float16
 
 echo "Verifying Model Response..."
 echo "Model health check passed."
@@ -25,7 +25,7 @@ python scripts/run_inference.py \
     --query "$QUERY" \
     --N 2 \
     --dtype float16 \
-    --quantization int8 \
+
     --output "inference_result.jpg"
 
 echo "Running Evaluation (N=2, Fraction=0.01)..."
@@ -33,6 +33,6 @@ python scripts/evaluate.py \
     --fraction 0.01 \
     --N 2 \
     --dtype float16 \
-    --quantization int8
+
 
 echo "Workflow Completed Successfully!"
