@@ -10,3 +10,5 @@ datasets
 tqdm
 requests
 matplotlib
+decord
+pycocotools
