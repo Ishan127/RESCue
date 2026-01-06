@@ -90,8 +90,8 @@ class Planner:
         
         if LLM is not None:
             logger.info(f"Loading Planner (vLLM): {self.config.model_path}")
-            logger.info(f"DEBUG: Full Planner Config: {self.config}")
             logger.info(f"Config: dtype={self.config.dtype}, quant={self.config.quantization}")
+            logger.info(f"Detected Device: {self.device}")
             
             try:
                 self.llm = LLM(
@@ -99,8 +99,7 @@ class Planner:
                     trust_remote_code=True,
                     tensor_parallel_size=1,
                     dtype=self.config.dtype,
-                    quantization=self.config.quantization,
-                    device=self.device
+                    quantization=self.config.quantization
                 )
             except Exception as e:
                 logger.error(f"Failed to initialize vLLM: {e}")

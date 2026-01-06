@@ -1,6 +1,7 @@
 set -e
 
 echo "Starting RESCue Workflow"
+export CUDA_VISIBLE_DEVICES=0
 
 echo "Downloading Models..."
 python scripts/download_models.py
