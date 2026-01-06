@@ -90,6 +90,7 @@ class Planner:
         
         if LLM is not None:
             logger.info(f"Loading Planner (vLLM): {self.config.model_path}")
+            logger.info(f"DEBUG: Full Planner Config: {self.config}")
             logger.info(f"Config: dtype={self.config.dtype}, quant={self.config.quantization}")
             
             try:
