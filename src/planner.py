@@ -99,7 +99,8 @@ class Planner:
                     trust_remote_code=True,
                     tensor_parallel_size=1,
                     dtype=self.config.dtype,
-                    quantization=self.config.quantization
+                    quantization=self.config.quantization,
+                    device=self.device
                 )
             except Exception as e:
                 logger.error(f"Failed to initialize vLLM: {e}")
