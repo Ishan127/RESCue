@@ -9,11 +9,11 @@ pip install -r requirements.txt
 echo "Uninstalling any wrong torch/vllm versions..."
 pip uninstall -y torch torchvision torchaudio vllm
 
-echo "Installing PyTorch for ROCm..."
-# Using ROCm 6.2 wheels
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.2
+echo "Installing PyTorch for ROCm (v2.4.0)..."
+# Explicitly pin version to match vLLM requirements and prevent drift
+pip install --no-cache-dir torch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 --index-url https://download.pytorch.org/whl/rocm6.1
 
 echo "Installing vLLM for ROCm..."
-pip install vllm==0.6.3.post1 --extra-index-url https://wheels.vllm.ai/rocm61
+pip install --no-cache-dir vllm==0.6.3.post1 --extra-index-url https://wheels.vllm.ai/rocm61
 
 echo "Setup Complete."
