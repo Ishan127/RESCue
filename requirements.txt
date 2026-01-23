@@ -1,0 +1,10 @@
+numpy
+pillow
+opencv-python
+requests
+datasets
+tqdm
+fastapi
+uvicorn
+huggingface_hub
+python-multipart

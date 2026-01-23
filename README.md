@@ -6,15 +6,28 @@
 
 ## 1. Environment Setup
 
-Install the required Python packages:
+The system is split into **Client** (Verification/Orchestration) and **Server** (Model Serving).
 
+### Client Setup (Local Machine / Front-End)
+Runs the logic, interacts with endpoints. **No Torch/vLLM required.**
 ```bash
 pip install -r requirements.txt
-pip install vllm==0.14.0
-pip install "git+https://github.com/facebookresearch/sam3.git"
+# Ensure requirements.txt contains: numpy, pillow, opencv-python, requests, datasets, tqdm, fastapi, uvicorn
 ```
 
-*(Note: Adjust pytorch/rocm versions as needed for your specific hardware).*
+### Server Setup (GPU Nodes)
+
+**Planner Node (LLM)**:
+```bash
+pip install vllm==0.14.0
+```
+
+**Executor Node (SAM)**:
+```bash
+pip install torch torchvision --index-url https://download.pytorch.org/whl/rocm6.0
+pip install "git+https://github.com/facebookresearch/sam3.git"
+pip install fastapi uvicorn pillow numpy requests
+```
 
 ## 2. Download Models
 

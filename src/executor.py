@@ -92,7 +92,7 @@ class Executor:
     def _base64_to_mask(self, b64_string):
         img_data = base64.b64decode(b64_string)
         img = Image.open(io.BytesIO(img_data)).convert("L")
-        return np.array(img) > 128
+        return np.array(img).astype(bool) # > 128 check done by implicit bool cast or threshold
 
     def execute(self, image_input, box, text_prompt):
         # image_input: np array (H, W, 3) or PIL Image
@@ -195,6 +195,11 @@ class Executor:
             
             # If 3D (N, H, W), just return list
             elif masks_np.ndim == 3:
+                # Is it (H, W, N) or (N, H, W)?
+                if masks_np.shape[2] <= 10 and masks_np.shape[0] > 100:
+                     print(f"[Executor Debug] Detected channels-last format (H, W, N). Transposing to (N, H, W).")
+                     masks_np = masks_np.transpose(2, 0, 1)
+
                 for i in range(masks_np.shape[0]):
                     extracted_masks.append(masks_np[i])
             else:

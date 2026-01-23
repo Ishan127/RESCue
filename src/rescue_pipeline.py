@@ -40,7 +40,7 @@ class RESCuePipeline:
         
         print("Pipeline Initialized.")
 
-    def run(self, image_path, query, N=4):
+    def run(self, image_path, query, N=4, gt_mask=None):
         image = load_image(image_path)
         
         print(f"--- Step 1: Planning (N={N}) ---")
@@ -60,6 +60,13 @@ class RESCuePipeline:
             for j, mask in enumerate(masks):
                 score = self.verifier.verify(image, mask, query)
                 
+                # IoU Calculation for debugging if Ground Truth is provided
+                iou_info = ""
+                if gt_mask is not None:
+                    from .utils import calculate_iou
+                    iou = calculate_iou(mask, gt_mask)
+                    iou_info = f" | IoU: {iou:.4f}"
+                
                 candidates.append({
                     'id': f"H{i}_M{j}",
                     'mask': mask,
@@ -68,7 +75,7 @@ class RESCuePipeline:
                     'reasoning': reasoning,
                     'noun_phrase': noun_phrase
                 })
-                print(f"  Candidate H{i}_M{j}: Score {score} | {noun_phrase}")
+                print(f"  Candidate H{i}_M{j}: Score {score}{iou_info} | {noun_phrase}")
                 
         if not candidates:
             return None

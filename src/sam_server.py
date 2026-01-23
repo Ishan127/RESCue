@@ -67,6 +67,9 @@ async def segment(request: SegmentationRequest):
         image_np = np.array(image)
         
         # Executor expects: image_input, box, text_prompt
+        # The prompt box should be passed directly, or maybe we need to swap x/y if there's confusion?
+        # Typically box is [x min, y min, x max, y max] relative to image w/h.
+        
         print(f"Received request. Box: {request.box}, Prompt: {request.text_prompt}")
         masks = executor.execute(image_np, request.box, request.text_prompt)
         
