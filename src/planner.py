@@ -204,7 +204,8 @@ class Planner:
             "\nIMPORTANT: Coordinates are normalized 0-1000. Box format: [x1, y1, x2, y2] where (x1,y1) is top-left.\n"
             "Format your answer EXACTLY as:\n"
             "Reasoning: <your step-by-step reasoning>\n"
-            "Target Concept: <specific noun phrase for the object, be precise>\n"
+            "Target Concept: <DESCRIPTIVE noun phrase - include color, size, position, material, or distinguishing features. "
+            "Example: 'large black tripod in the foreground' NOT just 'tripod'>\n"
             "Box: [x1, y1, x2, y2]"
         )
         
