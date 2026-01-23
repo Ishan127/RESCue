@@ -13,15 +13,14 @@ class RESCuePipeline:
                  device=None,
                  dtype="auto",
                  quantization=None,
-                 verification_mode="comparative"):
+                 verification_mode="detailed"):
         """
         Initialize RESCue Pipeline.
         
         Args:
-            verification_mode: "simple", "detailed", or "comparative"
-                - "simple": Basic scoring (fast, less accurate differentiation)
-                - "detailed": Multi-criteria scoring (more LLM calls, better breakdown)
-                - "comparative": Compare all masks at once (best differentiation, recommended)
+            verification_mode: "simple" or "detailed"
+                - "simple": Basic scoring (fast, less accurate)
+                - "detailed": Multi-criteria scoring (recommended, better differentiation)
         """
         print("Initializing RESCue Pipeline...")
         self.device = device or get_device()
@@ -60,7 +59,6 @@ class RESCuePipeline:
         print(f"Generated {len(hypotheses)} hypotheses.")
         
         candidates = []
-        all_masks = []
         
         print(f"--- Step 2: Execution ---")
         
@@ -77,7 +75,6 @@ class RESCuePipeline:
             masks = self.executor.predict_masks(box, noun_phrase)
             
             for j, mask in enumerate(masks):
-                all_masks.append(mask)
                 candidates.append({
                     'id': f"H{i}_M{j}",
                     'mask': mask,
@@ -89,65 +86,45 @@ class RESCuePipeline:
                 print(f"  Generated candidate H{i}_M{j} | {noun_phrase}")
         
         if not candidates:
+            print("WARNING: No candidates generated!")
             return None
         
         print(f"--- Step 3: Verification ({self.verification_mode} mode) ---")
         
-        if self.verification_mode == "comparative" and len(candidates) > 1:
-            # Comparative verification: score all masks together
-            print(f"  - Comparing {len(all_masks)} candidates simultaneously...")
-            scores = self.verifier.verify_comparative(image, all_masks, query)
+        # Individual verification (simple or detailed mode)
+        for cand in candidates:
+            result = self.verifier.verify(image, cand['mask'], query, 
+                                         return_details=(self.verification_mode == "detailed"))
             
-            for i, cand in enumerate(candidates):
-                cand['score'] = scores[i] if i < len(scores) else 0.0
-                
-                # IoU for debugging
-                iou_info = ""
-                if gt_mask is not None:
-                    from .utils import calculate_iou
-                    iou = calculate_iou(cand['mask'], gt_mask)
-                    iou_info = f" | IoU: {iou:.4f}"
-                
-                print(f"  {cand['id']}: Score {cand['score']:.1f}{iou_info}")
-        
-        else:
-            # Individual verification (simple or detailed mode)
-            self.verifier.start_batch()
+            if isinstance(result, dict):
+                cand['score'] = result['total']
+                cand['score_breakdown'] = result
+            else:
+                cand['score'] = result
             
-            for cand in candidates:
-                result = self.verifier.verify(image, cand['mask'], query, 
-                                             return_details=(self.verification_mode == "detailed"))
-                
-                if isinstance(result, dict):
-                    cand['score'] = result['total']
-                    cand['score_breakdown'] = result
-                else:
-                    cand['score'] = result
-                
-                # IoU for debugging
-                iou_info = ""
-                if gt_mask is not None:
-                    from .utils import calculate_iou
-                    iou = calculate_iou(cand['mask'], gt_mask)
-                    iou_info = f" | IoU: {iou:.4f}"
-                
-                breakdown = ""
-                if 'score_breakdown' in cand:
-                    sb = cand['score_breakdown']
-                    breakdown = f" [I:{sb['identity']:.0f} S:{sb['spatial']:.0f} C:{sb['completeness']:.0f} B:{sb['boundary']:.0f}]"
-                
-                print(f"  {cand['id']}: Score {cand['score']:.1f}{breakdown}{iou_info}")
+            # IoU for debugging
+            iou_info = ""
+            if gt_mask is not None:
+                from .utils import calculate_iou
+                iou = calculate_iou(cand['mask'], gt_mask)
+                cand['iou'] = iou
+                iou_info = f" | IoU: {iou:.4f}"
             
-            # Normalize scores within batch for better differentiation
-            normalized_scores = self.verifier.end_batch()
-            if normalized_scores and len(normalized_scores) == len(candidates):
-                print("  - Applying score normalization for better spread...")
-                for i, cand in enumerate(candidates):
-                    cand['raw_score'] = cand['score']
-                    cand['score'] = normalized_scores[i]
-                    print(f"    {cand['id']}: {cand['raw_score']:.1f} -> {cand['score']:.1f}")
+            breakdown = ""
+            if 'score_breakdown' in cand:
+                sb = cand['score_breakdown']
+                breakdown = f" [I:{sb['identity']:.0f} S:{sb['spatial']:.0f} C:{sb['completeness']:.0f} B:{sb['boundary']:.0f}]"
+            
+            print(f"  {cand['id']}: Score {cand['score']:.1f}{breakdown}{iou_info} | {cand['noun_phrase']}")
         
         best_candidate = max(candidates, key=lambda x: x['score'])
+        
+        # Also find the best IoU candidate for debugging
+        if gt_mask is not None:
+            best_iou_cand = max(candidates, key=lambda x: x.get('iou', 0))
+            if best_iou_cand['id'] != best_candidate['id']:
+                print(f"  NOTE: Best IoU is {best_iou_cand['id']} ({best_iou_cand.get('iou', 0):.4f}), but selected {best_candidate['id']}")
+        
         print(f"--- Result ---")
         print(f"Best Candidate: {best_candidate['id']} with Score {best_candidate['score']:.1f}")
         

@@ -112,16 +112,19 @@ class Planner:
         
         candidates: List[Hypothesis] = []
         
+        # Track all concepts across strategies to avoid duplicates
+        all_concepts: List[str] = []
+        
         if self.config.use_stratified_sampling and N > 1:
-            n_conservative = math.ceil(N * 0.4)
-            n_exploratory = math.ceil(N * 0.4)
-            n_spatial = N - n_conservative - n_exploratory
-            if n_spatial < 0: n_spatial = 0
+            # Distribute more evenly and ensure spatial gets at least 1
+            n_conservative = max(1, N // 3)
+            n_exploratory = max(1, N // 3)
+            n_spatial = max(1, N - n_conservative - n_exploratory)
             
             strategies = [
-                ("conservative", n_conservative, max(0.1, base_temp - 0.2)),
-                ("exploratory", n_exploratory, min(1.0, base_temp + 0.2)),
-                ("spatial", n_spatial, base_temp)
+                ("conservative", n_conservative, max(0.3, base_temp - 0.2)),
+                ("exploratory", n_exploratory, min(1.0, base_temp + 0.3)),
+                ("spatial", n_spatial, base_temp + 0.1)
             ]
         else:
             strategies = [("standard", N, base_temp)]
@@ -137,9 +140,11 @@ class Planner:
                     query, 
                     count, 
                     temperature=temp,
-                    strategy=strategy_name
+                    strategy=strategy_name,
+                    existing_concepts=all_concepts  # Pass existing concepts to avoid duplicates
                 )
                 candidates.extend(new_hyps)
+                all_concepts.extend([h.target_concept for h in new_hyps])
             except Exception as e:
                 logger.error(f"Strategy '{strategy_name}' failed: {e}")
 
@@ -148,102 +153,181 @@ class Planner:
         logger.info(f"Final selection: {len(final_hypotheses)} hypotheses")
         return [h.to_dict() for h in final_hypotheses]
 
-    def _construct_prompt(self, query: str, strategy: str) -> str:
+    def _construct_prompt(self, query: str, strategy: str, attempt: int = 0) -> str:
         base_prompt = (
             f"Query: {query}\n"
             "Analyze the image and locate the object described by the query.\n"
         )
         
+        # Add diversity hints based on attempt number
+        diversity_hints = ""
+        if attempt > 0:
+            diversity_options = [
+                "Consider a DIFFERENT object than the most obvious answer. Look for alternative interpretations.\n",
+                "Focus on a DIFFERENT REGION of the image than the center. Look at edges, corners, background.\n",
+                "Think about PARTS of objects rather than whole objects. What components match the query?\n",
+                "Consider SMALLER or PARTIALLY VISIBLE objects that might also match the description.\n",
+                "Look for objects that match the query INDIRECTLY or METAPHORICALLY.\n",
+            ]
+            diversity_hints = diversity_options[attempt % len(diversity_options)]
+        
         if strategy == "conservative":
             instruction = (
-                "Step 1 (See): List visible objects strictly related to the query.\n"
-                "Step 2 (Think): perform a logical deduction to identify the correct object.\n"
-                "Step 3 (Propose): Output the precise bounding box.\n"
+                "Step 1 (See): List ALL visible objects that could possibly relate to the query (at least 3 candidates).\n"
+                "Step 2 (Think): For EACH candidate, explain why it might or might not match. Select the MOST LITERAL match.\n"
+                "Step 3 (Propose): Output the precise bounding box for YOUR CHOSEN object.\n"
+                f"{diversity_hints}"
             )
         elif strategy == "exploratory":
             instruction = (
-                "Step 1 (Brainstorm): Consider figurative or indirect interpretations of the query.\n"
-                "Step 2 (Select): Choose the most likely candidate even if ambiguous.\n"
-                "Step 3 (Propose): Output the bounding box.\n"
+                "Step 1 (Brainstorm): List at least 3 DIFFERENT possible interpretations of the query, including figurative or indirect ones.\n"
+                "Step 2 (Select): Choose the LEAST OBVIOUS but still valid interpretation. Avoid the most common answer.\n"
+                "Step 3 (Propose): Output the bounding box for this alternative object.\n"
+                f"{diversity_hints}"
             )
         elif strategy == "spatial":
             instruction = (
-                "Step 1 (Scan): Scan the image distinct regions (foreground, background).\n"
-                "Step 2 (Locate): Identify the target based on its spatial context.\n"
+                "Step 1 (Scan): Divide the image into regions (top-left, top-right, bottom-left, bottom-right, center). List objects in EACH region.\n"
+                "Step 2 (Locate): Find matching objects in DIFFERENT REGIONS than the obvious center. Prefer objects at the edges or in the background.\n"
                 "Step 3 (Propose): Output the bounding box.\n"
+                f"{diversity_hints}"
             )
         else:
             instruction = (
-                "Step 1 (See): List all objects visible in the image that are relevant to the query.\n"
-                "Step 2 (Think): Analyze the spatial and causal relationships. Resolve ambiguities.\n"
-                "Step 3 (Propose): Output the bounding box coordinates [x_1, y_1, x_2, y_2] for the target object.\n"
+                "Step 1 (See): List ALL objects visible in the image that could match the query (minimum 3).\n"
+                "Step 2 (Think): Analyze spatial and causal relationships. Consider multiple valid answers.\n"
+                "Step 3 (Propose): Output the bounding box for ONE specific object.\n"
+                f"{diversity_hints}"
             )
 
         format_instr = (
-            "Format your answer as:\n"
-            "Reasoning: <your reasoning>\n"
-            "Target Concept: <noun phrase>\n"
+            "\nIMPORTANT: Coordinates are normalized 0-1000. Box format: [x1, y1, x2, y2] where (x1,y1) is top-left.\n"
+            "Format your answer EXACTLY as:\n"
+            "Reasoning: <your step-by-step reasoning>\n"
+            "Target Concept: <specific noun phrase for the object, be precise>\n"
             "Box: [x1, y1, x2, y2]"
         )
         
         return f"{base_prompt}{instruction}{format_instr}"
 
-    def _sample_batch(self, image_path: str, query: str, n: int, temperature: float, strategy: str) -> List[Hypothesis]:
-        prompt_text = self._construct_prompt(query, strategy)
-        
-        messages = create_vision_message(prompt_text, image_path)
-        
-        try:
-            completion = self.client.chat.completions.create(
-                model=self.config.model_path,
-                messages=messages,
-                temperature=temperature,
-                n=n,
-                max_tokens=600,
-                logprobs=True,
-                top_logprobs=1
-            )
-        except Exception as e:
-            logger.error(f"API Call Failed: {e}")
-            return []
-        
-        batch_hypotheses = []
+    def _sample_batch(self, image_path: str, query: str, n: int, temperature: float, strategy: str, existing_concepts: List[str] = None) -> List[Hypothesis]:
+        """Sample a batch of hypotheses with retry logic for diversity."""
         from PIL import Image
         
         with Image.open(image_path) as img:
             real_w, real_h = img.size
             img_area = real_w * real_h
-
-        for choice in completion.choices:
-            text = choice.message.content
+        
+        batch_hypotheses = []
+        existing_concepts = existing_concepts or []
+        max_attempts = n + self.config.max_retries  # Extra attempts to ensure we get n diverse results
+        
+        for attempt in range(max_attempts):
+            if len(batch_hypotheses) >= n:
+                break
             
-            # Estimate confidence from logprobs if available
-            confidence = 0.5
-            if choice.logprobs and choice.logprobs.content:
-                try:
-                    # Filter out null logprobs and sum them
-                    token_logprobs = [t.logprob for t in choice.logprobs.content if t.logprob is not None]
-                    if token_logprobs:
-                        avg_logprob = sum(token_logprobs) / len(token_logprobs)
-                        confidence = math.exp(avg_logprob)
-                except Exception:
-                    pass
-
-            parsed = self._parse_completion(
-                text, 
-                real_w, 
-                real_h, 
-                confidence, 
-                strategy,
-                img_area
-            )
+            # Construct prompt with diversity hint based on attempt
+            prompt_text = self._construct_prompt(query, strategy, attempt=attempt)
             
-            if parsed:
-                batch_hypotheses.append(parsed)
-            else:
-                logger.debug(f"Failed to parse completion: {text[:50]}...")
+            # Add exclusion list if we have existing concepts
+            all_concepts = existing_concepts + [h.target_concept for h in batch_hypotheses]
+            if all_concepts:
+                exclude_text = f"\nIMPORTANT: Do NOT select these objects (already chosen): {', '.join(set(all_concepts))}. Choose a DIFFERENT object.\n"
+                prompt_text = prompt_text.replace("Format your answer EXACTLY as:", exclude_text + "Format your answer EXACTLY as:")
+            
+            messages = create_vision_message(prompt_text, image_path)
+            
+            # Request more samples than needed to increase diversity
+            samples_to_request = min(n - len(batch_hypotheses) + 1, 3)
+            
+            try:
+                completion = self.client.chat.completions.create(
+                    model=self.config.model_path,
+                    messages=messages,
+                    temperature=min(1.0, temperature + 0.1 * attempt),  # Increase temp on retries
+                    n=samples_to_request,
+                    max_tokens=800,
+                    logprobs=True,
+                    top_logprobs=1
+                )
+            except Exception as e:
+                logger.error(f"API Call Failed: {e}")
+                continue
+            
+            for choice in completion.choices:
+                if len(batch_hypotheses) >= n:
+                    break
+                    
+                text = choice.message.content
+                
+                # Estimate confidence from logprobs if available
+                confidence = 0.5
+                if choice.logprobs and choice.logprobs.content:
+                    try:
+                        token_logprobs = [t.logprob for t in choice.logprobs.content if t.logprob is not None]
+                        if token_logprobs:
+                            avg_logprob = sum(token_logprobs) / len(token_logprobs)
+                            confidence = math.exp(avg_logprob)
+                    except Exception:
+                        pass
 
+                parsed = self._parse_completion(
+                    text, 
+                    real_w, 
+                    real_h, 
+                    confidence, 
+                    strategy,
+                    img_area
+                )
+                
+                if parsed:
+                    # Check if this concept is too similar to existing ones
+                    concept_lower = parsed.target_concept.lower().strip()
+                    is_duplicate = False
+                    for existing in all_concepts + [h.target_concept for h in batch_hypotheses]:
+                        if self._concepts_similar(concept_lower, existing.lower().strip()):
+                            is_duplicate = True
+                            logger.debug(f"Skipping duplicate concept: {parsed.target_concept} (similar to {existing})")
+                            break
+                    
+                    if not is_duplicate:
+                        batch_hypotheses.append(parsed)
+                        logger.info(f"  Added hypothesis: {parsed.target_concept} (attempt {attempt+1})")
+                else:
+                    logger.debug(f"Failed to parse completion: {text[:100]}...")
+        
+        if len(batch_hypotheses) < n:
+            logger.warning(f"Only generated {len(batch_hypotheses)}/{n} diverse hypotheses after {max_attempts} attempts")
+        
         return batch_hypotheses
+    
+    def _concepts_similar(self, concept1: str, concept2: str) -> bool:
+        """Check if two concepts are semantically similar."""
+        # Exact match
+        if concept1 == concept2:
+            return True
+        
+        # One contains the other
+        if concept1 in concept2 or concept2 in concept1:
+            return True
+        
+        # Word overlap check
+        words1 = set(concept1.split())
+        words2 = set(concept2.split())
+        
+        # Remove common words
+        stopwords = {'the', 'a', 'an', 'in', 'on', 'at', 'of', 'to', 'for', 'with'}
+        words1 = words1 - stopwords
+        words2 = words2 - stopwords
+        
+        if not words1 or not words2:
+            return False
+        
+        # High overlap = similar
+        overlap = len(words1 & words2)
+        union = len(words1 | words2)
+        
+        return overlap / union > 0.5 if union > 0 else False
 
     def _parse_completion(self, text: str, w: int, h: int, conf: float, strategy: str, img_area: int) -> Optional[Hypothesis]:
         
@@ -301,42 +385,74 @@ class Planner:
     def _select_diverse_subset(self, candidates: List[Hypothesis], N: int, query: str) -> List[Hypothesis]:
         if not candidates:
             return []
+        
+        # First, deduplicate by concept
+        concept_groups: Dict[str, List[Hypothesis]] = defaultdict(list)
+        for c in candidates:
+            concept_key = c.target_concept.lower().strip()
+            concept_groups[concept_key].append(c)
+        
+        # Take best from each concept group
+        unique_candidates = []
+        for concept, group in concept_groups.items():
+            # Sort by confidence and take best
+            best = max(group, key=lambda h: h.confidence)
+            unique_candidates.append(best)
+        
+        logger.info(f"Deduplicated {len(candidates)} -> {len(unique_candidates)} unique concepts")
+        
+        if not unique_candidates:
+            return []
             
-        max_len = max(len(c.reasoning) for c in candidates) if candidates else 1
+        max_len = max(len(c.reasoning) for c in unique_candidates) if unique_candidates else 1
         
         def score_fn(h: Hypothesis):
-            len_score = len(h.reasoning) / max_len
-            return 0.7 * h.confidence + 0.3 * len_score
+            len_score = len(h.reasoning) / max_len if max_len > 0 else 0
+            return 0.6 * h.confidence + 0.4 * len_score
 
-        ranked = sorted(candidates, key=score_fn, reverse=True)
+        ranked = sorted(unique_candidates, key=score_fn, reverse=True)
         
         selected: List[Hypothesis] = []
         
+        # Select diverse hypotheses based on BOTH box IoU AND concept similarity
         for cand in ranked:
             if len(selected) >= N:
                 break
                 
-            is_new = True
+            is_diverse = True
             for existing in selected:
+                # Check box overlap
                 iou = cand.iou(existing)
                 if iou > self.config.iou_threshold:
-                    is_new = False
+                    is_diverse = False
+                    break
+                
+                # Check concept similarity
+                if self._concepts_similar(cand.target_concept.lower(), existing.target_concept.lower()):
+                    is_diverse = False
                     break
             
-            if is_new:
+            if is_diverse:
                 selected.append(cand)
+                logger.info(f"  Selected: {cand.target_concept} (conf={cand.confidence:.2f})")
                 
+        # If we still need more, add remaining with lowest overlap
         if len(selected) < N:
             remaining_needed = N - len(selected)
             others = [c for c in ranked if c not in selected]
             
-            def max_overlap(h):
-                if not selected: return 0.0
-                return max(h.iou(s) for s in selected)
+            def diversity_score(h):
+                if not selected:
+                    return 1.0
+                max_iou = max(h.iou(s) for s in selected)
+                concept_penalty = 0.5 if any(self._concepts_similar(h.target_concept.lower(), s.target_concept.lower()) for s in selected) else 0
+                return 1.0 - max_iou - concept_penalty
                 
-            others_sorted = sorted(others, key=max_overlap)
+            others_sorted = sorted(others, key=diversity_score, reverse=True)
             
-            selected.extend(others_sorted[:remaining_needed])
+            for h in others_sorted[:remaining_needed]:
+                selected.append(h)
+                logger.info(f"  Added (fill): {h.target_concept} (conf={h.confidence:.2f})")
             
         return selected
 
