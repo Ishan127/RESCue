@@ -155,7 +155,7 @@ class Executor:
             else:
                 print("Warning: Image state missing dimensions, skipping box prompt.")
 
-        # Processor returns masks as tensor (N, H, W)
+        # Processor returns masks as tensor
         masks = state.get("masks", None)
         
         if masks is not None:
@@ -165,18 +165,21 @@ class Executor:
                 
             # Convert to numpy list of masks
             masks_np = masks.cpu().numpy()
+            print(f"[Executor Debug] Raw masks shape from SAM3: {masks_np.shape}")
             
-            # Use only the best mask per query if taking the index logic
-            # OR return all valid masks.
-            # SAM3/SAM output shape: (B, N_masks, H, W).
-            # If B=1.
+            # Helper to handle different layouts depending on what SAM3/Processor returns
+            # Possible shapes: (B, N, H, W) or (B, H, W, N)
             
             if masks_np.ndim == 4:
-                # Shape (1, 3, H, W) -> Extract the first (best) mask for simplicity? 
-                # Or flatten?
-                # Usually index 0 is best for single point, but here we might have 3.
-                # Let's flatten all of them so checking candidate H0_M0, H0_M1 etc.
+                # Heuristic: If last dim is small (e.g. 3) and 2nd dim is large, it's likely (B, H, W, N)
+                B, D1, D2, D3 = masks_np.shape
                 
+                # Check for channels-last format (B, H, W, N)
+                if D3 <= 10 and D1 > 100: 
+                    print(f"[Executor Debug] Detected channels-last format. Transposing to (B, N, H, W).")
+                    masks_np = masks_np.transpose(0, 3, 1, 2)
+                    
+                # Flatten
                 flat_masks = []
                 for b in range(masks_np.shape[0]):
                     for c in range(masks_np.shape[1]):
