@@ -165,6 +165,24 @@ class Executor:
                 
             # Convert to numpy list of masks
             masks_np = masks.cpu().numpy()
+            
+            # Use only the best mask per query if taking the index logic
+            # OR return all valid masks.
+            # SAM3/SAM output shape: (B, N_masks, H, W).
+            # If B=1.
+            
+            if masks_np.ndim == 4:
+                # Shape (1, 3, H, W) -> Extract the first (best) mask for simplicity? 
+                # Or flatten?
+                # Usually index 0 is best for single point, but here we might have 3.
+                # Let's flatten all of them so checking candidate H0_M0, H0_M1 etc.
+                
+                flat_masks = []
+                for b in range(masks_np.shape[0]):
+                    for c in range(masks_np.shape[1]):
+                        flat_masks.append(masks_np[b, c])
+                return flat_masks
+                
             return [masks_np[i] for i in range(masks_np.shape[0])]
             
         return []

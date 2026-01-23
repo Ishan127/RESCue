@@ -96,6 +96,16 @@ def save_mask(mask, output_path):
     mask.save(output_path)
 
 def calculate_iou(mask1, mask2):
+    # Ensure masks are boolean and matching shapes
+    mask1 = np.asarray(mask1) > 0
+    mask2 = np.asarray(mask2) > 0
+    
+    if mask1.shape != mask2.shape:
+        # Try to resize mask1 to mask2
+        print(f"Resizing mask for IoU: {mask1.shape} -> {mask2.shape}")
+        mask1_uint = mask1.astype(np.uint8)
+        mask1 = cv2.resize(mask1_uint, (mask2.shape[1], mask2.shape[0]), interpolation=cv2.INTER_NEAREST) > 0
+        
     intersection = np.logical_and(mask1, mask2).sum()
     union = np.logical_or(mask1, mask2).sum()
     
