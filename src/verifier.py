@@ -41,12 +41,22 @@ class Verifier:
                 )
                 
                 text = completion.choices[0].message.content
+                print(f"[Verifier Raw Output]: {text}") # Debug print
                 
-                match = re.search(r"Score:\s*(\d+)", text)
+                # Robust regex to find score (e.g. "Score: 90", "Score is 90", "**90**")
+                match = re.search(r"(?:Score|score)[:\s]*is\s*(\d+(?:\.\d+)?)|(?:Score|score)[:\s]*(\d+(?:\.\d+)?)", text)
                 if match:
-                    score = float(match.group(1))
+                    # group 1 or group 2 will be non-None
+                    score_str = match.group(1) if match.group(1) else match.group(2)
+                    score = float(score_str)
                 else:
-                    score = 0.0
+                    # Fallback: look for just a number at the end
+                    match_end = re.search(r"\b(\d{1,3})\b$", text.strip())
+                    if match_end:
+                         score = float(match_end.group(1))
+                    else:
+                        print(f"Verifier Parsing Failed for: '{text}'")
+                        score = 0.0
             except Exception as e:
                 print(f"Verifier Error: {e}")
                 score = 0.0
