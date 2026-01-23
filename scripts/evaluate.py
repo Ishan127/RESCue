@@ -9,7 +9,7 @@ from tqdm import tqdm
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from src.rescue_pipeline import RESCuePipeline
-from src.utils import calculate_iou
+from src.utils import calculate_iou, apply_red_alpha_overlay
 
 def evaluate(fraction=0.1, N=4, dtype="auto", quantization=None, planner_url="http://localhost:8000/v1", executor_url="http://localhost:8001"):
     print(f"Loading ReasonSeg dataset (Validation)...")
@@ -65,6 +65,29 @@ def evaluate(fraction=0.1, N=4, dtype="auto", quantization=None, planner_url="ht
                 pred_mask = result['best_mask']
                 pred_mask_bin = pred_mask > 0
                 
+                # --- Debug: Raw Mask Analysis ---
+                print(f"  [Debug] Sample {i} Mask Stats:")
+                print(f"    - Pred Shape: {pred_mask.shape}, Unique: {np.unique(pred_mask)}")
+                print(f"    - GT Shape:   {gt_mask.shape}, Unique: {np.unique(gt_mask)}")
+                
+                # --- Debug: Save Visualizations for first 5 samples ---
+                if i < 5:
+                    debug_dir = "debug_output"
+                    os.makedirs(debug_dir, exist_ok=True)
+                    
+                    # Save Pred Overlay
+                    img_pil = sample.get('image')
+                    try:
+                        overlay_pred = apply_red_alpha_overlay(img_pil, pred_mask, alpha=0.5)
+                        overlay_pred.save(os.path.join(debug_dir, f"sample_{i}_pred_score{result['best_score']}.png"))
+                        
+                        # Save GT Overlay
+                        overlay_gt = apply_red_alpha_overlay(img_pil, gt_mask, alpha=0.5)
+                        overlay_gt.save(os.path.join(debug_dir, f"sample_{i}_gt.png"))
+                        print(f"    - Saved debug overlays to {debug_dir}/sample_{i}_*.png")
+                    except Exception as e:
+                        print(f"    - Failed to save debug images: {e}")
+
                 iou = calculate_iou(pred_mask_bin, gt_mask)
                 ious.append(iou)
                 print(f"Sample {i} | Final Selected IoU: {iou:.4f}")
