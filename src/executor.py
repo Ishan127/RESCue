@@ -1,6 +1,7 @@
 import torch
 import torchvision
 import numpy as np
+import cv2
 import requests
 import base64
 import io
@@ -177,6 +178,7 @@ class Executor:
                      print(f"[Executor Debug] Detected channels-last format (H, W, N). Transposing to (N, H, W).")
                      masks_np = masks_np.transpose(2, 0, 1)
 
+            extracted_masks = []
             if masks_np.ndim == 4:
                 # Heuristic: If last dim is small (e.g. 3) and 2nd dim is large, it's likely (B, H, W, N)
                 B, D1, D2, D3 = masks_np.shape
@@ -187,16 +189,38 @@ class Executor:
                     masks_np = masks_np.transpose(0, 3, 1, 2)
                     
                 # Flatten
-                flat_masks = []
                 for b in range(masks_np.shape[0]):
                     for c in range(masks_np.shape[1]):
-                        flat_masks.append(masks_np[b, c])
-                return flat_masks
+                        extracted_masks.append(masks_np[b, c])
             
             # If 3D (N, H, W), just return list
-            if masks_np.ndim == 3:
-                return [masks_np[i] for i in range(masks_np.shape[0])]
-                
-            return [masks_np[i] for i in range(masks_np.shape[0])]
+            elif masks_np.ndim == 3:
+                for i in range(masks_np.shape[0]):
+                    extracted_masks.append(masks_np[i])
+            else:
+                 # Fallback
+                 for i in range(masks_np.shape[0]):
+                    extracted_masks.append(masks_np[i])
+
+            # --- Enforce Shape Consistency ---
+            # image_input might be PIL or NP
+            if hasattr(image_input, 'shape'):
+                target_h, target_w = image_input.shape[:2]
+            else:
+                target_w, target_h = image_input.size
+
+            final_masks = []
+            for m in extracted_masks:
+                if m.shape != (target_h, target_w):
+                    # Be tolerant if it matches transposed (W, H) - this happens if tensor is transposed
+                    if m.shape == (target_w, target_h):
+                         print(f"[Executor Warning] Mask transposed {m.shape} vs Target {(target_h, target_w)}. Transposing.")
+                         m = m.T
+                    else:
+                        print(f"[Executor Warning] Resizing mask {m.shape} to target {(target_h, target_w)}")
+                        m = cv2.resize(m.astype(np.uint8), (target_w, target_h), interpolation=cv2.INTER_NEAREST) > 0
+                final_masks.append(m)
+            
+            return final_masks
             
         return []
