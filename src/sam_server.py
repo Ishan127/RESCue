@@ -32,6 +32,143 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================================
+# ROCm/AMD GPU Compatibility Fix for torchvision ops
+# ============================================================================
+
+def is_rocm_pytorch():
+    """Check if PyTorch is built with ROCm (AMD GPU) support."""
+    if hasattr(torch.version, 'hip') and torch.version.hip:
+        return True
+    # Also check by GPU name
+    if torch.cuda.is_available():
+        try:
+            gpu_name = torch.cuda.get_device_name(0).lower()
+            if 'amd' in gpu_name or 'radeon' in gpu_name:
+                return True
+        except:
+            pass
+    return False
+
+def patch_torchvision_for_rocm():
+    """
+    Patch torchvision operations to work on ROCm/AMD GPUs.
+    ROCm doesn't support some torchvision CUDA ops like roi_align.
+    This patches them to use CPU fallback.
+    """
+    try:
+        import torchvision
+        import torchvision.ops as ops
+        from torchvision.ops import _box_convert
+        
+        # Check if we're on ROCm
+        if not is_rocm_pytorch():
+            logger.info("Not running on ROCm, skipping torchvision patches")
+            return False
+        
+        logger.info("Detected ROCm/AMD GPU, applying torchvision compatibility patches...")
+        
+        # Store original functions
+        _original_roi_align = ops.roi_align
+        _original_nms = ops.nms
+        _original_roi_pool = getattr(ops, 'roi_pool', None)
+        _original_ps_roi_align = getattr(ops, 'ps_roi_align', None)
+        _original_ps_roi_pool = getattr(ops, 'ps_roi_pool', None)
+        _original_deform_conv2d = getattr(ops, 'deform_conv2d', None)
+        
+        def cpu_fallback_wrapper(original_fn, op_name):
+            """Create a CPU fallback wrapper for any torchvision op."""
+            def wrapper(*args, **kwargs):
+                try:
+                    return original_fn(*args, **kwargs)
+                except (NotImplementedError, RuntimeError) as e:
+                    error_str = str(e).lower()
+                    if 'cuda' in error_str or op_name.lower() in error_str or 'backend' in error_str:
+                        logger.warning(f"{op_name} falling back to CPU (ROCm compatibility)")
+                        
+                        # Move tensors to CPU
+                        cpu_args = []
+                        devices = []
+                        for arg in args:
+                            if isinstance(arg, torch.Tensor):
+                                devices.append(arg.device)
+                                cpu_args.append(arg.cpu())
+                            elif isinstance(arg, (list, tuple)) and len(arg) > 0 and isinstance(arg[0], torch.Tensor):
+                                devices.append(arg[0].device)
+                                cpu_args.append([t.cpu() if isinstance(t, torch.Tensor) else t for t in arg])
+                            else:
+                                cpu_args.append(arg)
+                        
+                        cpu_kwargs = {}
+                        for k, v in kwargs.items():
+                            if isinstance(v, torch.Tensor):
+                                if not devices:
+                                    devices.append(v.device)
+                                cpu_kwargs[k] = v.cpu()
+                            else:
+                                cpu_kwargs[k] = v
+                        
+                        # Execute on CPU
+                        result = original_fn(*cpu_args, **cpu_kwargs)
+                        
+                        # Move result back to original device
+                        target_device = devices[0] if devices else torch.device('cpu')
+                        if isinstance(result, torch.Tensor):
+                            return result.to(target_device)
+                        elif isinstance(result, (tuple, list)):
+                            return type(result)(
+                                r.to(target_device) if isinstance(r, torch.Tensor) else r 
+                                for r in result
+                            )
+                        return result
+                    raise
+            return wrapper
+        
+        # Apply patches to all potentially problematic ops
+        ops.roi_align = cpu_fallback_wrapper(_original_roi_align, 'roi_align')
+        ops.nms = cpu_fallback_wrapper(_original_nms, 'nms')
+        
+        if _original_roi_pool:
+            ops.roi_pool = cpu_fallback_wrapper(_original_roi_pool, 'roi_pool')
+        if _original_ps_roi_align:
+            ops.ps_roi_align = cpu_fallback_wrapper(_original_ps_roi_align, 'ps_roi_align')
+        if _original_ps_roi_pool:
+            ops.ps_roi_pool = cpu_fallback_wrapper(_original_ps_roi_pool, 'ps_roi_pool')
+        if _original_deform_conv2d:
+            ops.deform_conv2d = cpu_fallback_wrapper(_original_deform_conv2d, 'deform_conv2d')
+        
+        # Also patch the RoIAlign and RoIPool classes if they exist
+        if hasattr(ops, 'RoIAlign'):
+            _OriginalRoIAlign = ops.RoIAlign
+            class PatchedRoIAlign(_OriginalRoIAlign):
+                def forward(self, input, rois):
+                    try:
+                        return super().forward(input, rois)
+                    except (NotImplementedError, RuntimeError) as e:
+                        if 'cuda' in str(e).lower() or 'roi_align' in str(e).lower():
+                            logger.warning("RoIAlign.forward falling back to CPU")
+                            device = input.device
+                            result = super().forward(input.cpu(), rois.cpu())
+                            return result.to(device)
+                        raise
+            ops.RoIAlign = PatchedRoIAlign
+        
+        logger.info("Successfully applied ROCm compatibility patches for torchvision ops")
+        return True
+        
+    except ImportError as e:
+        logger.warning(f"torchvision not available, skipping patches: {e}")
+        return False
+    except Exception as e:
+        logger.warning(f"Failed to patch torchvision: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+# Apply patches early (before any model loading)
+_rocm_patched = patch_torchvision_for_rocm()
+
+
+# ============================================================================
 # Pydantic Schemas (based on rpol-recart/sam3_inference/api/schemas)
 # ============================================================================
 
@@ -467,6 +604,12 @@ def encode_mask_to_base64(mask: np.ndarray) -> str:
 # Global model instance
 image_model: Optional[SAM3ImageModel] = None
 
+# Global settings (can be modified before app starts)
+_server_settings = {
+    "device": None,
+    "force_cpu": False,
+}
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -476,6 +619,7 @@ async def lifespan(app: FastAPI):
     logger.info("Starting SAM3 Inference Server...")
     logger.info(f"PyTorch version: {torch.__version__}")
     logger.info(f"CUDA available: {torch.cuda.is_available()}")
+    logger.info(f"ROCm detected: {is_rocm_pytorch()}")
 
     if torch.cuda.is_available():
         logger.info(f"CUDA version: {torch.version.cuda}")
@@ -483,8 +627,15 @@ async def lifespan(app: FastAPI):
         for i in range(torch.cuda.device_count()):
             logger.info(f"GPU {i}: {torch.cuda.get_device_name(i)}")
 
-    # Load model from settings or defaults
-    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    # Determine device
+    if _server_settings.get("device"):
+        device = _server_settings["device"]
+    elif _server_settings.get("force_cpu"):
+        device = "cpu"
+    else:
+        device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    
+    logger.info(f"Using device: {device}")
     
     try:
         image_model = SAM3ImageModel(
@@ -494,8 +645,29 @@ async def lifespan(app: FastAPI):
             resolution=1008,
         )
         logger.info("✓ SAM3 Image model loaded successfully")
+    except NotImplementedError as e:
+        # This usually means torchvision op compatibility issue
+        if "roi_align" in str(e).lower() or "cuda" in str(e).lower():
+            logger.warning(f"GPU inference failed due to ROCm compatibility: {e}")
+            logger.info("Falling back to CPU inference...")
+            try:
+                image_model = SAM3ImageModel(
+                    checkpoint="facebook/sam3",
+                    device="cpu",
+                    confidence_threshold=0.5,
+                    resolution=1008,
+                )
+                logger.info("✓ SAM3 Image model loaded successfully on CPU")
+            except Exception as e2:
+                logger.error(f"CPU fallback also failed: {e2}")
+                image_model = None
+        else:
+            logger.error(f"Failed to load SAM3 model: {e}")
+            image_model = None
     except Exception as e:
         logger.error(f"Failed to load SAM3 model: {e}")
+        import traceback
+        traceback.print_exc()
         # Don't raise - allow server to start for debugging
         image_model = None
 
@@ -795,11 +967,31 @@ async def predict_legacy(request: dict):
 
 def main():
     """Run the server."""
+    global _server_settings
+    
     parser = argparse.ArgumentParser(description="SAM3 Inference Server")
     parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")
     parser.add_argument("--port", type=int, default=8001, help="Port to listen on")
     parser.add_argument("--reload", action="store_true", help="Enable auto-reload")
+    parser.add_argument("--device", default=None, help="Device to use (cuda:0, cpu, etc.)")
+    parser.add_argument("--force-cpu", action="store_true", 
+                        help="Force CPU inference (useful for ROCm compatibility issues)")
     args = parser.parse_args()
+    
+    # Handle ROCm/CPU fallback
+    if args.force_cpu:
+        _server_settings["force_cpu"] = True
+        _server_settings["device"] = "cpu"
+        logger.info("Forcing CPU inference mode")
+    elif args.device:
+        _server_settings["device"] = args.device
+    else:
+        # Auto-detect: use CPU if ROCm detected and having issues
+        if is_rocm_pytorch():
+            logger.info("ROCm detected. Use --force-cpu if you encounter torchvision op errors.")
+        _server_settings["device"] = "cuda:0" if torch.cuda.is_available() else "cpu"
+    
+    logger.info(f"Using device: {_server_settings['device']}")
 
     uvicorn.run(
         "sam_server:app",
