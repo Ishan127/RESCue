@@ -57,21 +57,65 @@ def decode_base64_image(b64_string):
 
 import traceback
 
-@app.post("/segment", response_model=SegmentationResponse)
-async def segment(request: SegmentationRequest):
+class PredictRequest(BaseModel):
+    box: Optional[List[float]] = None
+    text_prompt: Optional[str] = None
+
+class SetImageRequest(BaseModel):
+    image_base64: str
+
+@app.post("/set_image")
+async def set_image_endpoint(request: SetImageRequest):
+    """Encodes the image and caches the embedding."""
     if not executor:
         raise HTTPException(status_code=500, detail="Model not initialized")
     
     try:
-        image = decode_base64_image(request.image_base64)
+        from src.utils import load_image
+        # Decode
+        img_data = base64.b64decode(request.image_base64)
+        image = Image.open(io.BytesIO(img_data)).convert("RGB")
         image_np = np.array(image)
         
-        # Executor expects: image_input, box, text_prompt
-        # The prompt box should be passed directly, or maybe we need to swap x/y if there's confusion?
-        # Typically box is [x min, y min, x max, y max] relative to image w/h.
+        executor.encode_image(image_np)
+        return {"status": "ok", "image_size": image_np.shape[:2]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/predict", response_model=SegmentationResponse)
+async def predict_endpoint(request: PredictRequest):
+    """Generates masks for the currently set image."""
+    if not executor:
+        raise HTTPException(status_code=500, detail="Model not initialized")
+    
+    try:
+        masks = executor.predict_masks(request.box, request.text_prompt)
         
-        print(f"Received request. Box: {request.box}, Prompt: {request.text_prompt}")
-        masks = executor.execute(image_np, request.box, request.text_prompt)
+        masks_b64 = []
+        for mask in masks:
+            masks_b64.append(mask_to_base64(mask))
+            
+        return SegmentationResponse(masks_rle=[], masks_base64=masks_b64)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/segment", response_model=SegmentationResponse)
+async def segment(request: SegmentationRequest):
+    """Legacy endpoint: Set Image + Predict"""
+    if not executor:
+        raise HTTPException(status_code=500, detail="Model not initialized")
+    
+    try:
+        # Decode
+        img_data = base64.b64decode(request.image_base64)
+        image = Image.open(io.BytesIO(img_data)).convert("RGB")
+        image_np = np.array(image)
+        
+        print(f"Received Legacy Request. Box: {request.box}, Prompt: {request.text_prompt}")
+        
+        # Call the unified methods
+        executor.encode_image(image_np)
+        masks = executor.predict_masks(request.box, request.text_prompt)
         
         masks_b64 = []
         for mask in masks:

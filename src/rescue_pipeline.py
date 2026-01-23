@@ -50,12 +50,18 @@ class RESCuePipeline:
         candidates = []
         
         print(f"--- Step 2: Execution & Verification ---")
+        
+        # Optimization: Send image to Executor ONCE
+        print("  - Encoding Image on Executor...")
+        self.executor.encode_image(np.array(image))
+        
         for i, hyp in enumerate(hypotheses):
             box = hyp['box']
             noun_phrase = hyp['noun_phrase']
             reasoning = hyp['reasoning']
             
-            masks = self.executor.execute(np.array(image), box, noun_phrase)
+            # Use cached image, just predict prompt
+            masks = self.executor.predict_masks(box, noun_phrase)
             
             for j, mask in enumerate(masks):
                 score = self.verifier.verify(image, mask, query)

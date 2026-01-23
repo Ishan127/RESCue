@@ -95,137 +95,157 @@ class Executor:
         return np.array(img).astype(bool) # > 128 check done by implicit bool cast or threshold
 
     def execute(self, image_input, box, text_prompt):
-        # image_input: np array (H, W, 3) or PIL Image
-        # box: [x1, y1, x2, y2]
-        # text_prompt: str
-        
+        # Legacy/Convenience method: Encode + Predict
+        self.encode_image(image_input)
+        return self.predict_masks(box, text_prompt)
+
+    def encode_image(self, image_input):
+        """
+        encodes the image and stores the state internally.
+        """
         if self.remote_url:
             try:
+                # Send image to server to be cached
+                payload = {"image_base64": self._image_to_base64(image_input)}
+                response = requests.post(f"{self.remote_url}/set_image", json=payload)
+                response.raise_for_status()
+                return True
+            except Exception as e:
+                print(f"Remote Set Image Failed: {e}")
+                return False
+        
+        # Local Setup
+        # Reset state
+        self.active_state = None
+        
+        try:
+            # This computes the embedding (expensive)
+            self.active_state = self.processor.set_image(image_input)
+            
+            # Store image dimensions for later normalization
+            if hasattr(image_input, 'shape'):
+                self.img_h, self.img_w = image_input.shape[:2]
+            else:
+                self.img_w, self.img_h = image_input.size
+                
+        except Exception as e:
+            print(f"Local Image Encoding Failed: {e}")
+            self.active_state = None
+
+    def predict_masks(self, box, text_prompt):
+        """
+        Uses the cached image state to generate masks for a prompt.
+        """
+        if self.remote_url:
+            try:
+                # Server already has image. Just send prompt.
                 payload = {
-                    "image_base64": self._image_to_base64(image_input),
                     "box": list(map(float, box)) if box else None,
                     "text_prompt": text_prompt
                 }
-                response = requests.post(f"{self.remote_url}/segment", json=payload)
-                try:
-                    response.raise_for_status()
-                    data = response.json()
-                except requests.exceptions.HTTPError as e:
-                    print(f"Remote Execution Failed: {e}")
-                    print(f"Server Response: {response.text}")
-                    return []
+                response = requests.post(f"{self.remote_url}/predict", json=payload)
+                response.raise_for_status()
+                data = response.json()
                 
                 masks = []
                 for b64_mask in data.get("masks_base64", []):
                     masks.append(self._base64_to_mask(b64_mask))
                 return masks
             except Exception as e:
-                print(f"Remote Execution Failed: {e}")
+                print(f"Remote Prediction Failed: {e}")
+                if hasattr(e, 'response') and e.response:
+                    print(f"Server Response: {e.response.text}")
                 return []
-        
-        # Local Execution
-        state = self.processor.set_image(image_input)
-        
-        if text_prompt:
-            state = self.processor.set_text_prompt(text_prompt, state)
-            
-        if box is not None:
-            # Convert [x1, y1, x2, y2] to [cx, cy, w, h] normalized
-            if "original_height" in state and "original_width" in state:
-                h = state["original_height"]
-                w = state["original_width"]
-                
-                x1, y1, x2, y2 = box
-                
-                # Center coordinates normalized
-                cx = (x1 + x2) / 2.0 / w
-                cy = (y1 + y2) / 2.0 / h
-                
-                # Width and height normalized
-                bw = (x2 - x1) / w
-                bh = (y2 - y1) / h
-                
-                norm_box = [cx, cy, bw, bh]
-                
-                # Add box prompt (label=True means foreground/positive)
-                state = self.processor.add_geometric_prompt(
-                    box=norm_box, 
-                    label=True, 
-                    state=state
-                )
-            else:
-                print("Warning: Image state missing dimensions, skipping box prompt.")
 
-        # Processor returns masks as tensor
-        masks = state.get("masks", None)
+        # Local Execution
+        if self.active_state is None:
+            print("Error: No image set. Call encode_image() first.")
+            return []
+
+        # We must clone the state or use a method that doesn't mutate it permanently if we want to reuse it?
+        # Sam3Processor methods usually return a NEW state dict merged with old one.
+        # But to be safe, we treat self.active_state as immutable base.
+        current_state = self.active_state.copy()
+        
+        # 1. Apply Text Prompt
+        if text_prompt:
+            current_state = self.processor.set_text_prompt(text_prompt, current_state)
+            
+        # 2. Apply Box Prompt
+        if box is not None:
+             # Convert [x1, y1, x2, y2] to [cx, cy, w, h] normalized
+             # We use stored dimensions or dimensions from state
+            h = current_state.get("original_height", self.img_h)
+            w = current_state.get("original_width", self.img_w)
+            
+            x1, y1, x2, y2 = box
+            
+            # Center coordinates normalized
+            cx = (x1 + x2) / 2.0 / w
+            cy = (y1 + y2) / 2.0 / h
+            bw = (x2 - x1) / w
+            bh = (y2 - y1) / h
+            
+            norm_box = [cx, cy, bw, bh]
+            
+            current_state = self.processor.add_geometric_prompt(
+                box=norm_box, 
+                label=True, 
+                state=current_state
+            )
+
+        # 3. Retrieve Output
+        masks = current_state.get("masks", None)
         
         if masks is not None:
-            # Check if masks is empty tensor
-            if masks.numel() == 0:
-                return []
-                
-            # Convert to numpy list of masks
+            if masks.numel() == 0: return []
+            
             masks_np = masks.cpu().numpy()
-            print(f"[Executor Debug] Raw masks shape from SAM3: {masks_np.shape}")
+            print(f"[Executor Debug] Raw masks shape: {masks_np.shape}")
             
-            # Helper to handle different layouts depending on what SAM3/Processor returns
-            # Possible shapes: (B, N, H, W) or (B, H, W, N)
-            
-            # Check for other weird shapes. e.g. (3, H, W) for batch=1 but missing batch dim
-            if masks_np.ndim == 3:
-                # Is it (N, H, W) or (H, W, N)?
-                if masks_np.shape[2] <= 10 and masks_np.shape[0] > 100:
-                     print(f"[Executor Debug] Detected channels-last format (H, W, N). Transposing to (N, H, W).")
-                     masks_np = masks_np.transpose(2, 0, 1)
-
-            extracted_masks = []
-            if masks_np.ndim == 4:
-                # Heuristic: If last dim is small (e.g. 3) and 2nd dim is large, it's likely (B, H, W, N)
-                B, D1, D2, D3 = masks_np.shape
-                
-                # Check for channels-last format (B, H, W, N)
-                if D3 <= 10 and D1 > 100: 
-                    print(f"[Executor Debug] Detected channels-last format. Transposing to (B, N, H, W).")
-                    masks_np = masks_np.transpose(0, 3, 1, 2)
-                    
-                # Flatten
-                for b in range(masks_np.shape[0]):
-                    for c in range(masks_np.shape[1]):
-                        extracted_masks.append(masks_np[b, c])
-            
-            # If 3D (N, H, W), just return list
-            elif masks_np.ndim == 3:
-                # Is it (H, W, N) or (N, H, W)?
-                if masks_np.shape[2] <= 10 and masks_np.shape[0] > 100:
-                     print(f"[Executor Debug] Detected channels-last format (H, W, N). Transposing to (N, H, W).")
-                     masks_np = masks_np.transpose(2, 0, 1)
-
-                for i in range(masks_np.shape[0]):
-                    extracted_masks.append(masks_np[i])
-            else:
-                 # Fallback
-                 for i in range(masks_np.shape[0]):
-                    extracted_masks.append(masks_np[i])
-
-            # --- Enforce Shape Consistency ---
-            # image_input might be PIL or NP
-            if hasattr(image_input, 'shape'):
-                target_h, target_w = image_input.shape[:2]
-            else:
-                target_w, target_h = image_input.size
-
-            final_masks = []
-            for m in extracted_masks:
-                if m.shape != (target_h, target_w):
-                    # Be tolerant if it matches transposed (W, H) - this happens if tensor is transposed
-                    if m.shape == (target_w, target_h):
-                         print(f"[Executor Warning] Mask transposed {m.shape} vs Target {(target_h, target_w)}. Transposing.")
-                         m = m.T
-                    else:
-                        print(f"[Executor Warning] Resizing mask {m.shape} to target {(target_h, target_w)}")
-                        m = cv2.resize(m.astype(np.uint8), (target_w, target_h), interpolation=cv2.INTER_NEAREST) > 0
-                final_masks.append(m)
-            
-            return final_masks
+            # Reuse the robust extraction logic
+            return self._process_mask_output(masks_np, self.img_h, self.img_w)
             
         return []
+
+    def _process_mask_output(self, masks_np, target_h, target_w):
+        extracted_masks = []
+            
+        # 4D Tensor Handling
+        if masks_np.ndim == 4:
+            B, D1, D2, D3 = masks_np.shape
+            # If D3 is small (N masks) and others are large or 1
+            if D3 <= 10: 
+                # channels-last format (B, H, W, N)
+                masks_np = masks_np.transpose(0, 3, 1, 2)
+                
+            # Flatten (B, N, H, W) -> List of (H, W)
+            for b in range(masks_np.shape[0]):
+                for c in range(masks_np.shape[1]):
+                    extracted_masks.append(masks_np[b, c])
+        
+        # 3D Tensor Handling (N, H, W) or (H, W, N)
+        elif masks_np.ndim == 3:
+             # Is it (H, W, N)?
+            if masks_np.shape[2] <= 10 and masks_np.shape[0] > 100:
+                    masks_np = masks_np.transpose(2, 0, 1)
+
+            for i in range(masks_np.shape[0]):
+                extracted_masks.append(masks_np[i])
+        else:
+             # Fallback
+             for i in range(masks_np.shape[0]):
+                extracted_masks.append(masks_np[i])
+
+        # Enforce Shape
+        final_masks = []
+        for m in extracted_masks:
+            if m.shape != (target_h, target_w):
+                # Tolerance for transposed
+                if m.shape == (target_w, target_h):
+                        m = m.T
+                else:
+                    m = cv2.resize(m.astype(np.uint8), (target_w, target_h), interpolation=cv2.INTER_NEAREST) > 0
+            final_masks.append(m)
+        
+        return final_masks

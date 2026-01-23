@@ -36,14 +36,13 @@ class Verifier:
                 completion = self.client.chat.completions.create(
                     model=self.model_path,
                     messages=messages,
-                    temperature=0.0,
-                    max_tokens=128
+                    temperature=0.8,
+                    max_tokens=1024
                 )
                 
                 text = completion.choices[0].message.content
-                print(f"[Verifier Raw Output]: {text}") # Debug print
+                print(f"[Verifier Raw Output]: {text}") 
                 
-                # Robust regex to find score (e.g. "Score: 90", "Score is 90", "**90**")
                 match = re.search(r"(?:Score|score)[:\s]*is\s*(\d+(?:\.\d+)?)|(?:Score|score)[:\s]*(\d+(?:\.\d+)?)", text)
                 if match:
                     # group 1 or group 2 will be non-None
