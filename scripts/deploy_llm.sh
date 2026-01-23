@@ -6,6 +6,6 @@ python -m vllm.entrypoints.openai.api_server \
     --trust-remote-code \
     --tensor-parallel-size 2 \
     --gpu-memory-utilization 0.95 \
-    --max-model-len 8192 \
+    --max-model-len 32768 \
     --port 8000 \
     --host 0.0.0.0

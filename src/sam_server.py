@@ -51,6 +51,8 @@ def decode_base64_image(b64_string):
     img_data = base64.b64decode(b64_string)
     return Image.open(io.BytesIO(img_data)).convert("RGB")
 
+import traceback
+
 @app.post("/segment", response_model=SegmentationResponse)
 async def segment(request: SegmentationRequest):
     if not executor:
@@ -61,12 +63,8 @@ async def segment(request: SegmentationRequest):
         image_np = np.array(image)
         
         # Executor expects: image_input, box, text_prompt
-        # prompt box logic might need alignment with Executor's expectations
+        print(f"Received request. Box: {request.box}, Prompt: {request.text_prompt}")
         masks = executor.execute(image_np, request.box, request.text_prompt)
-        
-        # Executor returns lists of masks? 
-        # Checking src/rescue_pipeline.py: "masks = self.executor.execute(...)"
-        # "for j, mask in enumerate(masks):"
         
         masks_b64 = []
         for mask in masks:
@@ -74,6 +72,8 @@ async def segment(request: SegmentationRequest):
             
         return SegmentationResponse(masks_rle=[], masks_base64=masks_b64)
     except Exception as e:
+        print(f"Error during segmentation: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":

@@ -11,7 +11,7 @@ Install the required Python packages:
 ```bash
 pip install -r requirements.txt
 pip install vllm==0.14.0
-pip install "git+https://github.com/facebookresearch/segment-anything-2.git"
+pip install "git+https://github.com/facebookresearch/sam3.git"
 ```
 
 *(Note: Adjust pytorch/rocm versions as needed for your specific hardware).*

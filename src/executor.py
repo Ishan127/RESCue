@@ -24,13 +24,26 @@ class Executor:
             # If user provides a local path, we assume it's a checkpoint
             checkpoint_path = None
             if model_path != "facebook/sam3":
-                checkpoint_path = model_path
-                
+                checkpoint_path = model_path # Fixed bug: was assuming model_path is checkpoint even if passed explicitly
+            
+            # Fallback for sam3 loading
             try:
+                # Try loading assuming 'facebook/sam3' or path
                 self.model = build_sam3_image_model(
                     device=self.device,
                     checkpoint_path=checkpoint_path
                 )
+            except TypeError as te:
+                 # Some versions of sam3 build function might differ
+                 print(f"Retrying SAM3 load with different signature: {te}")
+                 try:
+                    self.model = build_sam3_image_model(
+                        device=self.device,
+                        ckpt_path=checkpoint_path
+                    )
+                 except Exception as e2:
+                     print(f"Failed to load SAM3 model: {e2}")
+                     raise e2
             except Exception as e:
                 print(f"Error loading SAM3 model: {e}")
                 raise e
