@@ -18,11 +18,19 @@ def _roi_align_rocm_safe(input, boxes, output_size, spatial_scale=1.0, sampling_
     if input.is_cuda:
         try:
             return _original_roi_align(input, boxes, output_size, spatial_scale, sampling_ratio, aligned)
-        except RuntimeError as e:
+        except (RuntimeError, NotImplementedError) as e:
             if "backend" in str(e) or "not available" in str(e):
                 # Fallback to CPU
                 input_cpu = input.cpu()
-                boxes_cpu = boxes.cpu()
+                
+                # Handle boxes: can be Tensor or List[Tensor]
+                if isinstance(boxes, torch.Tensor):
+                    boxes_cpu = boxes.cpu()
+                elif isinstance(boxes, (list, tuple)):
+                    boxes_cpu = [b.cpu() for b in boxes]
+                else:
+                    boxes_cpu = boxes # Try as is if unknown type
+                    
                 result = _original_roi_align(input_cpu, boxes_cpu, output_size, spatial_scale, sampling_ratio, aligned)
                 return result.to(input.device)
             raise e
