@@ -1,122 +1,67 @@
-# RESCue: Search-Based Segmentation
+# RESCue: Reasoning Segmentation with Cut-the-chase usage
 
-This repository implements **Search-Based Segmentation (RESCue)**, a framework that establishes Inference-Time Scaling Laws for reasoning segmentation. It decouples the process into a **Planner** (Qwen2.5-VL), an **Executor** (SAM 3), and a **Verifier** (VLM-as-a-Judge).
+## Prerequisites
+- **Hardware**: 2x MI325X GPUs (or equivalent high-VRAM setup).
+- **Software**: ROCm 7.1.1, vLLM 0.14.0, Python 3.10+.
 
-## Abstract
-The paradigm of Artificial Intelligence has recently bifurcated. While models continue to scale via massive pre-training (System 1), a new frontier of models has emerged, trading test-time compute for enhanced reasoning capabilities (System 2). RESCue applies this to segmentation by generating diverse visual hypotheses and verifying them to select the best mask.
+## 1. Environment Setup
 
-## Environment Setup (AMD MI325X)
+Install the required Python packages:
 
-This codebase is optimized for **AMD MI325X** GPUs running **ROCm 6.3.0**.
+```bash
+pip install -r requirements.txt
+pip install vllm==0.14.0
+pip install "git+https://github.com/facebookresearch/segment-anything-2.git"
+```
 
-### Prerequisites
-- **OS**: Linux (tested on user's AMD environment) / Windows (for development)
-- **GPU**: AMD MI325X (or compatible ROCm GPU)
-- **ROCm**: 6.3.0
-- **PyTorch**: 2.6.0 (ROCm compatible)
-- **vLLM**: 0.6.4 (ROCm compatible)
+*(Note: Adjust pytorch/rocm versions as needed for your specific hardware).*
 
-### Installation
+## 2. Download Models
 
-1.  **Clone the repository**:
-    ```bash
-    git clone <repo_url>
-    cd RESCue
-    ```
+Pre-download the model weights to avoid timeouts during deployment:
 
-2.  **Set up the Python Environment**:
-    It is recommended to use the pre-configured environment `AMD AAC VLLM_0_6_4_Rocm_6_3_0_Pytorch_2_6_0` if available, or create a new one:
-
-    ```bash
-    # If starting from scratch (ensure python 3.10+ is used)
-    python -m venv venv
-    source venv/bin/activate
-    ```
-
-3.  **Install Dependencies**:
-    ```bash
-    pip install -r requirements.txt
-    ```
-    > [!IMPORTANT]
-    > **Do NOT reinstall torch/vllm from PyPI.** The `requirements.txt` has `torch` and `vllm` commented out to preserve your pre-installed ROCm versions. If you need to install them manually, use the ROCm-specific index url (e.g., `--index-url https://download.pytorch.org/whl/rocm6.2`).
-    
-    > [!WARNING]
-    > **If you encounter "Found no NVIDIA driver" errors:**
-    > This means you have installed the wrong (Nvidia) PyTorch/vLLM. Run the fix script:
-    > ```bash
-    > bash scripts/fix_env.sh
-    > ```
-
-    *Note: `sam3` is installed directly from the official GitHub repository.*
-
-## Usage
-
-### 1. Download Models
-Download the required model weights (Qwen2.5-VL and SAM 3 checkpoints):
 ```bash
 python scripts/download_models.py
 ```
 
-### 2. Download Data
-Download the **ReasonSeg** validation dataset for evaluation:
-```bash
-python scripts/download_data.py
-```
+## 3. Deploy Model Endpoints
 
-### 3. Run Inference (Single Image)
-Run the RESCue pipeline on an image with a text query:
-```bash
-python scripts/run_inference.py --image "access/demo.jpg" --query "the object that would break if the boy jumps" --N 4
-```
-- `--N`: Number of reasoning paths to sample (Inference-time scaling parameter).
+Run the following services in **separate terminals** (e.g., using `tmux`).
 
-### 4. Run Evaluation (Dataset)
-Evaluate the model on a fraction of the ReasonSeg dataset:
-```bash
-python scripts/evaluate.py --fraction 0.1 --N 4
-```
-- `--fraction`: Proportion of the dataset to evaluate (e.g., `0.1` for 10%).
+### Terminal 1: Planner (LLM) Service
 
-## Docker Support
-
-You can run the entire workflow in a Docker container, pre-configured with ROCm support.
-
-### 1. Build the Image
-```bash
-docker build -t rescue-app .
-```
-
-### 2. Run with ROCm GPU Support
-To ensure the container can access the AMD MI325X GPU, you must pass the DRI and KFD devices and the video group:
+Deploys Qwen3-VL-30B-A3B-Instruct on vLLM.
 
 ```bash
-docker run --device=/dev/kfd --device=/dev/dri --group-add video \
-    -e HF_TOKEN=$HF_TOKEN \
-    rescue-app
+./scripts/deploy_llm.sh
 ```
-*Note: Pass your Hugging Face token as an environment variable.*
+*Wait for: `Uvicorn running on http://0.0.0.0:8000`*
 
-## Architecture
+### Terminal 2: Executor (SAM3) Service
 
-- **Planner**: `Qwen2-VL-72B-Instruct` generates bounding box hypotheses via Visual Chain-of-Thought (vCoT).
-- **Executor**: `SAM 3` grounds the boxes + text concepts into pixel masks.
-- **Verifier**: `Qwen2-VL-72B-Instruct` (VLM-as-a-Judge) scores the masks based on visual alignment with the query.
+Deploys the SAM3 Segmentation Server.
 
-## Directory Structure
+```bash
+./scripts/deploy_sam.sh
 ```
-RESCue/
-├── src/
-│   ├── rescue_pipeline.py  # Main System 2 Loop
-│   ├── planner.py          # Qwen2.5-VL Interface
-│   ├── executor.py         # SAM 3 Interface
-│   ├── verifier.py         # VLM-as-a-Judge
-│   └── utils.py            # Visualization & Helpers
-├── scripts/
-│   ├── setup_environment.sh
-│   ├── download_models.py
-│   ├── download_data.py
-│   ├── evaluate.py
-│   └── run_inference.py
-├── tests/
-└── requirements.txt
+*Wait for: `Uvicorn running on http://0.0.0.0:8001`*
+
+## 4. Run Benchmark
+
+Once both services are up, run the main orchestration script. This handles data downloading, health checks, and evaluation.
+
+```bash
+python main_benchmark.py
+```
+
+## Custom Usage
+
+To run inference on a single image:
+
+```bash
+python scripts/run_inference.py \
+  --image example.jpg \
+  --query "the red car in the background" \
+  --planner_url http://localhost:8000/v1 \
+  --executor_url http://localhost:8001
 ```

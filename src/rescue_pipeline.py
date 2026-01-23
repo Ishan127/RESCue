@@ -6,8 +6,10 @@ import numpy as np
 
 class RESCuePipeline:
     def __init__(self, 
-                 planner_model="Qwen/Qwen2.5-VL-72B-Instruct",
+                 planner_model="Qwen/Qwen3-VL-30B-A3B-Instruct",
                  executor_model="facebook/sam3",
+                 planner_api_base="http://localhost:8000/v1",
+                 executor_api_base="http://localhost:8001",
                  device=None,
                  dtype="auto",
                  quantization=None):
@@ -16,11 +18,25 @@ class RESCuePipeline:
         self.device = device or get_device()
         print(f"Pipeline using device: {self.device}")
         
-        self.planner = Planner(model_path=planner_model, device=self.device, dtype=dtype, quantization=quantization)
+        self.planner = Planner(
+            model_path=planner_model, 
+            api_base=planner_api_base,
+            device=self.device, 
+            dtype=dtype, 
+            quantization=quantization
+        )
         
-        self.executor = Executor(model_path=executor_model, device=self.device)
+        self.executor = Executor(
+            model_path=executor_model, 
+            device=self.device,
+            remote_url=executor_api_base
+        )
         
-        self.verifier = Verifier(llm_instance=self.planner.llm)
+        self.verifier = Verifier(
+            client=self.planner.client,
+            model_path=planner_model,
+            api_base=planner_api_base
+        )
         
         print("Pipeline Initialized.")
 

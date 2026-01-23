@@ -9,14 +9,16 @@ from typing import List, Dict, Optional, Tuple, Any, Union
 from collections import defaultdict
 
 from .utils import get_device
-from vllm import LLM, SamplingParams
+from .api_utils import get_openai_client, create_vision_message
+# from vllm import LLM, SamplingParams # Removed vLLM dependency
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("RESCue.Planner")
 
 @dataclass(frozen=True)
 class PlannerConfig:
-    model_path: str = "Qwen/Qwen2.5-VL-72B-Instruct"
+    model_path: str = "Qwen/Qwen3-VL-30B-A3B-Instruct"
+    api_base: Optional[str] = "http://localhost:8000/v1"
     device: Optional[str] = None
     dtype: str = "auto"
     quantization: Optional[str] = None
@@ -87,26 +89,18 @@ class Planner:
             self.config = config
             
         self.device = self.config.device or get_device()
+        self.client = None
         
-        if LLM is not None:
-            logger.info(f"Loading Planner (vLLM): {self.config.model_path}")
-            logger.info(f"Config: dtype={self.config.dtype}, quant={self.config.quantization}")
-            logger.info(f"Detected Device: {self.device}")
-            
+        if self.config.api_base:
+            logger.info(f"Initializing Planner with API: {self.config.api_base}")
             try:
-                self.llm = LLM(
-                    model=self.config.model_path,
-                    trust_remote_code=True,
-                    tensor_parallel_size=1,
-                    dtype=self.config.dtype,
-                    quantization=self.config.quantization
-                )
+                self.client = get_openai_client(base_url=self.config.api_base)
             except Exception as e:
-                logger.error(f"Failed to initialize vLLM: {e}")
+                logger.error(f"Failed to initialize OpenAI client: {e}")
                 raise e
         else:
-            logger.error("vLLM library not found.")
-            raise ImportError("vLLM is not installed.")
+             logger.error("API base URL not provided. Local inference is removed in this refactor.")
+             raise ValueError("API base URL is required.")
 
     def generate_hypotheses(self, image_path: str, query: str, N: int = 1, temperature: float = 0.7) -> List[Dict]:
         if N < 1:
@@ -197,23 +191,21 @@ class Planner:
     def _sample_batch(self, image_path: str, query: str, n: int, temperature: float, strategy: str) -> List[Hypothesis]:
         prompt_text = self._construct_prompt(query, strategy)
         
-        inputs = [
-            {
-                "prompt": f"<|image_pad|>{prompt_text}",
-                "multi_modal_data": {"image": image_path},
-            }
-        ]
-        sampling_params = SamplingParams(
-            temperature=temperature, 
-            n=n, 
-            max_tokens=600,
-            logprobs=1  
-        )
+        messages = create_vision_message(prompt_text, image_path)
         
-        outputs = self.llm.generate(
-            [inputs[0]["prompt"]],
-            sampling_params=sampling_params,
-        )
+        try:
+            completion = self.client.chat.completions.create(
+                model=self.config.model_path,
+                messages=messages,
+                temperature=temperature,
+                n=n,
+                max_tokens=600,
+                logprobs=True,
+                top_logprobs=1
+            )
+        except Exception as e:
+            logger.error(f"API Call Failed: {e}")
+            return []
         
         batch_hypotheses = []
         from PIL import Image
@@ -222,18 +214,20 @@ class Planner:
             real_w, real_h = img.size
             img_area = real_w * real_h
 
-        for completion in outputs[0].outputs:
-            text = completion.text
+        for choice in completion.choices:
+            text = choice.message.content
             
-            if completion.logprobs:
+            # Estimate confidence from logprobs if available
+            confidence = 0.5
+            if choice.logprobs and choice.logprobs.content:
                 try:
-                    token_logprobs = [list(t.values())[0].logprob for t in completion.logprobs if t]
-                    avg_logprob = sum(token_logprobs) / len(token_logprobs) if token_logprobs else -99.0
-                    confidence = math.exp(avg_logprob) # Rough probability [0, 1]
+                    # Filter out null logprobs and sum them
+                    token_logprobs = [t.logprob for t in choice.logprobs.content if t.logprob is not None]
+                    if token_logprobs:
+                        avg_logprob = sum(token_logprobs) / len(token_logprobs)
+                        confidence = math.exp(avg_logprob)
                 except Exception:
-                    confidence = 0.5
-            else:
-                confidence = 0.5
+                    pass
 
             parsed = self._parse_completion(
                 text, 
@@ -346,6 +340,6 @@ class Planner:
             
         return selected
 
-def get_default_planner(model_path="Qwen/Qwen2.5-VL-72B-Instruct"):
+def get_default_planner(model_path="Qwen/Qwen3-VL-30B-A3B-Instruct"):
     config = PlannerConfig(model_path=model_path)
     return Planner(config)

@@ -6,10 +6,10 @@ def download_models():
     token = os.getenv("HF_TOKEN")
     if not token:
         print("Warning: HF_TOKEN not set. Downloads may fail for gated models.")
-    print("Downloading Qwen2.5-VL-72B-Instruct...")
+    print("Downloading Qwen3-VL-30B-A3B-Instruct...")
     try:
-        snapshot_download(repo_id="Qwen/Qwen2.5-VL-72B-Instruct", token=token)
-        print("Qwen2.5-VL downloaded successfully.")
+        snapshot_download(repo_id="Qwen/Qwen3-VL-30B-A3B-Instruct", token=token)
+        print("Qwen3-VL downloaded successfully.")
     except Exception as e:
         print(f"Error downloading Qwen: {e}")
 

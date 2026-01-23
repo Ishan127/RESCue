@@ -11,7 +11,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from src.rescue_pipeline import RESCuePipeline
 from src.utils import calculate_iou
 
-def evaluate(fraction=0.1, N=4, dtype="auto", quantization=None):
+def evaluate(fraction=0.1, N=4, dtype="auto", quantization=None, planner_url="http://localhost:8000/v1", executor_url="http://localhost:8001"):
     print(f"Loading ReasonSeg dataset (Validation)...")
     try:
         ds = load_dataset("Ricky06662/ReasonSeg_val", split="test")
@@ -25,7 +25,12 @@ def evaluate(fraction=0.1, N=4, dtype="auto", quantization=None):
     
     ds = ds.shuffle(seed=42).select(range(num_samples))
     
-    pipeline = RESCuePipeline(dtype=dtype, quantization=quantization)
+    pipeline = RESCuePipeline(
+        dtype=dtype, 
+        quantization=quantization,
+        planner_api_base=planner_url, 
+        executor_api_base=executor_url
+    )
     
     ious = []
     
@@ -77,6 +82,15 @@ if __name__ == "__main__":
     parser.add_argument("--N", type=int, default=4, help="Number of reasoning paths")
     parser.add_argument("--dtype", default="auto", help="Model data type (auto, float16, etc.)")
     parser.add_argument("--quantization", default=None, help="Model quantization (awq, gptq, int8, etc.)")
+    parser.add_argument("--planner_url", default="http://localhost:8000/v1", help="API URL for Planner LLM")
+    parser.add_argument("--executor_url", default="http://localhost:8001", help="API URL for Executor SAM")
     args = parser.parse_args()
     
-    evaluate(fraction=args.fraction, N=args.N, dtype=args.dtype, quantization=args.quantization)
+    evaluate(
+        fraction=args.fraction, 
+        N=args.N, 
+        dtype=args.dtype, 
+        quantization=args.quantization,
+        planner_url=args.planner_url,
+        executor_url=args.executor_url
+    )
