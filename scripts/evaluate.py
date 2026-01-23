@@ -54,15 +54,28 @@ def evaluate(fraction=0.1, N=4, dtype="auto", quantization=None, planner_url="ht
         image.save(temp_img_path)
         
         try:
+            # Pass gt_mask to pipeline.run is not standard but we can calculate IoU per candidate here if we refactor run or do it after.
+            # Easiest way is to modify RESCuePipeline.run to return all candidates and we compute IoU here for debugging.
             result = pipeline.run(temp_img_path, query, N=N)
             
             if result and gt_mask is not None:
+                # --- Debug: Print IoU for each candidate ---
+                print("--- Candidate Analysis ---")
+                best_cand_iou = 0.0
+                for cand in result.get('all_candidates', []):
+                    c_mask = cand['mask'] > 0
+                    c_score = cand['score']
+                    c_iou = calculate_iou(c_mask, gt_mask)
+                    print(f"  > {cand['id']}: Score={c_score:.1f}, IoU={c_iou:.4f} | {cand['noun_phrase']}")
+                    if c_score == result['best_score'] and cand.get('best_flag', False): # Or just match by ID if 'best_mask' logic is consistent
+                        pass
+
                 pred_mask = result['best_mask']
                 pred_mask_bin = pred_mask > 0
                 
                 iou = calculate_iou(pred_mask_bin, gt_mask)
                 ious.append(iou)
-                print(f"Sample {i} | IoU: {iou:.4f}")
+                print(f"Sample {i} | Final Selected IoU: {iou:.4f}")
             else:
                 print(f"Sample {i} | No result or No GT.")
                 ious.append(0.0)

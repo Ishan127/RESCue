@@ -170,6 +170,13 @@ class Executor:
             # Helper to handle different layouts depending on what SAM3/Processor returns
             # Possible shapes: (B, N, H, W) or (B, H, W, N)
             
+            # Check for other weird shapes. e.g. (3, H, W) for batch=1 but missing batch dim
+            if masks_np.ndim == 3:
+                # Is it (N, H, W) or (H, W, N)?
+                if masks_np.shape[2] <= 10 and masks_np.shape[0] > 100:
+                     print(f"[Executor Debug] Detected channels-last format (H, W, N). Transposing to (N, H, W).")
+                     masks_np = masks_np.transpose(2, 0, 1)
+
             if masks_np.ndim == 4:
                 # Heuristic: If last dim is small (e.g. 3) and 2nd dim is large, it's likely (B, H, W, N)
                 B, D1, D2, D3 = masks_np.shape
@@ -185,6 +192,10 @@ class Executor:
                     for c in range(masks_np.shape[1]):
                         flat_masks.append(masks_np[b, c])
                 return flat_masks
+            
+            # If 3D (N, H, W), just return list
+            if masks_np.ndim == 3:
+                return [masks_np[i] for i in range(masks_np.shape[0])]
                 
             return [masks_np[i] for i in range(masks_np.shape[0])]
             
