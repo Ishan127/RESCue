@@ -8,3 +8,5 @@ fastapi
 uvicorn
 huggingface_hub
 python-multipart
+pydantic>=2.0
+loguru

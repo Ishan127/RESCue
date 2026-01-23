@@ -1,133 +1,560 @@
+"""
+SAM3 Executor - Client for SAM3 Inference Server
+Based on rpol-recart/sam3_inference API patterns
+
+This executor provides:
+  - Remote mode: Connects to SAM3 inference server via HTTP
+  - Local mode: Direct model inference (fallback)
+"""
 import torch
 import numpy as np
 import cv2
 import requests
 import base64
 import io
+import time
+from typing import Dict, List, Optional, Tuple, Any, Union
+from pathlib import Path
 from PIL import Image
 from .utils import get_device
-from sam3.model_builder import build_sam3_image_model
-from sam3.model.sam3_image_processor import Sam3Processor
+
+# Logging
+import logging
+logger = logging.getLogger(__name__)
+
 
 class Executor:
-    def __init__(self, model_path="facebook/sam3", device=None, remote_url=None):
+    """
+    SAM3 Executor with remote/local inference support.
+    
+    Based on rpol-recart/sam3_inference implementation patterns.
+    
+    Usage:
+        # Remote mode (recommended)
+        executor = Executor(remote_url="http://localhost:8001")
+        
+        # Local mode
+        executor = Executor(model_path="facebook/sam3", device="cuda")
+    """
+
+    def __init__(
+        self, 
+        model_path: str = "facebook/sam3", 
+        device: Optional[str] = None, 
+        remote_url: Optional[str] = None,
+        confidence_threshold: float = 0.5, 
+        resolution: int = 1008,
+        timeout: int = 60
+    ):
+        """
+        Initialize the SAM3 Executor.
+        
+        Args:
+            model_path: Model checkpoint path or HuggingFace ID (for local mode)
+            device: Device for local inference (auto-detected if None)
+            remote_url: URL of SAM3 inference server (enables remote mode)
+            confidence_threshold: Confidence threshold for mask filtering
+            resolution: Input resolution for SAM3
+            timeout: Request timeout for remote mode (seconds)
+        """
         self.remote_url = remote_url
         self.device = device or get_device()
+        self.confidence_threshold = confidence_threshold
+        self.resolution = resolution
+        self.timeout = timeout
         
+        # State for caching
+        self._cached_image: Optional[Image.Image] = None
+        self._cached_image_size: Optional[Tuple[int, int]] = None
+        self._session_active: bool = False
+        self._active_state = None
+        
+        # Local model references
+        self.model = None
+        self.processor = None
+
         if self.remote_url:
-            self.model = None
-            self.processor = None
+            logger.info(f"Executor initialized in REMOTE mode. Target: {self.remote_url}")
+            print(f"Executor initialized in REMOTE mode. Target: {self.remote_url}")
+            self._verify_server_connection()
         else:
-            checkpoint_path = None if model_path == "facebook/sam3" else model_path
+            logger.info(f"Executor initializing in LOCAL mode on {self.device}...")
+            print(f"Executor initializing in LOCAL mode on {self.device}...")
+            self._load_local_model(model_path)
+
+    def _verify_server_connection(self):
+        """Verify connection to remote SAM3 server."""
+        try:
+            response = requests.get(f"{self.remote_url}/health", timeout=5)
+            response.raise_for_status()
+            health = response.json()
+            logger.info(f"Server health: {health}")
+            print(f"Server health: {health}")
+            if health.get("status") != "healthy":
+                logger.warning("Server status is not healthy")
+        except requests.RequestException as e:
+            logger.warning(f"Could not connect to SAM3 server at {self.remote_url}: {e}")
+            print(f"Warning: Could not connect to SAM3 server at {self.remote_url}: {e}")
+
+    def _load_local_model(self, model_path: str):
+        """Load SAM3 model locally."""
+        try:
+            from sam3.model_builder import build_sam3_image_model
+            from sam3.model.sam3_image_processor import Sam3Processor
+        except ImportError as e:
+            logger.error(f"SAM3 not installed: {e}")
+            raise ImportError("SAM3 library not installed. Install sam3 or use remote mode.")
+
+        # Checkpoint resolution
+        load_from_HF = False
+        resolved_checkpoint_path = None
+
+        if model_path == "facebook/sam3":
+            load_from_HF = True
+        elif Path(model_path).exists():
+            resolved_checkpoint_path = model_path
+        else:
+            load_from_HF = True
+
+        logger.info(f"Loading model: {resolved_checkpoint_path or model_path}")
+        print(f"Loading model: {resolved_checkpoint_path or model_path}")
+
+        try:
             self.model = build_sam3_image_model(
                 device=self.device,
-                checkpoint_path=checkpoint_path
+                checkpoint_path=resolved_checkpoint_path,
+                load_from_HF=load_from_HF,
+                eval_mode=True
             )
-            self.processor = Sam3Processor(self.model)
+        except Exception as e:
+            logger.warning(f"First load attempt failed: {e}")
+            try:
+                self.model = build_sam3_image_model(
+                    device=self.device,
+                    ckpt_path=resolved_checkpoint_path
+                )
+            except Exception as e2:
+                logger.error(f"Failed to load model: {e2}")
+                raise
 
-    def _image_to_base64(self, image_input):
+        self.processor = Sam3Processor(
+            model=self.model,
+            resolution=self.resolution,
+            device=self.device,
+            confidence_threshold=self.confidence_threshold
+        )
+        logger.info("SAM3 model loaded successfully")
+        print("SAM3 model loaded successfully")
+
+    # =========================================================================
+    # Image Encoding Utilities
+    # =========================================================================
+
+    def _image_to_base64(self, image_input: Union[np.ndarray, Image.Image]) -> str:
+        """Convert image to base64 string."""
         if isinstance(image_input, np.ndarray):
             image = Image.fromarray(image_input.astype(np.uint8))
         else:
             image = image_input
-            
-        buff = io.BytesIO()
-        image.save(buff, format="PNG")
-        return base64.b64encode(buff.getvalue()).decode("utf-8")
 
-    def _base64_to_mask(self, b64_string):
+        buffer = io.BytesIO()
+        image.save(buffer, format="PNG")
+        return base64.b64encode(buffer.getvalue()).decode("utf-8")
+
+    def _base64_to_mask(self, b64_string: str) -> np.ndarray:
+        """Convert base64 encoded mask to numpy array."""
         img_data = base64.b64decode(b64_string)
         img = Image.open(io.BytesIO(img_data)).convert("L")
         return np.array(img).astype(bool)
 
-    def execute(self, image_input, box, text_prompt):
-        self.encode_image(image_input)
-        return self.predict_masks(box, text_prompt)
+    def _to_pil(self, image_input: Union[np.ndarray, Image.Image]) -> Image.Image:
+        """Convert input to PIL Image."""
+        if isinstance(image_input, np.ndarray):
+            return Image.fromarray(image_input.astype(np.uint8))
+        return image_input
 
-    def encode_image(self, image_input):
-        if self.remote_url:
-            try:
-                payload = {"image_base64": self._image_to_base64(image_input)}
-                requests.post(f"{self.remote_url}/set_image", json=payload).raise_for_status()
-                return True
-            except Exception:
-                return False
+    # =========================================================================
+    # Main API Methods
+    # =========================================================================
+
+    def segment(
+        self,
+        image: Union[np.ndarray, Image.Image],
+        text_prompt: Optional[str] = None,
+        box: Optional[List[float]] = None,
+        points: Optional[List[List[float]]] = None,
+        point_labels: Optional[List[int]] = None,
+    ) -> List[np.ndarray]:
+        """
+        Segment image with prompts (main API method).
         
-        self.active_state = None
-        try:
-            self.active_state = self.processor.set_image(image_input)
-            if hasattr(image_input, 'shape'):
-                self.img_h, self.img_w = image_input.shape[:2]
-            else:
-                self.img_w, self.img_h = image_input.size
-        except Exception:
-            self.active_state = None
-
-    def predict_masks(self, box, text_prompt):
-        if self.remote_url:
-            try:
-                payload = {
-                    "box": list(map(float, box)) if box else None,
-                    "text_prompt": text_prompt
-                }
-                response = requests.post(f"{self.remote_url}/predict", json=payload)
-                response.raise_for_status()
-                data = response.json()
-                return [self._base64_to_mask(m) for m in data.get("masks_base64", [])]
-            except Exception:
-                return []
-
-        if self.active_state is None:
-            return []
-
-        current_state = self.active_state.copy()
+        Args:
+            image: Input image (numpy array or PIL Image)
+            text_prompt: Text description of object to segment
+            box: Bounding box [x1, y1, x2, y2] in pixels
+            points: List of [x, y] points in pixels
+            point_labels: Labels for points (1=positive, 0=negative)
         
-        if text_prompt:
-            current_state = self.processor.set_text_prompt(
-                prompt=text_prompt, 
-                state=current_state
-            )
-            
-        if box is not None:
-            current_state = self.processor.add_geometric_prompt(
-                box=box, 
-                label=1, 
-                state=current_state
-            )
-
-        masks = current_state.get("masks", None)
-        if masks is None or masks.numel() == 0:
-            return []
-            
-        masks_np = masks.cpu().numpy()
-        return self._process_mask_output(masks_np, self.img_h, self.img_w)
-
-    def _process_mask_output(self, masks_np, target_h, target_w):
-        extracted_masks = []
-        if masks_np.ndim == 4:
-            B, D1, D2, D3 = masks_np.shape
-            if D3 <= 10: 
-                masks_np = masks_np.transpose(0, 3, 1, 2)
-            for b in range(masks_np.shape[0]):
-                for c in range(masks_np.shape[1]):
-                    extracted_masks.append(masks_np[b, c])
-        elif masks_np.ndim == 3:
-            if masks_np.shape[2] <= 10 and masks_np.shape[0] > 100:
-                    masks_np = masks_np.transpose(2, 0, 1)
-            for i in range(masks_np.shape[0]):
-                extracted_masks.append(masks_np[i])
+        Returns:
+            List of binary mask arrays
+        """
+        if self.remote_url:
+            return self._segment_remote(image, text_prompt, box, points, point_labels)
         else:
-             for i in range(masks_np.shape[0]):
-                extracted_masks.append(masks_np[i])
+            return self._segment_local(image, text_prompt, box, points, point_labels)
 
+    def execute(
+        self, 
+        image_input: Union[np.ndarray, Image.Image], 
+        box: Optional[List[float]], 
+        text_prompt: Optional[str]
+    ) -> List[np.ndarray]:
+        """
+        Legacy execute method (calls segment internally).
+        
+        Args:
+            image_input: Input image
+            box: Bounding box [x1, y1, x2, y2] in pixels
+            text_prompt: Text prompt
+        
+        Returns:
+            List of binary masks
+        """
+        return self.segment(image_input, text_prompt=text_prompt, box=box)
+
+    def encode_image(self, image_input: Union[np.ndarray, Image.Image]) -> bool:
+        """
+        Cache image for subsequent predictions (optimization).
+        
+        Args:
+            image_input: Input image
+        
+        Returns:
+            True if successful
+        """
+        pil_image = self._to_pil(image_input)
+        self._cached_image = pil_image
+        self._cached_image_size = pil_image.size
+
+        if self.remote_url:
+            try:
+                payload = {"image_base64": self._image_to_base64(pil_image)}
+                response = requests.post(
+                    f"{self.remote_url}/set_image", 
+                    json=payload,
+                    timeout=self.timeout
+                )
+                response.raise_for_status()
+                self._session_active = True
+                return True
+            except Exception as e:
+                logger.error(f"Remote image encoding failed: {e}")
+                print(f"Remote image encoding failed: {e}")
+                return False
+        else:
+            # Local: pre-compute features
+            try:
+                self._active_state = self.processor.set_image(pil_image)
+                self._session_active = True
+                return True
+            except Exception as e:
+                logger.error(f"Local image encoding failed: {e}")
+                print(f"Local image encoding failed: {e}")
+                self._active_state = None
+                return False
+
+    def predict_masks(
+        self, 
+        box: Optional[List[float]] = None, 
+        text_prompt: Optional[str] = None
+    ) -> List[np.ndarray]:
+        """
+        Predict masks using cached image.
+        
+        Args:
+            box: Bounding box [x1, y1, x2, y2] in pixels
+            text_prompt: Text prompt
+        
+        Returns:
+            List of binary masks
+        """
+        if not self._session_active or self._cached_image is None:
+            logger.error("No cached image. Call encode_image first.")
+            print("Error: No cached image. Call encode_image first.")
+            return []
+
+        if self.remote_url:
+            return self._predict_remote(box, text_prompt)
+        else:
+            return self._predict_local(box, text_prompt)
+
+    # =========================================================================
+    # Remote Inference Implementation
+    # =========================================================================
+
+    def _segment_remote(
+        self,
+        image: Union[np.ndarray, Image.Image],
+        text_prompt: Optional[str] = None,
+        box: Optional[List[float]] = None,
+        points: Optional[List[List[float]]] = None,
+        point_labels: Optional[List[int]] = None,
+    ) -> List[np.ndarray]:
+        """Remote segmentation via API."""
+        pil_image = self._to_pil(image)
+        orig_w, orig_h = pil_image.size
+
+        # Build prompts
+        prompts = []
+        if text_prompt:
+            prompts.append({"type": "text", "text": text_prompt})
+        if box:
+            # Normalize box to [0, 1]
+            normalized_box = [
+                box[0] / orig_w,
+                box[1] / orig_h,
+                box[2] / orig_w,
+                box[3] / orig_h,
+            ]
+            prompts.append({"type": "box", "box": normalized_box, "label": True})
+        if points and point_labels:
+            # Normalize points to [0, 1]
+            normalized_points = [[p[0] / orig_w, p[1] / orig_h] for p in points]
+            prompts.append({
+                "type": "point", 
+                "points": normalized_points, 
+                "point_labels": point_labels
+            })
+
+        if not prompts:
+            logger.warning("No prompts provided")
+            return []
+
+        try:
+            payload = {
+                "image": self._image_to_base64(pil_image),
+                "prompts": prompts,
+                "confidence_threshold": self.confidence_threshold,
+            }
+            response = requests.post(
+                f"{self.remote_url}/api/v1/image/segment",
+                json=payload,
+                timeout=self.timeout
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            # Decode masks
+            masks = [self._base64_to_mask(m) for m in data.get("masks", [])]
+            logger.info(f"Remote segmentation: {len(masks)} masks, {data.get('inference_time_ms', 0):.1f}ms")
+            return masks
+
+        except Exception as e:
+            logger.error(f"Remote segmentation failed: {e}")
+            print(f"Remote segmentation failed: {e}")
+            return []
+
+    def _predict_remote(
+        self, 
+        box: Optional[List[float]] = None, 
+        text_prompt: Optional[str] = None
+    ) -> List[np.ndarray]:
+        """Remote prediction using cached image."""
+        try:
+            payload = {}
+            if text_prompt:
+                payload["text_prompt"] = text_prompt
+            if box:
+                payload["box"] = list(map(float, box))
+
+            response = requests.post(
+                f"{self.remote_url}/predict",
+                json=payload,
+                timeout=self.timeout
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            masks = [self._base64_to_mask(m) for m in data.get("masks_base64", [])]
+            return masks
+
+        except Exception as e:
+            logger.error(f"Remote prediction failed: {e}")
+            print(f"Remote prediction failed: {e}")
+            return []
+
+    # =========================================================================
+    # Local Inference Implementation
+    # =========================================================================
+
+    def _segment_local(
+        self,
+        image: Union[np.ndarray, Image.Image],
+        text_prompt: Optional[str] = None,
+        box: Optional[List[float]] = None,
+        points: Optional[List[List[float]]] = None,
+        point_labels: Optional[List[int]] = None,
+    ) -> List[np.ndarray]:
+        """Local segmentation with SAM3."""
+        pil_image = self._to_pil(image)
+        orig_w, orig_h = pil_image.size
+
+        try:
+            state = self.processor.set_image(pil_image)
+
+            # Add text prompt
+            if text_prompt:
+                state = self.processor.set_text_prompt(prompt=text_prompt, state=state)
+
+            # Add box prompt
+            if box:
+                state = self.processor.add_geometric_prompt(
+                    box=box,  # Already in pixels
+                    label=1,
+                    state=state
+                )
+
+            # Add point prompts
+            if points and point_labels:
+                pts_tensor = torch.tensor(points, device=self.device, dtype=torch.float32).view(-1, 1, 2)
+                labels_tensor = torch.tensor(point_labels, device=self.device, dtype=torch.long).view(-1, 1)
+
+                # Ensure language features exist
+                if "language_features" not in state.get("backbone_out", {}):
+                    dummy_text = self.processor.model.backbone.forward_text(["visual"], device=self.device)
+                    state["backbone_out"].update(dummy_text)
+
+                if "geometric_prompt" not in state:
+                    state["geometric_prompt"] = self.processor.model._get_dummy_prompt()
+
+                state["geometric_prompt"].append_points(points=pts_tensor, labels=labels_tensor)
+
+                if hasattr(self.processor, '_forward_grounding'):
+                    state = self.processor._forward_grounding(state)
+
+            return self._process_mask_output(state.get("masks"), (orig_w, orig_h))
+
+        except Exception as e:
+            logger.error(f"Local segmentation failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
+
+    def _predict_local(
+        self, 
+        box: Optional[List[float]] = None, 
+        text_prompt: Optional[str] = None
+    ) -> List[np.ndarray]:
+        """Local prediction using cached state."""
+        if self._active_state is None:
+            logger.error("No active state. Call encode_image first.")
+            return []
+
+        try:
+            state = self._active_state.copy()
+
+            if text_prompt:
+                state = self.processor.set_text_prompt(prompt=text_prompt, state=state)
+
+            if box:
+                state = self.processor.add_geometric_prompt(
+                    box=box,
+                    label=1,
+                    state=state
+                )
+
+            # Ensure language features for geometric-only prompts
+            if "language_features" not in state.get("backbone_out", {}):
+                dummy_text = self.processor.model.backbone.forward_text(["visual"], device=self.device)
+                state["backbone_out"].update(dummy_text)
+
+            if "geometric_prompt" not in state:
+                state["geometric_prompt"] = self.processor.model._get_dummy_prompt()
+
+            if hasattr(self.processor, '_forward_grounding'):
+                state = self.processor._forward_grounding(state)
+
+            return self._process_mask_output(state.get("masks"), self._cached_image_size)
+
+        except Exception as e:
+            logger.error(f"Local prediction failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
+
+    def _process_mask_output(
+        self, 
+        masks: Any, 
+        image_size: Tuple[int, int]
+    ) -> List[np.ndarray]:
+        """Process and format mask output."""
+        if masks is None:
+            return []
+
+        orig_w, orig_h = image_size
+
+        # Convert to numpy
+        if isinstance(masks, torch.Tensor):
+            masks = masks.detach().cpu().numpy()
+
+        extracted_masks = []
+
+        # Handle different tensor shapes
+        if masks.ndim == 4:
+            # (B, N, H, W)
+            for b in range(masks.shape[0]):
+                for n in range(masks.shape[1]):
+                    extracted_masks.append(masks[b, n])
+        elif masks.ndim == 3:
+            # (N, H, W)
+            for n in range(masks.shape[0]):
+                extracted_masks.append(masks[n])
+        elif masks.ndim == 2:
+            extracted_masks.append(masks)
+
+        # Resize and threshold masks
         final_masks = []
         for m in extracted_masks:
-            m = m > 0
-            if m.shape != (target_h, target_w):
-                if m.shape == (target_w, target_h):
+            if m.shape != (orig_h, orig_w):
+                if m.shape == (orig_w, orig_h):
                     m = m.T
                 else:
-                    m = cv2.resize(m.astype(np.uint8), (target_w, target_h), interpolation=cv2.INTER_NEAREST) > 0
-            final_masks.append(m)
-        
+                    m = cv2.resize(
+                        m.astype(np.float32), 
+                        (orig_w, orig_h), 
+                        interpolation=cv2.INTER_NEAREST
+                    )
+            final_masks.append((m > 0).astype(bool))
+
         return final_masks
+
+    # =========================================================================
+    # Utility Methods
+    # =========================================================================
+
+    def get_server_info(self) -> Optional[Dict]:
+        """Get information about connected SAM3 server."""
+        if not self.remote_url:
+            return {"mode": "local", "device": self.device}
+
+        try:
+            response = requests.get(f"{self.remote_url}/models/info", timeout=5)
+            response.raise_for_status()
+            info = response.json()
+            info["mode"] = "remote"
+            info["url"] = self.remote_url
+            return info
+        except Exception as e:
+            logger.warning(f"Could not get server info: {e}")
+            return None
+
+    def is_healthy(self) -> bool:
+        """Check if executor is ready for inference."""
+        if self.remote_url:
+            try:
+                response = requests.get(f"{self.remote_url}/health", timeout=5)
+                return response.status_code == 200
+            except:
+                return False
+        else:
+            return self.model is not None and self.processor is not None
