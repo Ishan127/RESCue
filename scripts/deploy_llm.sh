@@ -5,7 +5,7 @@ python -m vllm.entrypoints.openai.api_server \
     --model Qwen/Qwen3-VL-30B-A3B-Instruct \
     --trust-remote-code \
     --tensor-parallel-size 2 \
-    --gpu-memory-utilization 0.95 \
+    --gpu-memory-utilization 0.80 \
     --max-model-len 32768 \
     --port 8000 \
     --host 0.0.0.0

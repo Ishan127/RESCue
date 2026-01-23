@@ -1,4 +1,5 @@
 import torch
+import torchvision
 import numpy as np
 import requests
 import base64
@@ -7,6 +8,28 @@ from PIL import Image
 from .utils import get_device
 from sam3 import build_sam3_image_model
 from sam3.model.sam3_image_processor import Sam3Processor
+
+# --- Monkey-Patch torchvision for ROCm compatibility ---
+# ROI Align often fails on ROCm if torchvision is not built with HIP support.
+# We intercept the call and force it to CPU for that specific operation.
+_original_roi_align = torchvision.ops.roi_align
+
+def _roi_align_rocm_safe(input, boxes, output_size, spatial_scale=1.0, sampling_ratio=-1, aligned=False):
+    if input.is_cuda:
+        try:
+            return _original_roi_align(input, boxes, output_size, spatial_scale, sampling_ratio, aligned)
+        except RuntimeError as e:
+            if "backend" in str(e) or "not available" in str(e):
+                # Fallback to CPU
+                input_cpu = input.cpu()
+                boxes_cpu = boxes.cpu()
+                result = _original_roi_align(input_cpu, boxes_cpu, output_size, spatial_scale, sampling_ratio, aligned)
+                return result.to(input.device)
+            raise e
+    return _original_roi_align(input, boxes, output_size, spatial_scale, sampling_ratio, aligned)
+
+torchvision.ops.roi_align = _roi_align_rocm_safe
+# -------------------------------------------------------
 
 class Executor:
     def __init__(self, model_path="facebook/sam3", device=None, remote_url=None):
@@ -24,18 +47,15 @@ class Executor:
             # If user provides a local path, we assume it's a checkpoint
             checkpoint_path = None
             if model_path != "facebook/sam3":
-                checkpoint_path = model_path # Fixed bug: was assuming model_path is checkpoint even if passed explicitly
+                checkpoint_path = model_path
             
-            # Fallback for sam3 loading
             try:
-                # Try loading assuming 'facebook/sam3' or path
                 self.model = build_sam3_image_model(
                     device=self.device,
                     checkpoint_path=checkpoint_path
                 )
-            except TypeError as te:
-                 # Some versions of sam3 build function might differ
-                 print(f"Retrying SAM3 load with different signature: {te}")
+            except TypeError:
+                 # Checkpoint signature mismatch fallback
                  try:
                     self.model = build_sam3_image_model(
                         device=self.device,
@@ -80,8 +100,13 @@ class Executor:
                     "text_prompt": text_prompt
                 }
                 response = requests.post(f"{self.remote_url}/segment", json=payload)
-                response.raise_for_status()
-                data = response.json()
+                try:
+                    response.raise_for_status()
+                    data = response.json()
+                except requests.exceptions.HTTPError as e:
+                    print(f"Remote Execution Failed: {e}")
+                    print(f"Server Response: {response.text}")
+                    return []
                 
                 masks = []
                 for b64_mask in data.get("masks_base64", []):
