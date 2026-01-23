@@ -42,7 +42,11 @@ async def startup_event():
 
 def mask_to_base64(mask_np):
     # mask_np is bool or uint8
-    img = Image.fromarray((mask_np * 255).astype(np.uint8))
+    # Ensure 2D
+    if mask_np.ndim == 3 and mask_np.shape[0] == 1:
+        mask_np = mask_np.squeeze(0)
+    
+    img = Image.fromarray((mask_np * 255).astype(np.uint8), mode='L')
     buff = io.BytesIO()
     img.save(buff, format="PNG")
     return base64.b64encode(buff.getvalue()).decode("utf-8")

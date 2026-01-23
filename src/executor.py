@@ -90,9 +90,7 @@ class Executor:
 
     def _base64_to_mask(self, b64_string):
         img_data = base64.b64decode(b64_string)
-        img = Image.open(io.BytesIO(img_data))
-        # SAM masks are usually boolean or 0/1. 
-        # Server sends 0-255 image. 
+        img = Image.open(io.BytesIO(img_data)).convert("L")
         return np.array(img) > 128
 
     def execute(self, image_input, box, text_prompt):

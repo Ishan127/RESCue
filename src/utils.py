@@ -35,7 +35,21 @@ def apply_red_alpha_overlay(image, mask, alpha=0.5):
     if isinstance(mask, Image.Image):
         mask = np.array(mask)
     
+    # Ensure mask is 2D
+    if mask.ndim == 3:
+        if mask.shape[0] == 1: mask = mask[0]
+        elif mask.shape[2] == 1: mask = mask[:, :, 0]
+        # Otherwise, if it has 3 channels, take first
+        elif mask.shape[2] == 3: mask = mask[:, :, 0] # or cv2.cvtColor...
+
     mask = mask > 0
+    
+    # Debug print if shapes mismatch
+    if image.shape[:2] != mask.shape[:2]:
+        print(f"Warning: Image {image.shape} and Mask {mask.shape} mismatch. Overlay may fail.")
+        # Try resize mask to image
+        mask = cv2.resize(mask.astype(np.uint8), (image.shape[1], image.shape[0]), interpolation=cv2.INTER_NEAREST) > 0
+
     overlay = image.copy()
     
     red_channel = image[:, :, 0]
