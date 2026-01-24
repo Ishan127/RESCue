@@ -377,6 +377,43 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
             
             if not task.candidates or task.gt_mask is None:
                 continue
+
+            # --- DEBUG LOGGING ---
+            import random
+            if task.candidates:
+                # Pick random candidate
+                rand_idx = random.randint(0, len(task.candidates) - 1)
+                rand_cand = task.candidates[rand_idx]
+                
+                # Get rank if available
+                rank = "N/A"
+                if task.ranking:
+                    try:
+                        rank = task.ranking.index(rand_idx) + 1
+                    except ValueError:
+                        pass
+                
+                # Get score if available (verifier stage usually doesn't store scores in task.candidates directly yet in this script, 
+                # but let's check structure. ExecutorStage adds 'hypothesis' and 'mask'. VerifierStage adds 'ranking'.
+                # We might not have scores easily accessible here without modifying VerifierStage to store them.
+                # However, the user asked for "evaluation by verifier result".
+                # In evaluate_pipeline.py, VerifierStage.process calls self.verifier.verify_batch_comparative which returns SCORES.
+                # But VerifierStage only stores 'ranking' indices in the task object. 
+                # To print the score, we would need to store the detailed results in the task. 
+                # For now, I will print the RANK as the verifier result.
+                
+                hyp = rand_cand.get("hypothesis", {})
+                print(f"\n  [DEBUG] Random Sample {task.sample_idx} (Cand #{rand_idx}):")
+                print(f"    Hypothesis: '{hyp.get('noun_phrase')}'")
+                print(f"    Reasoning: {hyp.get('reasoning', '')[:100]}...")
+                print(f"    Box: {hyp.get('box')}")
+                
+                mask = rand_cand.get("mask")
+                mask_area = np.sum(mask) if mask is not None else 0
+                print(f"    Mask Area: {mask_area} pixels")
+                print(f"    Verifier Rank: {rank}/{len(task.candidates)}")
+                print(f"  [DEBUG] End Sample\n")
+            # ---------------------
             
             # Evaluate for each N
             for n in results_by_n.keys():
