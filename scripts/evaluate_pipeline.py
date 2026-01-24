@@ -140,35 +140,33 @@ class ExecutorStage(PipelineStage):
         
         print(f"[Executor] Sample {task.sample_idx}: Processing {len(task.hypotheses)} hypotheses")
         
-        # Load image once
-        image = Image.open(task.temp_img_path)
-        
         candidates = []
         
-        # Process hypotheses in parallel batches
-        def exec_one(hyp):
+        # Process hypotheses SEQUENTIALLY to avoid overwhelming SAM server
+        for i, hyp in enumerate(task.hypotheses):
             try:
+                # Load fresh image for each request
+                image = Image.open(task.temp_img_path).copy()
+                
                 # Extract box and query from hypothesis
                 box = hyp.get("box") or hyp.get("bbox")
                 query = hyp.get("noun_phrase") or hyp.get("query") or task.query
                 
-                # Call executor with correct signature
+                # Call executor
                 masks = self.executor.execute(image, box, query)
                 
                 if masks and len(masks) > 0:
-                    mask = masks[0]  # Take first mask
+                    mask = masks[0]
                     result = {"hypothesis": hyp, "mask": mask}
                     if task.gt_mask is not None:
                         result["iou"] = calculate_iou(mask, task.gt_mask)
-                    return result
+                    candidates.append(result)
+                    
             except Exception as e:
-                print(f"[Executor] Hypothesis error: {e}")
-            return None
+                if i < 3:  # Only print first few errors
+                    print(f"[Executor] Hypothesis {i} error: {e}")
         
-        with ThreadPoolExecutor(max_workers=8) as executor:
-            results = list(executor.map(exec_one, task.hypotheses))
-        
-        task.candidates = [r for r in results if r is not None]
+        task.candidates = candidates
         print(f"[Executor] Sample {task.sample_idx}: Got {len(task.candidates)} masks")
         task.t_exec_done = time.time()
         return task
