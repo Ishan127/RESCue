@@ -42,14 +42,14 @@ for i in $(seq 0 $((NUM_INSTANCES - 1))); do
     
     echo -e "${YELLOW}Starting SAM instance $i on port $PORT...${NC}"
     
-    python -m src.sam_server \
+    python src/sam_server.py \
         --host $HOST \
         --port $PORT &
     
     PIDS+=($!)
     
-    # Small delay between starts
-    sleep 2
+    # Small delay between starts to avoid GPU memory contention
+    sleep 5
 done
 
 echo -e "${GREEN}Started ${#PIDS[@]} SAM instances on ports: 8001, 8003, 8004, 8005${NC}"
