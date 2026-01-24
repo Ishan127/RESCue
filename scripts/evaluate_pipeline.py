@@ -121,6 +121,16 @@ class PlannerStage(PipelineStage):
         try:
             hypotheses = self.planner.generate_hypotheses(task.temp_img_path, task.query, N=self.max_n)
             task.hypotheses = hypotheses if hypotheses else []
+            
+            # --- LOGGING: Planner Immediate ---
+            if task.hypotheses:
+                import random
+                rand_h = random.choice(task.hypotheses)
+                print(f"\n[Planner] Sample {task.sample_idx} Ready (N={len(task.hypotheses)})")
+                print(f"  Random Hyp: '{rand_h.get('noun_phrase')}'")
+                print(f"  Reasoning: {rand_h.get('reasoning', '')[:100]}...")
+            # ----------------------------------
+
         except Exception as e:
             print(f"[Planner] Sample {task.sample_idx} error: {e}")
             task.hypotheses = [{"query": task.query, "bbox": None}]
@@ -158,21 +168,11 @@ class ExecutorStage(PipelineStage):
         # Load fresh image copy
         image = Image.open(task.temp_img_path).copy()
         
-        # Since Executor/Pipeline now supports batching, we just pass all hypotheses at once
-        # logic moved to Executor.execute (which calls segment_batch) or handled here if using raw Executor.
-        # But wait, evaluate_pipeline imports Executor, not RESCuePipeline.
-        # We need to adapt this.
-        
-        # The Executor class (in src/executor.py) exposes 'segment', 'execute', etc.
-        # 'execute' takes single inputs. 
-        # We should use the new batch capability of Executor.sengment (prompts_list) directly here.
-        
         prompts_list = []
         for hyp in task.hypotheses:
             box = hyp.get("box") or hyp.get("bbox")
             # Ensure box is [0,1]
             if box and any(x > 1 for x in box): 
-                 # Handle absolute coords if necessary, but assuming normalized from Planner
                  pass 
 
             prompts_list.append({
@@ -194,7 +194,16 @@ class ExecutorStage(PipelineStage):
                  results.append(res)
                  
              task.candidates = results
-             print(f"[Executor] Sample {task.sample_idx}: Got {len(task.candidates)} masks (Batch)")
+             
+             # --- LOGGING: Executor Immediate ---
+             if task.candidates:
+                 import random
+                 rand_c = random.choice(task.candidates)
+                 mask = rand_c.get('mask')
+                 area = np.sum(mask) if mask is not None else 0
+                 print(f"\n[Executor] Sample {task.sample_idx} Ready (Masks={len(task.candidates)})")
+                 print(f"  Random Mask Area: {area} pixels")
+             # -----------------------------------
              
         except Exception as e:
             print(f"[Executor] Sample {task.sample_idx} Batch Error: {e}")
@@ -254,6 +263,14 @@ class VerifierStage(PipelineStage):
                 results = self.verifier.verify_batch_comparative(task.image, masks, task.query)
                 sorted_results = sorted(results, key=lambda r: r['rank'])
                 task.ranking = [r['mask_idx'] for r in sorted_results]
+                
+            # --- LOGGING: Verifier Immediate ---
+            if task.ranking:
+                winner_idx = task.ranking[0]
+                print(f"\n[Verifier] Sample {task.sample_idx} Done")
+                print(f"  Winner Candidate Index: {winner_idx}")
+            # -----------------------------------
+
         except Exception as e:
             print(f"[Verifier] Sample {task.sample_idx} error: {e}")
             task.ranking = list(range(len(task.candidates)))
