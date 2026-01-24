@@ -140,7 +140,7 @@ class ExecutorStage(PipelineStage):
     def __init__(self, input_queue, output_queue, executor_url, parallel_requests=16):
         super().__init__("Executor", input_queue, output_queue)
         # Single executor pointing to load balancer
-        self.executor = Executor(remote_url=executor_url)
+        self.executor = Executor(remote_url=executor_url, timeout=300)
         self.parallel_requests = parallel_requests  # Max concurrent requests to LB
         print(f"[Executor] Initialized with load balancer at {executor_url}")
         print(f"[Executor] Will send up to {parallel_requests} parallel requests")
