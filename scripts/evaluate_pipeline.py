@@ -120,9 +120,8 @@ class PlannerStage(PipelineStage):
         
         try:
             hypotheses = self.planner.generate_hypotheses(task.temp_img_path, task.query, N=self.max_n)
-            if task.hypotheses:
-                pass # Original code had no logging here, removing debug block
-
+            task.hypotheses = hypotheses if hypotheses else []
+            
         except Exception as e:
             print(f"[Planner] Sample {task.sample_idx} error: {e}")
             task.hypotheses = [{"query": task.query, "bbox": None}]
