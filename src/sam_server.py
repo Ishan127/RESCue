@@ -46,51 +46,71 @@ def patch_torchvision_for_rocm():
         def cpu_roi_align(input, boxes, output_size, spatial_scale=1.0, sampling_ratio=-1, aligned=False):
             """ROCm-compatible roi_align that runs on CPU then moves back to GPU."""
             device = input.device
+            dtype = input.dtype
             
-            # Move to CPU
+            # Normalize output_size
+            if isinstance(output_size, int):
+                out_h, out_w = output_size, output_size
+            else:
+                out_h, out_w = output_size[0], output_size[1]
+            
+            # Move input to CPU
             input_cpu = input.cpu()
             
             # Handle boxes - can be tensor or list of tensors
+            # torchvision.ops.roi_align expects either:
+            # 1. Tensor of shape (N, 5) with [batch_idx, x1, y1, x2, y2]
+            # 2. List of tensors, one per batch image, each of shape (M, 4)
+            
             if isinstance(boxes, torch.Tensor):
+                # Already a tensor - just move to CPU
                 boxes_cpu = boxes.cpu()
+                num_boxes = boxes_cpu.shape[0]
             elif isinstance(boxes, (list, tuple)):
-                # Convert list of tensors to single tensor with batch indices
-                # Format: [batch_idx, x1, y1, x2, y2]
+                # List of tensors - need to convert to single tensor with batch indices
                 all_boxes = []
                 for batch_idx, box_tensor in enumerate(boxes):
                     if isinstance(box_tensor, torch.Tensor):
-                        box_tensor = box_tensor.cpu()
-                        if box_tensor.numel() > 0:
+                        bt = box_tensor.cpu()
+                        if bt.numel() > 0 and bt.shape[0] > 0:
                             # Add batch index as first column
-                            batch_indices = torch.full((box_tensor.shape[0], 1), batch_idx, dtype=box_tensor.dtype)
-                            boxes_with_idx = torch.cat([batch_indices, box_tensor], dim=1)
+                            n = bt.shape[0]
+                            batch_col = torch.full((n, 1), float(batch_idx), dtype=bt.dtype, device=bt.device)
+                            boxes_with_idx = torch.cat([batch_col, bt], dim=1)
                             all_boxes.append(boxes_with_idx)
                 
                 if all_boxes:
                     boxes_cpu = torch.cat(all_boxes, dim=0)
+                    num_boxes = boxes_cpu.shape[0]
                 else:
-                    # Empty boxes - create empty tensor with correct shape
-                    boxes_cpu = torch.zeros((0, 5), dtype=input_cpu.dtype)
+                    # All boxes empty - return empty output immediately
+                    return torch.zeros((0, input_cpu.shape[1], out_h, out_w), dtype=dtype, device=device)
             else:
+                # Unknown type - try to use as-is
                 boxes_cpu = boxes
+                num_boxes = 0
             
-            # Handle empty boxes case
-            if isinstance(boxes_cpu, torch.Tensor) and boxes_cpu.numel() == 0:
-                # Return empty output
-                h = output_size[0] if isinstance(output_size, (tuple, list)) else output_size
-                w = output_size[1] if isinstance(output_size, (tuple, list)) else output_size
-                return torch.zeros((0, input_cpu.shape[1], h, w), dtype=input_cpu.dtype, device=device)
+            # Handle empty boxes case - return early
+            if num_boxes == 0 or (isinstance(boxes_cpu, torch.Tensor) and boxes_cpu.numel() == 0):
+                return torch.zeros((0, input_cpu.shape[1], out_h, out_w), dtype=dtype, device=device)
+            
+            # Ensure boxes_cpu is float tensor
+            if boxes_cpu.dtype not in [torch.float32, torch.float64]:
+                boxes_cpu = boxes_cpu.float()
             
             # Run on CPU using the C++ implementation
-            result = torch.ops.torchvision.roi_align(
-                input_cpu, boxes_cpu, spatial_scale, 
-                output_size[0] if isinstance(output_size, (tuple, list)) else output_size,
-                output_size[1] if isinstance(output_size, (tuple, list)) else output_size,
-                sampling_ratio, aligned
-            )
+            try:
+                result = torch.ops.torchvision.roi_align(
+                    input_cpu.float(), boxes_cpu, spatial_scale, 
+                    out_h, out_w, sampling_ratio, aligned
+                )
+            except Exception as e:
+                logger.error(f"roi_align failed: {e}, input shape: {input_cpu.shape}, boxes shape: {boxes_cpu.shape}")
+                # Return empty on error
+                return torch.zeros((num_boxes, input_cpu.shape[1], out_h, out_w), dtype=dtype, device=device)
             
-            # Move back to original device
-            return result.to(device)
+            # Move back to original device and dtype
+            return result.to(device=device, dtype=dtype)
         
         # Patch at multiple levels
         ops.roi_align = cpu_roi_align
