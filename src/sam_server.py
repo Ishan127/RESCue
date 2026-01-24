@@ -573,9 +573,12 @@ class SAM3ImageModel:
                     if mask is None and "segmentation" in best_res:
                         mask = best_res["segmentation"]
                         
-                    # Resize is handled by postprocessor (use_original_sizes_mask=True)
-                    # But double check shape
                     if mask is not None:
+                         # Ensure mask is 2D (H, W)
+                         # It appears to be (1, 1, H, W) sometimes
+                         while mask.ndim > 2:
+                             mask = mask.squeeze(0)
+                         
                          final_masks.append(mask.astype(bool))
                     else:
                          final_masks.append(np.zeros((h, w), dtype=bool))
