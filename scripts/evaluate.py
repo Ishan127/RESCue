@@ -32,9 +32,14 @@ def evaluate(fraction=0.1, N=4, dtype="auto", quantization=None, planner_url="ht
         executor_api_base=executor_url
     )
     
-    ious = []
+    ious_comparative = []
+    ious_individual = []
+    ious_oracle = []
     
-    print("Starting evaluation...")
+    print("\n" + "="*60)
+    print("Starting evaluation with BOTH verification methods...")
+    print("="*60 + "\n")
+    
     for i, sample in tqdm(enumerate(ds), total=num_samples):
         if i == 0:
             print("Dataset columns:", sample.keys())
@@ -47,60 +52,89 @@ def evaluate(fraction=0.1, N=4, dtype="auto", quantization=None, planner_url="ht
             print(f"Skipping sample {i}: Missing image or query.")
             continue
             
-        if gt_mask:
+        if gt_mask is not None:
             gt_mask = np.array(gt_mask) > 0
         
         temp_img_path = f"temp_eval_{i}.jpg"
         image.save(temp_img_path)
         
         try:
-            # Pass gt_mask to pipeline.run for debug printing
-            result = pipeline.run(temp_img_path, query, N=N, gt_mask=gt_mask)
+            result = pipeline.run(temp_img_path, query, N=N, gt_mask=gt_mask, verification_mode="both")
             
             if result and gt_mask is not None:
-                # --- Debug: Print IoU for each candidate ---
-                # (Printing already done inside pipeline.run but we keep this summary if needed)
-                pass
-
-                pred_mask = result['best_mask']
-                pred_mask_bin = pred_mask > 0
+                iou_comp = calculate_iou(result['best_mask_comparative'], gt_mask)
+                iou_indiv = calculate_iou(result['best_mask_individual'], gt_mask)
+                iou_oracle = result['oracle_best'].get('iou', 0) if result.get('oracle_best') else 0
                 
-                # --- Debug: Raw Mask Analysis ---
-                print(f"  [Debug] Sample {i} Mask Stats:")
-                print(f"    - Pred Shape: {pred_mask.shape}, Unique: {np.unique(pred_mask)}")
-                print(f"    - GT Shape:   {gt_mask.shape}, Unique: {np.unique(gt_mask)}")
+                ious_comparative.append(iou_comp)
+                ious_individual.append(iou_indiv)
+                ious_oracle.append(iou_oracle)
                 
-                # --- Debug: Save Visualizations for first 5 samples ---
+                comp_win = "✓" if iou_comp >= iou_indiv else " "
+                indiv_win = "✓" if iou_indiv >= iou_comp else " "
+                
+                print(f"\nSample {i} Summary:")
+                print(f"  Comparative [{comp_win}]: IoU {iou_comp:.4f} ({result['best_candidate_comparative']['id']})")
+                print(f"  Individual  [{indiv_win}]: IoU {iou_indiv:.4f} ({result['best_candidate_individual']['id']})")
+                print(f"  Oracle (GT):     IoU {iou_oracle:.4f} ({result['oracle_best']['id']})")
+                
                 if i < 5:
                     debug_dir = "debug_output"
                     os.makedirs(debug_dir, exist_ok=True)
                     
-                    # Save Pred Overlay
                     img_pil = sample.get('image')
                     try:
-                        overlay_pred = apply_red_alpha_overlay(img_pil, pred_mask, alpha=0.5)
-                        overlay_pred.save(os.path.join(debug_dir, f"sample_{i}_pred_score{result['best_score']}.png"))
+                        overlay_comp = apply_red_alpha_overlay(img_pil, result['best_mask_comparative'], alpha=0.5)
+                        overlay_comp.save(os.path.join(debug_dir, f"sample_{i}_comparative_iou{iou_comp:.3f}.png"))
                         
-                        # Save GT Overlay
+                        overlay_indiv = apply_red_alpha_overlay(img_pil, result['best_mask_individual'], alpha=0.5)
+                        overlay_indiv.save(os.path.join(debug_dir, f"sample_{i}_individual_iou{iou_indiv:.3f}.png"))
+                        
                         overlay_gt = apply_red_alpha_overlay(img_pil, gt_mask, alpha=0.5)
                         overlay_gt.save(os.path.join(debug_dir, f"sample_{i}_gt.png"))
-                        print(f"    - Saved debug overlays to {debug_dir}/sample_{i}_*.png")
                     except Exception as e:
                         print(f"    - Failed to save debug images: {e}")
-
-                iou = calculate_iou(pred_mask_bin, gt_mask)
-                ious.append(iou)
-                print(f"Sample {i} | Final Selected IoU: {iou:.4f}")
             else:
                 print(f"Sample {i} | No result or No GT.")
-                ious.append(0.0)
+                ious_comparative.append(0.0)
+                ious_individual.append(0.0)
+                ious_oracle.append(0.0)
                 
+        except Exception as e:
+            print(f"Sample {i} | Error: {e}")
+            ious_comparative.append(0.0)
+            ious_individual.append(0.0)
+            ious_oracle.append(0.0)
         finally:
             if os.path.exists(temp_img_path):
                 os.remove(temp_img_path)
 
-    if ious:
-        print(f"\nMean gIoU (approx as IoU): {np.mean(ious):.4f}")
+    print("\n" + "="*60)
+    print("FINAL RESULTS")
+    print("="*60)
+    
+    if ious_comparative:
+        mean_comp = np.mean(ious_comparative)
+        mean_indiv = np.mean(ious_individual)
+        mean_oracle = np.mean(ious_oracle)
+        
+        print(f"\n{'Method':<25} | {'Mean gIoU':>10} | {'vs Oracle':>10}")
+        print("-"*50)
+        print(f"{'Comparative Verification':<25} | {mean_comp:>10.4f} | {mean_comp/mean_oracle*100:>9.1f}%")
+        print(f"{'Individual Verification':<25} | {mean_indiv:>10.4f} | {mean_indiv/mean_oracle*100:>9.1f}%")
+        print(f"{'Oracle (Best Possible)':<25} | {mean_oracle:>10.4f} | {'100.0':>9}%")
+        
+        comp_wins = sum(1 for c, i in zip(ious_comparative, ious_individual) if c > i)
+        indiv_wins = sum(1 for c, i in zip(ious_comparative, ious_individual) if i > c)
+        ties = sum(1 for c, i in zip(ious_comparative, ious_individual) if c == i)
+        
+        print(f"\nHead-to-head (n={len(ious_comparative)}):")
+        print(f"  Comparative wins: {comp_wins} ({comp_wins/len(ious_comparative)*100:.1f}%)")
+        print(f"  Individual wins:  {indiv_wins} ({indiv_wins/len(ious_comparative)*100:.1f}%)")
+        print(f"  Ties:             {ties} ({ties/len(ious_comparative)*100:.1f}%)")
+        
+        winner = "COMPARATIVE" if mean_comp > mean_indiv else "INDIVIDUAL" if mean_indiv > mean_comp else "TIE"
+        print(f"\n>>> WINNER: {winner} <<<")
     else:
         print("No evaluations performed.")
 

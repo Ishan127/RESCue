@@ -41,9 +41,9 @@ python scripts/download_models.py
 
 Run the following services in **separate terminals** (e.g., using `tmux`).
 
-### Terminal 1: Planner (LLM) Service
+### Terminal 1: Planner & Verifier (VLM) Service
 
-Deploys Qwen3-VL-30B-A3B-Instruct on vLLM.
+Deploys Qwen3-VL-32B-Thinking on vLLM (chain-of-thought model for better reasoning).
 
 ```bash
 ./scripts/deploy_llm.sh
