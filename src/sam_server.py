@@ -823,7 +823,7 @@ async def models_info():
 
 
 @app.post("/api/v1/image/segment", response_model=ImageSegmentResponse)
-async def segment_image(request: ImageSegmentRequest):
+def segment_image(request: ImageSegmentRequest):
     if image_model is None:
         raise HTTPException(status_code=503, detail="Image model not loaded")
 
