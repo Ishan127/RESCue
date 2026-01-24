@@ -69,7 +69,7 @@ Consider:
 2. Are the boundaries TIGHT and ACCURATE?
 3. Does it avoid including EXCESS BACKGROUND?
 
-Answer with ONLY one word: LEFT or RIGHT"""
+Your final answer MUST end with exactly "ANSWER: LEFT" or "ANSWER: RIGHT"."""
 
         with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
             comparison_img.save(tmp.name, quality=95)
@@ -78,38 +78,48 @@ Answer with ONLY one word: LEFT or RIGHT"""
         try:
             messages = create_vision_message(prompt, tmp_path)
             
+            # For thinking models, allow more tokens for reasoning
+            max_tok = 500 if self.is_thinking_model else 150
+            
             completion = self.client.chat.completions.create(
                 model=self.model_path,
                 messages=messages,
                 temperature=0.1,  # Low temp for decisive answer
-                max_tokens=100
+                max_tokens=max_tok
             )
             
             text = completion.choices[0].message.content.strip().upper()
             
             if self.verbose:
-                print(f"[Compare {idx_a} vs {idx_b}]: {text[:100]}")
+                short_text = text[-200:] if len(text) > 200 else text
+                print(f"[Compare {idx_a} vs {idx_b}]: ...{short_text}")
             
-            # Parse response
-            if "LEFT" in text and "RIGHT" not in text:
+            # Parse response - look for explicit ANSWER: pattern first
+            if "ANSWER: LEFT" in text or "ANSWER:LEFT" in text:
                 return idx_a
-            elif "RIGHT" in text and "LEFT" not in text:
+            elif "ANSWER: RIGHT" in text or "ANSWER:RIGHT" in text:
                 return idx_b
-            elif text.startswith("LEFT"):
+            
+            # Fallback: look at last line or last words for the answer
+            lines = text.strip().split('\n')
+            last_line = lines[-1].strip()
+            
+            if last_line == "LEFT" or last_line.endswith("LEFT"):
                 return idx_a
-            elif text.startswith("RIGHT"):
+            elif last_line == "RIGHT" or last_line.endswith("RIGHT"):
                 return idx_b
-            else:
-                # Ambiguous - count occurrences
-                left_count = text.count("LEFT")
-                right_count = text.count("RIGHT")
-                if left_count > right_count:
-                    return idx_a
-                elif right_count > left_count:
-                    return idx_b
-                else:
-                    # Truly ambiguous, return first
-                    return idx_a
+            
+            # Final fallback: count occurrences in last 100 chars
+            tail = text[-100:]
+            left_count = tail.count("LEFT")
+            right_count = tail.count("RIGHT")
+            if left_count > right_count:
+                return idx_a
+            elif right_count > left_count:
+                return idx_b
+            
+            # Truly ambiguous - default to first
+            return idx_a
                     
         except Exception as e:
             if self.verbose:
@@ -159,9 +169,8 @@ Answer with ONLY one word: LEFT or RIGHT"""
 
     def verify_batch_comparative(self, image_input, masks, query):
         """
-        Tournament-based ranking.
-        For small N (<=6): use grid comparison
-        For large N (>6): use tournament bracket
+        Full ranking using parallel tournament.
+        Sends many comparisons to vLLM at once for batched GPU inference.
         """
         if len(masks) == 0:
             return []
@@ -171,11 +180,176 @@ Answer with ONLY one word: LEFT or RIGHT"""
         n = len(masks)
         
         if n <= 6:
-            # Use original grid method for small N
             return self._grid_compare(image_input, masks, query)
         else:
-            # Use tournament for large N
-            return self._tournament_rank(image_input, masks, query)
+            return self._parallel_full_ranking(image_input, masks, query)
+
+    def _parallel_full_ranking(self, image, masks, query):
+        """
+        Get full ranking using parallel tournament with elimination tracking.
+        
+        Strategy:
+        1. Run single-elimination tournament (parallelized rounds)
+        2. Track which round each candidate was eliminated
+        3. Rank by elimination round (later = better)
+        4. Within same round, use heuristic tie-breaker
+        """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        import random
+        
+        n = len(masks)
+        indices = list(range(n))
+        
+        # Track elimination: {idx: round_eliminated} (lower = eliminated earlier = worse)
+        # Winner gets round = infinity
+        elimination_round = {}
+        
+        # Compute heuristics for tie-breaking
+        heuristics = {i: self._compute_mask_heuristic(masks[i]) for i in indices}
+        
+        # Shuffle for fair seeding
+        current_round = list(indices)
+        random.shuffle(current_round)
+        
+        round_num = 0
+        
+        while len(current_round) > 1:
+            round_num += 1
+            if self.verbose:
+                print(f"[Tournament Round {round_num}]: {len(current_round)} candidates")
+            
+            # Create all pairs for this round
+            pairs = []
+            for i in range(0, len(current_round) - 1, 2):
+                pairs.append((current_round[i], current_round[i + 1]))
+            
+            # Bye for odd one
+            bye_idx = current_round[-1] if len(current_round) % 2 == 1 else None
+            
+            # Run ALL comparisons in parallel - vLLM will batch them!
+            winners = []
+            losers = []
+            
+            with ThreadPoolExecutor(max_workers=32) as executor:
+                future_to_pair = {}
+                for idx_a, idx_b in pairs:
+                    future = executor.submit(
+                        self._compare_pair, image, masks[idx_a], masks[idx_b],
+                        query, idx_a, idx_b
+                    )
+                    future_to_pair[future] = (idx_a, idx_b)
+                
+                for future in as_completed(future_to_pair):
+                    idx_a, idx_b = future_to_pair[future]
+                    winner = future.result()
+                    loser = idx_b if winner == idx_a else idx_a
+                    winners.append(winner)
+                    losers.append(loser)
+            
+            # Mark losers with their elimination round
+            for loser in losers:
+                elimination_round[loser] = round_num
+            
+            # Next round = winners + bye
+            current_round = winners
+            if bye_idx is not None:
+                current_round.append(bye_idx)
+        
+        # Winner survives all rounds
+        if current_round:
+            winner = current_round[0]
+            elimination_round[winner] = round_num + 1  # Survived longest
+        
+        # Build ranking: sort by elimination round (desc), then by heuristic (desc)
+        ranking = sorted(
+            indices,
+            key=lambda i: (elimination_round.get(i, 0), heuristics.get(i, 0)),
+            reverse=True
+        )
+        
+        # Build results
+        results = []
+        for rank, idx in enumerate(ranking):
+            score = max(10, 100 - rank * (90 // max(1, n - 1)))
+            results.append({
+                "mask_idx": idx,
+                "rank": rank + 1,
+                "score": score,
+                "reasoning": f"Eliminated round {elimination_round.get(idx, 0)}"
+            })
+        
+        return results
+
+    def _compute_mask_heuristic(self, mask):
+        """Quick heuristic score for tie-breaking."""
+        import numpy as np
+        mask_np = np.array(mask).astype(bool)
+        if mask_np.ndim == 3:
+            mask_np = mask_np[:, :, 0]
+        
+        total_pixels = mask_np.size
+        mask_pixels = np.sum(mask_np)
+        
+        if mask_pixels == 0:
+            return 0
+        
+        # Coverage ratio (penalize too small or too large)
+        coverage = mask_pixels / total_pixels
+        if coverage < 0.01:
+            coverage_score = coverage * 50
+        elif coverage > 0.8:
+            coverage_score = 50 - (coverage - 0.8) * 100
+        else:
+            coverage_score = 50 + (0.3 - abs(coverage - 0.3)) * 100
+        
+        return coverage_score
+
+    def _parallel_tournament(self, image, masks, query, indices):
+        """Run tournament with parallel comparisons."""
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        import random
+        
+        if len(indices) == 0:
+            return None
+        if len(indices) == 1:
+            return indices[0]
+        
+        current_round = list(indices)
+        random.shuffle(current_round)
+        
+        round_num = 1
+        while len(current_round) > 1:
+            if self.verbose:
+                print(f"[Tournament Round {round_num}]: {len(current_round)} candidates")
+            
+            # Create pairs
+            pairs = []
+            for i in range(0, len(current_round) - 1, 2):
+                pairs.append((current_round[i], current_round[i + 1]))
+            
+            # Run comparisons in parallel (4 at a time to not overload)
+            next_round = []
+            with ThreadPoolExecutor(max_workers=4) as executor:
+                futures = {}
+                for idx_a, idx_b in pairs:
+                    future = executor.submit(
+                        self._compare_pair, image, masks[idx_a], masks[idx_b],
+                        query, idx_a, idx_b
+                    )
+                    futures[future] = (idx_a, idx_b)
+                
+                for future in as_completed(futures):
+                    winner = future.result()
+                    next_round.append(winner)
+            
+            # Odd one out gets a bye
+            if len(current_round) % 2 == 1:
+                next_round.append(current_round[-1])
+            
+            current_round = next_round
+            round_num += 1
+        
+        return current_round[0]
 
     def _tournament_rank(self, image, masks, query):
         """Get full ranking using tournament elimination."""
