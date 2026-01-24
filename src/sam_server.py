@@ -588,6 +588,13 @@ class SAM3ImageModel:
                          while mask.ndim > 2:
                              mask = mask.squeeze(0)
                          
+                         # --- LOGGING MASK STATS ---
+                         try:
+                             with open("sam_debug_deep.log", "a") as f:
+                                 f.write(f"Mask Stats Q{q_id}: Shape={mask.shape}, Sum={mask.sum()}, Max={mask.max()}\n")
+                         except: pass
+                         # --------------------------
+
                          final_masks.append(mask.astype(bool))
                     else:
                          final_masks.append(np.zeros((h, w), dtype=bool))
