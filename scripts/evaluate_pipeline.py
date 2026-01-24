@@ -133,29 +133,43 @@ class ExecutorStage(PipelineStage):
     
     def process(self, task: SampleTask) -> SampleTask:
         if not task.hypotheses:
+            print(f"[Executor] Sample {task.sample_idx}: No hypotheses to process")
             task.candidates = []
             task.t_exec_done = time.time()
             return task
+        
+        print(f"[Executor] Sample {task.sample_idx}: Processing {len(task.hypotheses)} hypotheses")
+        
+        # Load image once
+        image = Image.open(task.temp_img_path)
         
         candidates = []
         
         # Process hypotheses in parallel batches
         def exec_one(hyp):
             try:
-                mask = self.executor.execute(task.temp_img_path, hyp)
-                if mask is not None:
+                # Extract box and query from hypothesis
+                box = hyp.get("box") or hyp.get("bbox")
+                query = hyp.get("noun_phrase") or hyp.get("query") or task.query
+                
+                # Call executor with correct signature
+                masks = self.executor.execute(image, box, query)
+                
+                if masks and len(masks) > 0:
+                    mask = masks[0]  # Take first mask
                     result = {"hypothesis": hyp, "mask": mask}
                     if task.gt_mask is not None:
                         result["iou"] = calculate_iou(mask, task.gt_mask)
                     return result
-            except:
-                pass
+            except Exception as e:
+                print(f"[Executor] Hypothesis error: {e}")
             return None
         
         with ThreadPoolExecutor(max_workers=8) as executor:
             results = list(executor.map(exec_one, task.hypotheses))
         
         task.candidates = [r for r in results if r is not None]
+        print(f"[Executor] Sample {task.sample_idx}: Got {len(task.candidates)} masks")
         task.t_exec_done = time.time()
         return task
 
