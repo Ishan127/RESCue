@@ -1,7 +1,7 @@
 from .planner import Planner
 from .executor import Executor
 from .verifier import Verifier
-from .utils import load_image, plot_results, get_device
+from .utils import load_image, get_device
 import numpy as np
 
 class RESCuePipeline:
@@ -12,21 +12,10 @@ class RESCuePipeline:
                  executor_api_base="http://localhost:8001",
                  device=None,
                  dtype="auto",
-                 quantization=None,
-                 verification_mode="detailed"):
-        """
-        Initialize RESCue Pipeline.
-        
-        Args:
-            verification_mode: "simple" or "detailed"
-                - "simple": Basic scoring (fast, less accurate)
-                - "detailed": Multi-criteria scoring (recommended, better differentiation)
-        """
+                 quantization=None):
         print("Initializing RESCue Pipeline...")
         self.device = device or get_device()
-        self.verification_mode = verification_mode
         print(f"Pipeline using device: {self.device}")
-        print(f"Verification mode: {verification_mode}")
         
         self.planner = Planner(
             model_path=planner_model, 
@@ -45,8 +34,7 @@ class RESCuePipeline:
         self.verifier = Verifier(
             client=self.planner.client,
             model_path=planner_model,
-            api_base=planner_api_base,
-            mode="detailed" if verification_mode == "detailed" else "simple"
+            api_base=planner_api_base
         )
         
         print("Pipeline Initialized.")
@@ -61,8 +49,6 @@ class RESCuePipeline:
         candidates = []
         
         print(f"--- Step 2: Execution ---")
-        
-        # Optimization: Send image to Executor ONCE
         print("  - Encoding Image on Executor...")
         self.executor.encode_image(np.array(image))
         
@@ -71,14 +57,13 @@ class RESCuePipeline:
             noun_phrase = hyp['noun_phrase']
             reasoning = hyp['reasoning']
             
-            # Use cached image, just predict prompt
             masks = self.executor.predict_masks(box, noun_phrase)
             
             for j, mask in enumerate(masks):
                 candidates.append({
                     'id': f"H{i}_M{j}",
                     'mask': mask,
-                    'score': 0.0,  # Will be filled in verification
+                    'score': 0.0,
                     'box': box,
                     'reasoning': reasoning,
                     'noun_phrase': noun_phrase
@@ -89,20 +74,13 @@ class RESCuePipeline:
             print("WARNING: No candidates generated!")
             return None
         
-        print(f"--- Step 3: Verification ({self.verification_mode} mode) ---")
+        print(f"--- Step 3: Verification ---")
         
-        # Individual verification (simple or detailed mode)
         for cand in candidates:
-            result = self.verifier.verify(image, cand['mask'], query, 
-                                         return_details=(self.verification_mode == "detailed"))
+            result = self.verifier.verify(image, cand['mask'], query)
+            cand['score'] = result['total']
+            cand['score_breakdown'] = result
             
-            if isinstance(result, dict):
-                cand['score'] = result['total']
-                cand['score_breakdown'] = result
-            else:
-                cand['score'] = result
-            
-            # IoU for debugging
             iou_info = ""
             if gt_mask is not None:
                 from .utils import calculate_iou
@@ -110,23 +88,18 @@ class RESCuePipeline:
                 cand['iou'] = iou
                 iou_info = f" | IoU: {iou:.4f}"
             
-            breakdown = ""
-            if 'score_breakdown' in cand:
-                sb = cand['score_breakdown']
-                breakdown = f" [I:{sb['identity']:.0f} S:{sb['spatial']:.0f} C:{sb['completeness']:.0f} B:{sb['boundary']:.0f}]"
-            
-            print(f"  {cand['id']}: Score {cand['score']:.1f}{breakdown}{iou_info} | {cand['noun_phrase']}")
+            sb = result
+            print(f"  {cand['id']}: Score {cand['score']:.0f} [I:{sb['identity']:.0f} S:{sb['spatial']:.0f} C:{sb['completeness']:.0f} B:{sb['boundary']:.0f}]{iou_info} | {cand['noun_phrase']}")
         
         best_candidate = max(candidates, key=lambda x: x['score'])
         
-        # Also find the best IoU candidate for debugging
         if gt_mask is not None:
             best_iou_cand = max(candidates, key=lambda x: x.get('iou', 0))
             if best_iou_cand['id'] != best_candidate['id']:
                 print(f"  NOTE: Best IoU is {best_iou_cand['id']} ({best_iou_cand.get('iou', 0):.4f}), but selected {best_candidate['id']}")
         
         print(f"--- Result ---")
-        print(f"Best Candidate: {best_candidate['id']} with Score {best_candidate['score']:.1f}")
+        print(f"Best Candidate: {best_candidate['id']} with Score {best_candidate['score']:.0f}")
         
         return {
             'best_mask': best_candidate['mask'],

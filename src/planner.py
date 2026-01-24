@@ -103,6 +103,16 @@ class Planner:
              raise ValueError("API base URL is required.")
 
     def generate_hypotheses(self, image_path: str, query: str, N: int = 1, temperature: float = 0.7) -> List[Dict]:
+        """
+        Generate N diverse hypotheses using query variations.
+        
+        Strategy:
+        - N=1: Original query only
+        - N=2: 1 original + 1 conservative rephrasing
+        - N=3: 1 original + 1 conservative + 1 exploratory
+        - N=4: 1 original + 1 conservative + 1 exploratory + 1 conservative
+        - N>4: Add spatial variations
+        """
         if N < 1:
             return []
             
@@ -110,198 +120,223 @@ class Planner:
         
         base_temp = temperature if temperature is not None else self.config.base_temperature
         
+        # Generate query variations based on N
+        query_configs = self._generate_query_configs(query, N, base_temp)
+        
         candidates: List[Hypothesis] = []
         
-        # Track all concepts across strategies to avoid duplicates
-        all_concepts: List[str] = []
+        from PIL import Image
+        with Image.open(image_path) as img:
+            real_w, real_h = img.size
+            img_area = real_w * real_h
         
-        if self.config.use_stratified_sampling and N > 1:
-            # Distribute more evenly and ensure spatial gets at least 1
-            n_conservative = max(1, N // 3)
-            n_exploratory = max(1, N // 3)
-            n_spatial = max(1, N - n_conservative - n_exploratory)
+        for i, config in enumerate(query_configs):
+            varied_query = config["query"]
+            strategy = config["strategy"]
+            temp = config["temperature"]
             
-            strategies = [
-                ("conservative", n_conservative, max(0.3, base_temp - 0.2)),
-                ("exploratory", n_exploratory, min(1.0, base_temp + 0.3)),
-                ("spatial", n_spatial, base_temp + 0.1)
-            ]
-        else:
-            strategies = [("standard", N, base_temp)]
-            
-        for strategy_name, count, temp in strategies:
-            if count <= 0: continue
-            
-            logger.info(f"Strategy '{strategy_name}': generating {count} samples (T={temp:.2f})")
+            logger.info(f"Query {i+1}/{len(query_configs)} [{strategy}] (T={temp:.2f}): {varied_query[:80]}...")
             
             try:
-                new_hyps = self._sample_batch(
+                hyp = self._generate_single_hypothesis(
                     image_path, 
-                    query, 
-                    count, 
-                    temperature=temp,
-                    strategy=strategy_name,
-                    existing_concepts=all_concepts  # Pass existing concepts to avoid duplicates
+                    varied_query,
+                    strategy,
+                    temp,
+                    real_w, real_h, img_area
                 )
-                candidates.extend(new_hyps)
-                all_concepts.extend([h.target_concept for h in new_hyps])
+                if hyp:
+                    candidates.append(hyp)
+                    logger.info(f"  -> {hyp.target_concept}")
             except Exception as e:
-                logger.error(f"Strategy '{strategy_name}' failed: {e}")
-
+                logger.error(f"Failed to generate hypothesis: {e}")
+        
+        # Select best N (should already be N, but deduplicate if needed)
         final_hypotheses = self._select_diverse_subset(candidates, N, query)
         
         logger.info(f"Final selection: {len(final_hypotheses)} hypotheses")
         return [h.to_dict() for h in final_hypotheses]
+    
+    def _generate_query_configs(self, original_query: str, N: int, base_temp: float) -> List[Dict]:
+        """
+        Generate N query configurations with variations.
+        Priority: original -> conservative -> exploratory -> spatial (only N>4)
+        """
+        configs = []
+        
+        # Always include original query first
+        configs.append({
+            "query": original_query,
+            "strategy": "original",
+            "temperature": base_temp
+        })
+        
+        if N == 1:
+            return configs
+        
+        # Generate varied queries using LLM
+        variations = self._generate_query_variations(original_query, N - 1)
+        
+        # Assign strategies based on position
+        # Priority order: conservative, exploratory, then spatial (only for N>4)
+        for i, varied_query in enumerate(variations):
+            if i < 2:  # First 2 variations are conservative
+                strategy = "conservative"
+                temp = max(0.3, base_temp - 0.2)
+            elif i < 4:  # Next 2 are exploratory
+                strategy = "exploratory"
+                temp = min(1.0, base_temp + 0.2)
+            else:  # Rest are spatial (N > 4)
+                strategy = "spatial"
+                temp = base_temp + 0.1
+            
+            configs.append({
+                "query": varied_query,
+                "strategy": strategy,
+                "temperature": temp
+            })
+        
+        return configs[:N]  # Ensure we return exactly N
+    
+    def _generate_query_variations(self, original_query: str, num_variations: int) -> List[str]:
+        """Generate varied interpretations of the query using the LLM."""
+        
+        prompt = f"""Given this image segmentation query: "{original_query}"
 
-    def _construct_prompt(self, query: str, strategy: str, attempt: int = 0) -> str:
+Generate {num_variations} DIFFERENT ways to interpret or rephrase this query. Each variation should:
+1. Focus on a DIFFERENT aspect or interpretation of what's being asked
+2. Be specific and actionable for locating an object in an image
+3. Consider literal, functional, visual, or contextual interpretations
+
+Output as JSON array of strings:
+{{"variations": ["variation 1", "variation 2", ...]}}
+
+Examples of good variations for "What could hold water?":
+- "a container or vessel that can store liquid" (literal/functional)
+- "a cup, bowl, or glass visible in the scene" (specific objects)
+- "something with a concave shape that could collect water" (visual property)
+- "a sink, bathtub, or plumbing fixture" (contextual/environmental)"""
+
+        try:
+            completion = self.client.chat.completions.create(
+                model=self.config.model_path,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+                max_tokens=500
+            )
+            
+            text = completion.choices[0].message.content
+            
+            # Parse JSON
+            import json
+            # Find JSON in response
+            json_match = re.search(r'\{[^{}]*"variations"[^{}]*\[.*?\][^{}]*\}', text, re.DOTALL)
+            if json_match:
+                data = json.loads(json_match.group())
+                variations = data.get("variations", [])
+                if variations:
+                    return variations[:num_variations]
+            
+            # Fallback: extract quoted strings
+            quoted = re.findall(r'"([^"]{10,})"', text)
+            if quoted:
+                return quoted[:num_variations]
+                
+        except Exception as e:
+            logger.warning(f"Failed to generate query variations: {e}")
+        
+        # Fallback: return simple variations
+        fallbacks = [
+            f"Find the most obvious {original_query.split()[-1] if original_query.split() else 'object'}",
+            f"Look for something that matches: {original_query}",
+            f"Identify the object described by: {original_query}",
+        ]
+        return fallbacks[:num_variations]
+    
+    def _generate_single_hypothesis(self, image_path: str, query: str, strategy: str, 
+                                     temperature: float, w: int, h: int, img_area: int) -> Optional[Hypothesis]:
+        """Generate a single hypothesis for a given query."""
+        
+        prompt_text = self._construct_prompt(query, strategy)
+        messages = create_vision_message(prompt_text, image_path)
+        
+        try:
+            completion = self.client.chat.completions.create(
+                model=self.config.model_path,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=800,
+                logprobs=True,
+                top_logprobs=1
+            )
+        except Exception as e:
+            logger.error(f"API Call Failed: {e}")
+            return None
+        
+        choice = completion.choices[0]
+        text = choice.message.content
+        
+        # Estimate confidence from logprobs
+        confidence = 0.5
+        if choice.logprobs and choice.logprobs.content:
+            try:
+                token_logprobs = [t.logprob for t in choice.logprobs.content if t.logprob is not None]
+                if token_logprobs:
+                    avg_logprob = sum(token_logprobs) / len(token_logprobs)
+                    confidence = math.exp(avg_logprob)
+            except Exception:
+                pass
+        
+        return self._parse_completion(text, w, h, confidence, strategy, img_area)
+
+    def _construct_prompt(self, query: str, strategy: str) -> str:
+        """Construct prompt based on strategy type."""
         base_prompt = (
             f"Query: {query}\n"
             "Analyze the image and locate the object described by the query.\n"
         )
         
-        # Add diversity hints based on attempt number
-        diversity_hints = ""
-        if attempt > 0:
-            diversity_options = [
-                "Consider a DIFFERENT object than the most obvious answer. Look for alternative interpretations.\n",
-                "Focus on a DIFFERENT REGION of the image than the center. Look at edges, corners, background.\n",
-                "Think about PARTS of objects rather than whole objects. What components match the query?\n",
-                "Consider SMALLER or PARTIALLY VISIBLE objects that might also match the description.\n",
-                "Look for objects that match the query INDIRECTLY or METAPHORICALLY.\n",
-            ]
-            diversity_hints = diversity_options[attempt % len(diversity_options)]
-        
-        if strategy == "conservative":
+        if strategy == "original":
             instruction = (
-                "Step 1 (See): List ALL visible objects that could possibly relate to the query (at least 3 candidates).\n"
-                "Step 2 (Think): For EACH candidate, explain why it might or might not match. Select the MOST LITERAL match.\n"
-                "Step 3 (Propose): Output the precise bounding box for YOUR CHOSEN object.\n"
-                f"{diversity_hints}"
+                "Step 1 (See): Identify the object that DIRECTLY matches the query.\n"
+                "Step 2 (Think): Verify this is the most relevant match.\n"
+                "Step 3 (Propose): Output the precise bounding box.\n"
+            )
+        elif strategy == "conservative":
+            instruction = (
+                "Step 1 (See): List ALL visible objects that could relate to the query.\n"
+                "Step 2 (Think): Select the MOST LITERAL and OBVIOUS match.\n"
+                "Step 3 (Propose): Output the precise bounding box.\n"
             )
         elif strategy == "exploratory":
             instruction = (
-                "Step 1 (Brainstorm): List at least 3 DIFFERENT possible interpretations of the query, including figurative or indirect ones.\n"
-                "Step 2 (Select): Choose the LEAST OBVIOUS but still valid interpretation. Avoid the most common answer.\n"
-                "Step 3 (Propose): Output the bounding box for this alternative object.\n"
-                f"{diversity_hints}"
+                "Step 1 (Brainstorm): Consider ALTERNATIVE or LESS OBVIOUS interpretations.\n"
+                "Step 2 (Select): Choose an object that matches INDIRECTLY or FUNCTIONALLY.\n"
+                "Step 3 (Propose): Output the bounding box for this alternative.\n"
             )
         elif strategy == "spatial":
             instruction = (
-                "Step 1 (Scan): Divide the image into regions (top-left, top-right, bottom-left, bottom-right, center). List objects in EACH region.\n"
-                "Step 2 (Locate): Find matching objects in DIFFERENT REGIONS than the obvious center. Prefer objects at the edges or in the background.\n"
+                "Step 1 (Scan): Look at DIFFERENT REGIONS - edges, corners, background.\n"
+                "Step 2 (Locate): Find a matching object NOT in the obvious center area.\n"
                 "Step 3 (Propose): Output the bounding box.\n"
-                f"{diversity_hints}"
             )
         else:
             instruction = (
-                "Step 1 (See): List ALL objects visible in the image that could match the query (minimum 3).\n"
-                "Step 2 (Think): Analyze spatial and causal relationships. Consider multiple valid answers.\n"
-                "Step 3 (Propose): Output the bounding box for ONE specific object.\n"
-                f"{diversity_hints}"
+                "Step 1 (See): Identify objects relevant to the query.\n"
+                "Step 2 (Think): Analyze and select the best match.\n"
+                "Step 3 (Propose): Output the bounding box.\n"
             )
 
         format_instr = (
-            "\nIMPORTANT: Coordinates are normalized 0-1000. Box format: [x1, y1, x2, y2] where (x1,y1) is top-left.\n"
+            "\nCoordinates are normalized 0-1000. Box format: [x1, y1, x2, y2] where (x1,y1) is top-left.\n"
             "Format your answer EXACTLY as:\n"
-            "Reasoning: <your step-by-step reasoning>\n"
-            "Target Concept: <DESCRIPTIVE noun phrase - include color, size, position, material, or distinguishing features. "
-            "Example: 'large black tripod in the foreground' NOT just 'tripod'>\n"
+            "Reasoning: <your reasoning>\n"
+            "Target Concept: <DESCRIPTIVE phrase with color/size/position, e.g., 'large black tripod on the left'>\n"
             "Box: [x1, y1, x2, y2]"
         )
         
         return f"{base_prompt}{instruction}{format_instr}"
 
-    def _sample_batch(self, image_path: str, query: str, n: int, temperature: float, strategy: str, existing_concepts: List[str] = None) -> List[Hypothesis]:
-        """Sample a batch of hypotheses with retry logic for diversity."""
-        from PIL import Image
-        
-        with Image.open(image_path) as img:
-            real_w, real_h = img.size
-            img_area = real_w * real_h
-        
-        batch_hypotheses = []
-        existing_concepts = existing_concepts or []
-        max_attempts = n + self.config.max_retries  # Extra attempts to ensure we get n diverse results
-        
-        for attempt in range(max_attempts):
-            if len(batch_hypotheses) >= n:
-                break
-            
-            # Construct prompt with diversity hint based on attempt
-            prompt_text = self._construct_prompt(query, strategy, attempt=attempt)
-            
-            # Add exclusion list if we have existing concepts
-            all_concepts = existing_concepts + [h.target_concept for h in batch_hypotheses]
-            if all_concepts:
-                exclude_text = f"\nIMPORTANT: Do NOT select these objects (already chosen): {', '.join(set(all_concepts))}. Choose a DIFFERENT object.\n"
-                prompt_text = prompt_text.replace("Format your answer EXACTLY as:", exclude_text + "Format your answer EXACTLY as:")
-            
-            messages = create_vision_message(prompt_text, image_path)
-            
-            # Request more samples than needed to increase diversity
-            samples_to_request = min(n - len(batch_hypotheses) + 1, 3)
-            
-            try:
-                completion = self.client.chat.completions.create(
-                    model=self.config.model_path,
-                    messages=messages,
-                    temperature=min(1.0, temperature + 0.1 * attempt),  # Increase temp on retries
-                    n=samples_to_request,
-                    max_tokens=800,
-                    logprobs=True,
-                    top_logprobs=1
-                )
-            except Exception as e:
-                logger.error(f"API Call Failed: {e}")
-                continue
-            
-            for choice in completion.choices:
-                if len(batch_hypotheses) >= n:
-                    break
-                    
-                text = choice.message.content
-                
-                # Estimate confidence from logprobs if available
-                confidence = 0.5
-                if choice.logprobs and choice.logprobs.content:
-                    try:
-                        token_logprobs = [t.logprob for t in choice.logprobs.content if t.logprob is not None]
-                        if token_logprobs:
-                            avg_logprob = sum(token_logprobs) / len(token_logprobs)
-                            confidence = math.exp(avg_logprob)
-                    except Exception:
-                        pass
-
-                parsed = self._parse_completion(
-                    text, 
-                    real_w, 
-                    real_h, 
-                    confidence, 
-                    strategy,
-                    img_area
-                )
-                
-                if parsed:
-                    # Check if this concept is too similar to existing ones
-                    concept_lower = parsed.target_concept.lower().strip()
-                    is_duplicate = False
-                    for existing in all_concepts + [h.target_concept for h in batch_hypotheses]:
-                        if self._concepts_similar(concept_lower, existing.lower().strip()):
-                            is_duplicate = True
-                            logger.debug(f"Skipping duplicate concept: {parsed.target_concept} (similar to {existing})")
-                            break
-                    
-                    if not is_duplicate:
-                        batch_hypotheses.append(parsed)
-                        logger.info(f"  Added hypothesis: {parsed.target_concept} (attempt {attempt+1})")
-                else:
-                    logger.debug(f"Failed to parse completion: {text[:100]}...")
-        
-        if len(batch_hypotheses) < n:
-            logger.warning(f"Only generated {len(batch_hypotheses)}/{n} diverse hypotheses after {max_attempts} attempts")
-        
-        return batch_hypotheses
-    
     def _concepts_similar(self, concept1: str, concept2: str) -> bool:
         """Check if two concepts are semantically similar."""
         # Exact match

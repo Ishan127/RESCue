@@ -1,13 +1,3 @@
-"""
-SAM3 Inference Server - FastAPI Application
-Based on rpol-recart/sam3_inference implementation pattern
-
-Endpoints:
-  - POST /api/v1/image/segment - Main segmentation endpoint
-  - POST /health - Health check
-  - GET /models/info - Model information
-"""
-import sys
 import time
 import base64
 import argparse
@@ -16,30 +6,22 @@ from typing import Dict, List, Optional, Tuple, Any, Union
 from contextlib import asynccontextmanager
 from io import BytesIO
 from enum import Enum
-
 import torch
 import numpy as np
 import uvicorn
 from PIL import Image
 from pydantic import BaseModel, Field
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-# Configure logging
 import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-# ============================================================================
-# ROCm/AMD GPU Compatibility Fix for torchvision ops
-# ============================================================================
-
 def is_rocm_pytorch():
-    """Check if PyTorch is built with ROCm (AMD GPU) support."""
     if hasattr(torch.version, 'hip') and torch.version.hip:
         return True
-    # Also check by GPU name
     if torch.cuda.is_available():
         try:
             gpu_name = torch.cuda.get_device_name(0).lower()
@@ -50,24 +32,15 @@ def is_rocm_pytorch():
     return False
 
 def patch_torchvision_for_rocm():
-    """
-    Patch torchvision operations to work on ROCm/AMD GPUs.
-    ROCm doesn't support some torchvision CUDA ops like roi_align.
-    This patches them to use CPU fallback.
-    """
     try:
-        import torchvision
         import torchvision.ops as ops
-        from torchvision.ops import _box_convert
         
-        # Check if we're on ROCm
         if not is_rocm_pytorch():
             logger.info("Not running on ROCm, skipping torchvision patches")
             return False
         
         logger.info("Detected ROCm/AMD GPU, applying torchvision compatibility patches...")
         
-        # Store original functions
         _original_roi_align = ops.roi_align
         _original_nms = ops.nms
         _original_roi_pool = getattr(ops, 'roi_pool', None)
@@ -76,7 +49,6 @@ def patch_torchvision_for_rocm():
         _original_deform_conv2d = getattr(ops, 'deform_conv2d', None)
         
         def cpu_fallback_wrapper(original_fn, op_name):
-            """Create a CPU fallback wrapper for any torchvision op."""
             def wrapper(*args, **kwargs):
                 try:
                     return original_fn(*args, **kwargs)
@@ -85,7 +57,6 @@ def patch_torchvision_for_rocm():
                     if 'cuda' in error_str or op_name.lower() in error_str or 'backend' in error_str:
                         logger.warning(f"{op_name} falling back to CPU (ROCm compatibility)")
                         
-                        # Move tensors to CPU
                         cpu_args = []
                         devices = []
                         for arg in args:
@@ -107,10 +78,8 @@ def patch_torchvision_for_rocm():
                             else:
                                 cpu_kwargs[k] = v
                         
-                        # Execute on CPU
                         result = original_fn(*cpu_args, **cpu_kwargs)
                         
-                        # Move result back to original device
                         target_device = devices[0] if devices else torch.device('cpu')
                         if isinstance(result, torch.Tensor):
                             return result.to(target_device)
@@ -123,7 +92,6 @@ def patch_torchvision_for_rocm():
                     raise
             return wrapper
         
-        # Apply patches to all potentially problematic ops
         ops.roi_align = cpu_fallback_wrapper(_original_roi_align, 'roi_align')
         ops.nms = cpu_fallback_wrapper(_original_nms, 'nms')
         
@@ -136,7 +104,6 @@ def patch_torchvision_for_rocm():
         if _original_deform_conv2d:
             ops.deform_conv2d = cpu_fallback_wrapper(_original_deform_conv2d, 'deform_conv2d')
         
-        # Also patch the RoIAlign and RoIPool classes if they exist
         if hasattr(ops, 'RoIAlign'):
             _OriginalRoIAlign = ops.RoIAlign
             class PatchedRoIAlign(_OriginalRoIAlign):
@@ -164,43 +131,33 @@ def patch_torchvision_for_rocm():
         traceback.print_exc()
         return False
 
-# Apply patches early (before any model loading)
 _rocm_patched = patch_torchvision_for_rocm()
 
 
-# ============================================================================
-# Pydantic Schemas (based on rpol-recart/sam3_inference/api/schemas)
-# ============================================================================
-
 class PromptType(str, Enum):
-    """Type of prompt for segmentation."""
     TEXT = "text"
     POINT = "point"
     BOX = "box"
 
 
 class TextPrompt(BaseModel):
-    """Text-based prompt."""
     type: str = Field(default="text")
     text: str = Field(..., description="Text description of object to segment")
 
 
 class BoxPrompt(BaseModel):
-    """Box-based prompt (normalized coordinates)."""
     type: str = Field(default="box")
     box: List[float] = Field(..., description="Bounding box [x1, y1, x2, y2] normalized to [0, 1]")
     label: bool = Field(default=True, description="True for positive, False for negative exemplar")
 
 
 class PointPrompt(BaseModel):
-    """Point-based prompt."""
     type: str = Field(default="point")
     points: List[List[float]] = Field(..., description="List of [x, y] coordinates normalized to [0, 1]")
     point_labels: List[int] = Field(..., description="Labels: 1=positive, 0=negative")
 
 
 class ImageSegmentRequest(BaseModel):
-    """Request for image segmentation."""
     image: str = Field(..., description="Base64-encoded image")
     prompts: List[Union[TextPrompt, BoxPrompt, PointPrompt]] = Field(
         ..., description="List of prompts", min_length=1
@@ -210,7 +167,6 @@ class ImageSegmentRequest(BaseModel):
 
 
 class ImageSegmentResponse(BaseModel):
-    """Response for image segmentation."""
     masks: List[str] = Field(..., description="Base64-encoded binary masks")
     boxes: List[List[float]] = Field(..., description="Bounding boxes [x1, y1, x2, y2] normalized")
     scores: List[float] = Field(..., description="Confidence scores")
@@ -220,14 +176,12 @@ class ImageSegmentResponse(BaseModel):
 
 
 class CachedFeaturesRequest(BaseModel):
-    """Request for cached features segmentation."""
     image: str = Field(..., description="Base64-encoded image")
     text_prompts: List[str] = Field(..., description="List of text prompts")
     confidence_threshold: float = Field(default=0.5, ge=0.0, le=1.0)
 
 
 class CachedFeaturesResultItem(BaseModel):
-    """Single result item for cached features."""
     prompt: str
     masks: List[str]
     boxes: List[List[float]]
@@ -236,14 +190,12 @@ class CachedFeaturesResultItem(BaseModel):
 
 
 class CachedFeaturesResponse(BaseModel):
-    """Response for cached features segmentation."""
     results: List[CachedFeaturesResultItem]
     cache_hit: bool
     inference_time_ms: float
 
 
 class HealthResponse(BaseModel):
-    """Health check response."""
     status: str
     gpu_available: bool
     gpu_count: int
@@ -252,17 +204,11 @@ class HealthResponse(BaseModel):
 
 
 class ModelInfoResponse(BaseModel):
-    """Model information response."""
     image_model: Optional[Dict[str, Any]] = None
     server_version: str = "1.0.0"
 
 
-# ============================================================================
-# SAM3 Image Model Wrapper (based on rpol-recart/sam3_inference/models/sam3_image.py)
-# ============================================================================
-
 class SAM3ImageModel:
-    """Wrapper for SAM3 image inference."""
 
     def __init__(
         self,
@@ -273,23 +219,12 @@ class SAM3ImageModel:
         resolution: int = 1008,
         compile: bool = False,
     ):
-        """Initialize SAM3 image model.
-
-        Args:
-            checkpoint: Model checkpoint path or HuggingFace ID
-            bpe_path: Path to BPE tokenizer file
-            device: Device to load model on
-            confidence_threshold: Confidence threshold for filtering
-            resolution: Input image resolution
-            compile: Enable torch.compile optimization
-        """
         self.device = device
         self.confidence_threshold = confidence_threshold
         self.resolution = resolution
 
         logger.info(f"Loading SAM3 image model on {device}...")
 
-        # Import SAM3 components
         try:
             from sam3.model_builder import build_sam3_image_model
             from sam3.model.sam3_image_processor import Sam3Processor
@@ -297,7 +232,6 @@ class SAM3ImageModel:
             logger.error(f"Failed to import SAM3: {e}")
             raise ImportError("SAM3 library not installed. Please install sam3 package.")
 
-        # Determine checkpoint loading strategy
         load_from_HF = False
         resolved_checkpoint_path = None
 
@@ -319,7 +253,6 @@ class SAM3ImageModel:
 
         logger.info(f"Checkpoint: {resolved_checkpoint_path or 'HuggingFace'}, load_from_HF: {load_from_HF}")
 
-        # Build model
         try:
             model = build_sam3_image_model(
                 checkpoint_path=resolved_checkpoint_path,
@@ -341,7 +274,6 @@ class SAM3ImageModel:
                 logger.error(f"Failed to load model: {e2}")
                 raise
 
-        # Create processor
         self.processor = Sam3Processor(
             model=model,
             resolution=resolution,
@@ -349,7 +281,6 @@ class SAM3ImageModel:
             confidence_threshold=confidence_threshold,
         )
 
-        # Feature cache for multiple prompts on same image
         self.feature_cache: Dict[str, Dict] = {}
 
         logger.info("SAM3 image model loaded successfully")
@@ -361,29 +292,15 @@ class SAM3ImageModel:
         boxes: Optional[List[Tuple[List[float], bool]]] = None,
         points: Optional[List[Tuple[List[List[float]], List[int]]]] = None,
     ) -> Tuple[List[np.ndarray], List[List[float]], List[float]]:
-        """Segment with combined prompts.
-
-        Args:
-            image: PIL Image
-            text_prompts: List of text prompts
-            boxes: List of (box, label) tuples, box is [x1, y1, x2, y2] normalized
-            points: List of (points, labels) tuples
-
-        Returns:
-            Tuple of (masks as numpy arrays, boxes normalized, scores)
-        """
         state = self.processor.set_image(image)
         orig_w, orig_h = image.size
 
-        # Add text prompts
         if text_prompts:
             for text in text_prompts:
                 state = self.processor.set_text_prompt(prompt=text, state=state)
 
-        # Add box prompts (convert normalized to pixel coordinates)
         if boxes:
             for box, label in boxes:
-                # box is [x1, y1, x2, y2] normalized
                 box_pixels = [
                     box[0] * orig_w,
                     box[1] * orig_h,
@@ -394,7 +311,6 @@ class SAM3ImageModel:
                     box=box_pixels, label=1 if label else 0, state=state
                 )
 
-        # Add point prompts
         if points:
             for point_list, point_labels in points:
                 points_pixels = torch.tensor(
@@ -406,7 +322,6 @@ class SAM3ImageModel:
                     point_labels, device=self.device, dtype=torch.long
                 ).view(-1, 1)
 
-                # Check if language features exist
                 if "language_features" not in state.get("backbone_out", {}):
                     dummy_text_outputs = self.processor.model.backbone.forward_text(
                         ["visual"], device=self.device
@@ -427,7 +342,6 @@ class SAM3ImageModel:
         return self._extract_results(state, image.size)
 
     def cache_features(self, image: Image.Image, cache_key: str) -> str:
-        """Cache image features for reuse with multiple prompts."""
         state = self.processor.set_image(image)
         self.feature_cache[cache_key] = {
             "backbone_out": state["backbone_out"],
@@ -438,7 +352,6 @@ class SAM3ImageModel:
     def segment_with_cached_features(
         self, cache_key: str, text_prompts: List[str]
     ) -> List[Tuple[List[np.ndarray], List[List[float]], List[float]]]:
-        """Segment using cached features with multiple text prompts."""
         if cache_key not in self.feature_cache:
             raise ValueError(f"No cached features for key: {cache_key}")
 
@@ -460,7 +373,6 @@ class SAM3ImageModel:
         return results
 
     def clear_cache(self, cache_key: Optional[str] = None):
-        """Clear feature cache."""
         if cache_key:
             self.feature_cache.pop(cache_key, None)
         else:
@@ -469,10 +381,8 @@ class SAM3ImageModel:
     def _extract_results(
         self, state: Dict, image_size: Tuple[int, int]
     ) -> Tuple[List[np.ndarray], List[List[float]], List[float]]:
-        """Extract and format results from inference state."""
         orig_w, orig_h = image_size
 
-        # Get masks from state
         masks_tensor = state.get("masks")
         boxes_tensor = state.get("boxes")
         scores_tensor = state.get("scores")
@@ -480,16 +390,13 @@ class SAM3ImageModel:
         if masks_tensor is None:
             return [], [], []
 
-        # Convert to numpy
         if isinstance(masks_tensor, torch.Tensor):
             masks_np = masks_tensor.detach().cpu().numpy()
         else:
             masks_np = masks_tensor
 
-        # Process masks
         final_masks = []
         if masks_np.ndim == 4:
-            # (B, N, H, W)
             for b in range(masks_np.shape[0]):
                 for n in range(masks_np.shape[1]):
                     mask = masks_np[b, n]
@@ -502,7 +409,6 @@ class SAM3ImageModel:
                         )
                     final_masks.append((mask > 0).astype(bool))
         elif masks_np.ndim == 3:
-            # (N, H, W)
             for n in range(masks_np.shape[0]):
                 mask = masks_np[n]
                 if mask.shape != (orig_h, orig_w):
@@ -524,7 +430,6 @@ class SAM3ImageModel:
                 )
             final_masks.append((mask > 0).astype(bool))
 
-        # Process boxes (normalize to [0, 1])
         final_boxes = []
         if boxes_tensor is not None:
             if isinstance(boxes_tensor, torch.Tensor):
@@ -534,7 +439,6 @@ class SAM3ImageModel:
 
             for i in range(len(boxes_np)):
                 box = boxes_np[i]
-                # Normalize XYXY format
                 normalized_box = [
                     float(box[0]) / orig_w,
                     float(box[1]) / orig_h,
@@ -543,7 +447,6 @@ class SAM3ImageModel:
                 ]
                 final_boxes.append(normalized_box)
 
-        # Process scores
         final_scores = []
         if scores_tensor is not None:
             if isinstance(scores_tensor, torch.Tensor):
@@ -552,7 +455,6 @@ class SAM3ImageModel:
                 scores_np = scores_tensor
             final_scores = [float(s) for s in scores_np.flatten()]
 
-        # Pad with default values if needed
         while len(final_boxes) < len(final_masks):
             final_boxes.append([0.0, 0.0, 1.0, 1.0])
         while len(final_scores) < len(final_masks):
@@ -562,7 +464,6 @@ class SAM3ImageModel:
 
     @property
     def model_info(self) -> Dict:
-        """Get model information."""
         return {
             "loaded": True,
             "device": self.device,
@@ -573,12 +474,7 @@ class SAM3ImageModel:
         }
 
 
-# ============================================================================
-# Utility Functions
-# ============================================================================
-
 def decode_base64_image(b64_string: str) -> Image.Image:
-    """Decode base64 string to PIL Image."""
     try:
         img_data = base64.b64decode(b64_string)
         return Image.open(BytesIO(img_data)).convert("RGB")
@@ -587,8 +483,6 @@ def decode_base64_image(b64_string: str) -> Image.Image:
 
 
 def encode_mask_to_base64(mask: np.ndarray) -> str:
-    """Encode binary mask to base64 PNG string."""
-    # Convert boolean mask to uint8
     mask_uint8 = (mask.astype(np.uint8) * 255)
     mask_img = Image.fromarray(mask_uint8, mode="L")
     
@@ -597,14 +491,8 @@ def encode_mask_to_base64(mask: np.ndarray) -> str:
     return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
 
-# ============================================================================
-# FastAPI Application
-# ============================================================================
-
-# Global model instance
 image_model: Optional[SAM3ImageModel] = None
 
-# Global settings (can be modified before app starts)
 _server_settings = {
     "device": None,
     "force_cpu": False,
@@ -613,7 +501,6 @@ _server_settings = {
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifespan context manager for model loading/unloading."""
     global image_model
 
     logger.info("Starting SAM3 Inference Server...")
@@ -627,7 +514,6 @@ async def lifespan(app: FastAPI):
         for i in range(torch.cuda.device_count()):
             logger.info(f"GPU {i}: {torch.cuda.get_device_name(i)}")
 
-    # Determine device
     if _server_settings.get("device"):
         device = _server_settings["device"]
     elif _server_settings.get("force_cpu"):
@@ -646,7 +532,6 @@ async def lifespan(app: FastAPI):
         )
         logger.info("✓ SAM3 Image model loaded successfully")
     except NotImplementedError as e:
-        # This usually means torchvision op compatibility issue
         if "roi_align" in str(e).lower() or "cuda" in str(e).lower():
             logger.warning(f"GPU inference failed due to ROCm compatibility: {e}")
             logger.info("Falling back to CPU inference...")
@@ -668,18 +553,15 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to load SAM3 model: {e}")
         import traceback
         traceback.print_exc()
-        # Don't raise - allow server to start for debugging
         image_model = None
 
     yield
 
-    # Cleanup
     logger.info("Shutting down SAM3 Inference Server...")
     if image_model:
         image_model.clear_cache()
 
 
-# Create FastAPI app
 app = FastAPI(
     title="SAM3 Inference Server",
     description="FastAPI server for SAM3 (Segment Anything 3) image segmentation",
@@ -687,7 +569,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -697,13 +578,8 @@ app.add_middleware(
 )
 
 
-# ============================================================================
-# API Routes
-# ============================================================================
-
 @app.get("/")
 async def root():
-    """Root endpoint."""
     return {
         "message": "SAM3 Inference Server",
         "version": "1.0.0",
@@ -714,7 +590,6 @@ async def root():
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
-    """Health check endpoint."""
     return HealthResponse(
         status="healthy" if image_model else "degraded",
         gpu_available=torch.cuda.is_available(),
@@ -726,7 +601,6 @@ async def health_check():
 
 @app.get("/models/info", response_model=ModelInfoResponse)
 async def models_info():
-    """Get loaded models information."""
     return ModelInfoResponse(
         image_model=image_model.model_info if image_model else None,
         server_version="1.0.0",
@@ -735,21 +609,15 @@ async def models_info():
 
 @app.post("/api/v1/image/segment", response_model=ImageSegmentResponse)
 async def segment_image(request: ImageSegmentRequest):
-    """Segment image with prompts.
-
-    Supports text prompts, box prompts, point prompts, and combinations.
-    """
     if image_model is None:
         raise HTTPException(status_code=503, detail="Image model not loaded")
 
     start_time = time.time()
 
     try:
-        # Decode image
         image = decode_base64_image(request.image)
         logger.info(f"Processing image of size {image.size}")
 
-        # Extract prompts by type
         text_prompts = []
         box_prompts = []
         point_prompts = []
@@ -765,14 +633,12 @@ async def segment_image(request: ImageSegmentRequest):
             elif prompt_type == "point":
                 point_prompts.append((prompt_dict["points"], prompt_dict["point_labels"]))
 
-        # Ensure at least one prompt
         if not text_prompts and not box_prompts and not point_prompts:
             raise HTTPException(
                 status_code=400,
                 detail="At least one text, box, or point prompt is required",
             )
 
-        # Segment with combined prompts
         masks, boxes, scores = image_model.segment_combined(
             image=image,
             text_prompts=text_prompts if text_prompts else None,
@@ -780,7 +646,6 @@ async def segment_image(request: ImageSegmentRequest):
             points=point_prompts if point_prompts else None,
         )
 
-        # Encode masks to base64
         masks_b64 = [encode_mask_to_base64(m) for m in masks]
 
         inference_time = (time.time() - start_time) * 1000
@@ -807,30 +672,24 @@ async def segment_image(request: ImageSegmentRequest):
 
 @app.post("/api/v1/image/cached-features", response_model=CachedFeaturesResponse)
 async def segment_with_cached_features(request: CachedFeaturesRequest):
-    """Segment with multiple text prompts using feature caching (faster)."""
     if image_model is None:
         raise HTTPException(status_code=503, detail="Image model not loaded")
 
     start_time = time.time()
 
     try:
-        # Decode image
         image = decode_base64_image(request.image)
 
-        # Generate cache key
         cache_key = f"cache_{hash(request.image[:100])}"
 
-        # Check if already cached
         cache_hit = cache_key in image_model.feature_cache
         if not cache_hit:
             image_model.cache_features(image, cache_key)
 
-        # Segment with cached features
         results_list = image_model.segment_with_cached_features(
             cache_key, request.text_prompts
         )
 
-        # Format results
         results = []
         for prompt, (masks, boxes, scores) in zip(request.text_prompts, results_list):
             masks_b64 = [encode_mask_to_base64(m) for m in masks]
@@ -866,13 +725,8 @@ async def segment_with_cached_features(request: CachedFeaturesRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ============================================================================
-# Legacy endpoints for backward compatibility
-# ============================================================================
-
 @app.post("/set_image")
 async def set_image_legacy(request: dict):
-    """Legacy endpoint: Set image for subsequent predictions."""
     if image_model is None:
         raise HTTPException(status_code=503, detail="Image model not loaded")
 
@@ -896,7 +750,6 @@ async def set_image_legacy(request: dict):
 
 @app.post("/predict")
 async def predict_legacy(request: dict):
-    """Legacy endpoint: Predict masks using cached image."""
     if image_model is None:
         raise HTTPException(status_code=503, detail="Image model not loaded")
 
@@ -911,16 +764,12 @@ async def predict_legacy(request: dict):
         if not text_prompt and not box:
             raise HTTPException(status_code=400, detail="text_prompt or box required")
 
-        # Get cached image info
         cached = image_model.feature_cache[cache_key]
         image_size = cached["image_size"]
 
-        # Build prompts
         text_prompts = [text_prompt] if text_prompt else None
         box_prompts = None
         if box:
-            # Legacy box format is [x1, y1, x2, y2] in pixels
-            # Convert to normalized
             orig_w, orig_h = image_size
             normalized_box = [
                 box[0] / orig_w,
@@ -930,19 +779,15 @@ async def predict_legacy(request: dict):
             ]
             box_prompts = [(normalized_box, True)]
 
-        # Re-decode image from cache backbone (we need full segment_combined)
-        # For now, just use text prompts with cached features
         if text_prompts:
             results = image_model.segment_with_cached_features(cache_key, text_prompts)
             masks, boxes, scores = results[0]
         else:
-            # For box-only, we need the original image - not ideal but works
             raise HTTPException(
                 status_code=400, 
                 detail="Box-only prompts require calling /api/v1/image/segment with full image"
             )
 
-        # Encode masks
         masks_b64 = [encode_mask_to_base64(m) for m in masks]
 
         return {
@@ -961,12 +806,7 @@ async def predict_legacy(request: dict):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ============================================================================
-# Main entry point
-# ============================================================================
-
 def main():
-    """Run the server."""
     global _server_settings
     
     parser = argparse.ArgumentParser(description="SAM3 Inference Server")
@@ -978,7 +818,6 @@ def main():
                         help="Force CPU inference (useful for ROCm compatibility issues)")
     args = parser.parse_args()
     
-    # Handle ROCm/CPU fallback
     if args.force_cpu:
         _server_settings["force_cpu"] = True
         _server_settings["device"] = "cpu"
@@ -986,7 +825,6 @@ def main():
     elif args.device:
         _server_settings["device"] = args.device
     else:
-        # Auto-detect: use CPU if ROCm detected and having issues
         if is_rocm_pytorch():
             logger.info("ROCm detected. Use --force-cpu if you encounter torchvision op errors.")
         _server_settings["device"] = "cuda:0" if torch.cuda.is_available() else "cpu"
