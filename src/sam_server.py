@@ -513,6 +513,16 @@ class SAM3ImageModel:
                     final_boxes.append([0.0, 0.0, 1.0, 1.0])
                     final_scores.append(0.0)
                 else:
+                    if isinstance(results, dict):
+                        results = [results]
+                    
+                    if not results:
+                        # Handle empty list case explicitly again just in case
+                        final_masks.append(np.zeros((h, w), dtype=bool))
+                        final_boxes.append([0.0, 0.0, 1.0, 1.0])
+                        final_scores.append(0.0)
+                        continue
+
                     # Take the highest confidence result for this query
                     best_res = max(results, key=lambda x: x.get("score", 0.0))
                     
