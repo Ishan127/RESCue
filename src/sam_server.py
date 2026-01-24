@@ -458,6 +458,14 @@ class SAM3ImageModel:
                     box[0] * w, box[1] * h,
                     box[2] * w, box[3] * h
                 ]
+                
+                # --- FILE LOGGING DEEP DEBUG ---
+                try:
+                    with open("sam_debug_deep.log", "a") as f:
+                        f.write(f"Query {self.global_counter + 1}: Norm Box {box} -> Pixel Box {pixel_box}\n")
+                except: pass
+                # -------------------------------
+
                 # SAM3 expects list of boxes. We treat each box as a separate query here to get separate masks
                 self.global_counter += 1
                 q_id = self.global_counter
@@ -496,6 +504,14 @@ class SAM3ImageModel:
             batch = collate([datapoint], dict_key="dummy")["dummy"]
             batch = copy_data_to_device(batch, torch.device(self.device), non_blocking=True) # Ensure device string
             
+            # --- FILE LOGGING DEEP DEBUG ---
+            try:
+                with open("sam_debug_deep.log", "a") as f:
+                    f.write(f"Batch Image Shape: {batch.images.shape}\n")
+                    f.write(f"Batch Resize Factors: {[m.resize_factor for m in batch.find_metadatas]}\n")
+            except: pass
+            # -------------------------------
+
             # 6. Inference
             with torch.inference_mode():
                 # Handling AMP manually if needed, or rely on global settings. 
@@ -505,6 +521,20 @@ class SAM3ImageModel:
             # 7. Post-process
             # process_results returns a Dict[int, List[Dict]] where int is the query ID (coco_image_id)
             processed_results = self.postprocessor.process_results(output, batch.find_metadatas)
+
+            # --- FILE LOGGING DEEP DEBUG ---
+            try:
+                with open("sam_debug_deep.log", "a") as f:
+                    f.write(f"Processed Results Keys: {list(processed_results.keys())}\n")
+                    if processed_results:
+                        first_k = list(processed_results.keys())[0]
+                        res = processed_results[first_k]
+                        if isinstance(res, list) and res:
+                            f.write(f"First Result Score: {res[0].get('score')}\n")
+                        else:
+                             f.write(f"First Result: {res}\n")
+            except: pass
+            # -------------------------------
             
             final_masks = []
             final_boxes = []
