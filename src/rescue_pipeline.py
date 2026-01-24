@@ -112,15 +112,16 @@ class RESCuePipeline:
         candidates = []
         
         print(f"--- Step 2: Execution ---")
-        print("  - Encoding Image on Executor...")
-        self.executor.encode_image(np.array(image))
+        # Stateless execution for load balancer compatibility
+        # Each request sends the image to allow round-robin routing
         
         for i, hyp in enumerate(hypotheses):
             box = hyp['box']
             noun_phrase = hyp['noun_phrase']
             reasoning = hyp['reasoning']
             
-            masks = self.executor.predict_masks(box, noun_phrase)
+            # Stateless call - works with LB
+            masks = self.executor.segment(image, text_prompt=noun_phrase, box=box)
             
             for j, mask in enumerate(masks):
                 cand = {

@@ -41,15 +41,17 @@ class Executor:
         if self.remote_url:
             logger.info(f"Executor initialized in REMOTE mode. Target: {self.remote_url}")
             print(f"Executor initialized in REMOTE mode. Target: {self.remote_url}")
+            self.session = requests.Session()
             self._verify_server_connection()
         else:
             logger.info(f"Executor initializing in LOCAL mode on {self.device}...")
             print(f"Executor initializing in LOCAL mode on {self.device}...")
+            self.session = None
             self._load_local_model(model_path)
 
     def _verify_server_connection(self):
         try:
-            response = requests.get(f"{self.remote_url}/health", timeout=5)
+            response = self.session.get(f"{self.remote_url}/health", timeout=5)
             response.raise_for_status()
             health = response.json()
             logger.info(f"Server health: {health}")
@@ -157,7 +159,7 @@ class Executor:
         if self.remote_url:
             try:
                 payload = {"image_base64": self._image_to_base64(pil_image)}
-                response = requests.post(
+                response = self.session.post(
                     f"{self.remote_url}/set_image", 
                     json=payload,
                     timeout=self.timeout
@@ -235,7 +237,7 @@ class Executor:
                 "prompts": prompts,
                 "confidence_threshold": self.confidence_threshold,
             }
-            response = requests.post(
+            response = self.session.post(
                 f"{self.remote_url}/api/v1/image/segment",
                 json=payload,
                 timeout=self.timeout
@@ -264,7 +266,7 @@ class Executor:
             if box:
                 payload["box"] = list(map(float, box))
 
-            response = requests.post(
+            response = self.session.post(
                 f"{self.remote_url}/predict",
                 json=payload,
                 timeout=self.timeout
@@ -416,7 +418,7 @@ class Executor:
             return {"mode": "local", "device": self.device}
 
         try:
-            response = requests.get(f"{self.remote_url}/models/info", timeout=5)
+            response = self.session.get(f"{self.remote_url}/models/info", timeout=5)
             response.raise_for_status()
             info = response.json()
             info["mode"] = "remote"
@@ -429,7 +431,7 @@ class Executor:
     def is_healthy(self) -> bool:
         if self.remote_url:
             try:
-                response = requests.get(f"{self.remote_url}/health", timeout=5)
+                response = self.session.get(f"{self.remote_url}/health", timeout=5)
                 return response.status_code == 200
             except:
                 return False
