@@ -57,7 +57,7 @@ def evaluate_multi_n(fraction=0.1, max_n=64, planner_url="http://localhost:8002/
         planner_api_base=planner_url,
         verifier_api_base=verifier_url,
         executor_api_base=executor_url,
-        verbose=True  # Show model info on init
+        verbose=False
     )
     
     results_by_n = {n: {'ious': [], 'oracle_ious': [], 'times': []} for n in N_VALUES if n <= max_n}
@@ -88,24 +88,45 @@ def evaluate_multi_n(fraction=0.1, max_n=64, planner_url="http://localhost:8002/
             if not all_candidates:
                 continue
             
+            # OPTIMIZATION: Verify ONCE with max_n, then derive smaller N results
+            t0 = time.time()
+            if verification_mode == "heuristic":
+                # Heuristic: score all candidates once
+                scores = [pipeline._compute_mask_quality(c['mask']) for c in all_candidates]
+                ranked_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
+            else:
+                # VLM verification: get ranking for all candidates ONCE
+                ranked_indices = pipeline.get_full_ranking(image, all_candidates, query)
+            verify_time = time.time() - t0
+            
+            # For each N, find best among first N candidates using the global ranking
             for n in results_by_n.keys():
-                candidates_subset = all_candidates[:n]
+                if n > len(all_candidates):
+                    continue
+                    
+                # Find which of the first N candidates ranks highest globally
+                best_in_subset = min(ranked_indices[:n], key=lambda i: ranked_indices.index(i)) if verification_mode != "heuristic" else None
                 
-                t0 = time.time()
-                best_idx = pipeline.verify_and_select(
-                    image, candidates_subset, query, 
-                    mode=verification_mode
-                )
-                verify_time = time.time() - t0
+                # For heuristic, find best score among first N
+                if verification_mode == "heuristic":
+                    subset_scores = scores[:n]
+                    best_idx = subset_scores.index(max(subset_scores))
+                else:
+                    # Find the candidate from first N that appears earliest in ranking
+                    first_n_set = set(range(n))
+                    best_idx = next(i for i in ranked_indices if i < n)
                 
-                if best_idx is not None and gt_mask is not None:
-                    pred_mask = candidates_subset[best_idx]['mask']
+                if gt_mask is not None:
+                    pred_mask = all_candidates[best_idx]['mask']
                     iou = calculate_iou(pred_mask, gt_mask)
-                    oracle_iou = max(c.get('iou', 0) for c in candidates_subset)
+                    oracle_iou = max(c.get('iou', 0) for c in all_candidates[:n])
+                    
+                    # Time: proportional generation + one-time verification amortized
+                    est_time = (gen_time / max_n * n) + (verify_time / len(results_by_n))
                     
                     results_by_n[n]['ious'].append(iou)
                     results_by_n[n]['oracle_ious'].append(oracle_iou)
-                    results_by_n[n]['times'].append(gen_time / max_n * n + verify_time)
+                    results_by_n[n]['times'].append(est_time)
                     
         except Exception as e:
             tqdm.write(f"Sample {sample_idx} error: {e}")

@@ -67,6 +67,8 @@ class RESCuePipelineFast:
         Generate all N candidates (hypotheses + masks).
         Returns list of candidate dicts with masks and metadata.
         """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        
         image = load_image(image_path)
         
         hypotheses = self.planner.generate_hypotheses(image_path, query, N=N)
@@ -79,30 +81,40 @@ class RESCuePipelineFast:
         
         candidates = []
         
-        for i, hyp in enumerate(hypotheses):
+        def process_hypothesis(args):
+            i, hyp = args
             box = hyp['box']
             noun_phrase = hyp['noun_phrase']
-            
+            results = []
             try:
                 masks = self.executor.predict_masks(box, noun_phrase)
-                
                 for j, mask in enumerate(masks):
                     cand = {
                         'id': f"H{i}_M{j}",
-                        'idx': len(candidates),
                         'mask': mask,
                         'box': box,
                         'noun_phrase': noun_phrase,
                         'quality': self._compute_mask_quality(mask)
                     }
-                    
                     if gt_mask is not None:
                         cand['iou'] = calculate_iou(mask, gt_mask)
-                    
-                    candidates.append(cand)
+                    results.append(cand)
             except Exception as e:
                 if self.verbose:
                     print(f"Mask generation failed for H{i}: {e}")
+            return results
+        
+        # Parallel SAM mask generation (4 workers to not overload SAM server)
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = [executor.submit(process_hypothesis, (i, hyp)) for i, hyp in enumerate(hypotheses)]
+            for future in as_completed(futures):
+                try:
+                    results = future.result()
+                    for cand in results:
+                        cand['idx'] = len(candidates)
+                        candidates.append(cand)
+                except:
+                    pass
         
         if self.verbose:
             print(f"Total candidates: {len(candidates)}")
@@ -175,6 +187,32 @@ class RESCuePipelineFast:
             if self.verbose:
                 print(f"Comparative verification failed: {e}")
             return self._select_by_heuristic(candidates)
+
+    def get_full_ranking(self, image, candidates, query):
+        """
+        Get full ranking of all candidates (one VLM call).
+        Returns list of indices sorted by rank (best first).
+        """
+        if not candidates:
+            return []
+        
+        if len(candidates) == 1:
+            return [0]
+        
+        masks_list = [c['mask'] for c in candidates]
+        
+        try:
+            results = self.verifier.verify_batch_comparative(image, masks_list, query)
+            # Sort by rank and return indices
+            sorted_results = sorted(results, key=lambda r: r['rank'])
+            return [r['mask_idx'] for r in sorted_results]
+        except Exception as e:
+            if self.verbose:
+                print(f"Full ranking failed: {e}, using heuristic")
+            # Fallback: rank by heuristic quality
+            scores = [(i, self._compute_mask_quality(c['mask'])) for i, c in enumerate(candidates)]
+            scores.sort(key=lambda x: x[1], reverse=True)
+            return [i for i, _ in scores]
 
     def _select_individual(self, image, candidates, query):
         """Use VLM individual scoring."""
