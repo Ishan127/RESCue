@@ -129,6 +129,7 @@ class PlannerStage(PipelineStage):
                 print(f"\n[Planner] Sample {task.sample_idx} Ready (N={len(task.hypotheses)})")
                 print(f"  Random Hyp: '{rand_h.get('noun_phrase')}'")
                 print(f"  Reasoning: {rand_h.get('reasoning', '')[:100]}...")
+                print(f"  Box (Pixel): {rand_h.get('box')}")
             # ----------------------------------
 
         except Exception as e:
@@ -202,6 +203,7 @@ class ExecutorStage(PipelineStage):
                  mask = rand_c.get('mask')
                  area = np.sum(mask) if mask is not None else 0
                  print(f"\n[Executor] Sample {task.sample_idx} Ready (Masks={len(task.candidates)})")
+                 print(f"  Image Size: {image.size}")
                  print(f"  Random Mask Area: {area} pixels")
              # -----------------------------------
              

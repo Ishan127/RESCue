@@ -141,6 +141,32 @@ class Planner:
                     pass
         
         final_hypotheses = self._select_diverse_subset(candidates, N, query)
+        
+        # --- PAD WITH RANDOM HYPOTHESES IF < N ---
+        if len(final_hypotheses) < N:
+            needed = N - len(final_hypotheses)
+            logger.warning(f"Generated {len(final_hypotheses)} hypotheses. Padding with {needed} random hypotheses.")
+            import random
+            
+            for i in range(needed):
+                # Random box within image coords
+                x1 = random.randint(0, int(real_w * 0.8))
+                y1 = random.randint(0, int(real_h * 0.8))
+                w = random.randint(int(real_w * 0.05), int(real_w - x1))
+                h = random.randint(int(real_h * 0.05), int(real_h - y1))
+                
+                box = [x1, y1, x1 + w, y1 + h]
+                
+                final_hypotheses.append(Hypothesis(
+                    box=box,
+                    reasoning="Random fill to meet N requirement",
+                    target_concept="random fill",
+                    confidence=0.1,
+                    source_strategy="random",
+                    raw_text="Randomly generated"
+                ))
+        # ----------------------------------------
+        
         return [h.to_dict() for h in final_hypotheses]
     
     def _generate_hypotheses_parallel(self, image_path: str, query_configs: List[Dict], 
