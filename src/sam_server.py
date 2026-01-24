@@ -137,16 +137,6 @@ def patch_torchvision_for_rocm():
                 elif isinstance(boxes, (list, tuple)):
                     logger.error(f"  Boxes list length: {len(boxes)}")
                 
-                # --- FILE LOGGING FOR DEBUG ---
-                try:
-                    with open("sam_debug_error.log", "a") as f:
-                        f.write(f"roi_align CRASHED: {e}\n")
-                        f.write(f"Input shape: {input.shape}\n")
-                        f.write(f"Boxes: {boxes}\n")
-                except: 
-                    pass
-                # ------------------------------
-
                 logger.error(f"  Output size: {output_size}")
                 logger.error(f"  Spatial scale: {spatial_scale}")
                 logger.error(f"  Sampling ratio: {sampling_ratio}")
@@ -459,13 +449,6 @@ class SAM3ImageModel:
                     box[2] * w, box[3] * h
                 ]
                 
-                # --- FILE LOGGING DEEP DEBUG ---
-                try:
-                    with open("sam_debug_deep.log", "a") as f:
-                        f.write(f"Query {self.global_counter + 1}: Norm Box {box} -> Pixel Box {pixel_box}\n")
-                except: pass
-                # -------------------------------
-
                 # SAM3 expects list of boxes. We treat each box as a separate query here to get separate masks
                 self.global_counter += 1
                 q_id = self.global_counter
@@ -502,25 +485,9 @@ class SAM3ImageModel:
         try:
             datapoint = self.transform(datapoint)
             
-            # --- FILE LOGGING DEEP DEBUG ---
-            try:
-                with open("sam_debug_deep.log", "a") as f:
-                    if datapoint.find_queries and hasattr(datapoint.find_queries[0], 'input_bbox'):
-                        f.write(f"Box After Transform: {datapoint.find_queries[0].input_bbox}\n")
-            except: pass
-            # -------------------------------
-
             batch = collate([datapoint], dict_key="dummy")["dummy"]
             batch = copy_data_to_device(batch, torch.device(self.device), non_blocking=True) # Ensure device string
             
-            # --- FILE LOGGING DEEP DEBUG ---
-            try:
-                with open("sam_debug_deep.log", "a") as f:
-                    f.write(f"Batch Image Shape: {batch.images.shape}\n")
-                    f.write(f"Batch Resize Factors: {[m.resize_factor for m in batch.find_metadatas]}\n")
-            except: pass
-            # -------------------------------
-
             # 6. Inference
             with torch.inference_mode():
                 # Handling AMP manually if needed, or rely on global settings. 
@@ -531,20 +498,6 @@ class SAM3ImageModel:
             # process_results returns a Dict[int, List[Dict]] where int is the query ID (coco_image_id)
             processed_results = self.postprocessor.process_results(output, batch.find_metadatas)
 
-            # --- FILE LOGGING DEEP DEBUG ---
-            try:
-                with open("sam_debug_deep.log", "a") as f:
-                    f.write(f"Processed Results Keys: {list(processed_results.keys())}\n")
-                    if processed_results:
-                        first_k = list(processed_results.keys())[0]
-                        res = processed_results[first_k]
-                        if isinstance(res, list) and res:
-                            f.write(f"First Result Score: {res[0].get('score')}\n")
-                        else:
-                             f.write(f"First Result: {res}\n")
-            except: pass
-            # -------------------------------
-            
             final_masks = []
             final_boxes = []
             final_scores = []
@@ -591,13 +544,6 @@ class SAM3ImageModel:
                          while mask.ndim > 2:
                              mask = mask.squeeze(0)
                          
-                         # --- LOGGING MASK STATS ---
-                         try:
-                             with open("sam_debug_deep.log", "a") as f:
-                                 f.write(f"Mask Stats Q{q_id}: Shape={mask.shape}, Sum={mask.sum()}, Max={mask.max()}\n")
-                         except: pass
-                         # --------------------------
-
                          final_masks.append(mask.astype(bool))
                     else:
                          final_masks.append(np.zeros((h, w), dtype=bool))
@@ -894,20 +840,6 @@ def segment_image(request: ImageSegmentRequest):
     try:
         image = decode_base64_image(request.image)
         logger.info(f"Processing image of size {image.size}")
-        
-        # --- FILE LOGGING FOR DEBUG ---
-        try:
-            with open("sam_debug_request.log", "a") as f:
-                f.write(f"--- Request ---\n")
-                f.write(f"Image Size: {image.size}\n")
-                f.write(f"Num Prompts: {len(request.prompts)}\n")
-                if request.prompts:
-                     p0 = request.prompts[0]
-                     p_dict = p0.model_dump() if hasattr(p0, 'model_dump') else p0.dict()
-                     f.write(f"First Prompt: {p_dict}\n")
-        except Exception as log_e:
-            logger.error(f"Failed to log request: {log_e}")
-        # ------------------------------
 
         text_prompts = []
         box_prompts = []

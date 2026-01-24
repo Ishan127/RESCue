@@ -120,17 +120,8 @@ class PlannerStage(PipelineStage):
         
         try:
             hypotheses = self.planner.generate_hypotheses(task.temp_img_path, task.query, N=self.max_n)
-            task.hypotheses = hypotheses if hypotheses else []
-            
-            # --- LOGGING: Planner Immediate ---
             if task.hypotheses:
-                import random
-                rand_h = random.choice(task.hypotheses)
-                print(f"\n[Planner] Sample {task.sample_idx} Ready (N={len(task.hypotheses)})")
-                print(f"  Random Hyp: '{rand_h.get('noun_phrase')}'")
-                print(f"  Reasoning: {rand_h.get('reasoning', '')[:100]}...")
-                print(f"  Box (Pixel): {rand_h.get('box')}")
-            # ----------------------------------
+                pass # Original code had no logging here, removing debug block
 
         except Exception as e:
             print(f"[Planner] Sample {task.sample_idx} error: {e}")
@@ -158,13 +149,12 @@ class ExecutorStage(PipelineStage):
     
     def process(self, task: SampleTask) -> SampleTask:
         if not task.hypotheses:
-            print(f"[Executor] Sample {task.sample_idx}: No hypotheses to process")
             task.candidates = []
             task.t_exec_done = time.time()
             return task
         
         n_hyps = len(task.hypotheses)
-        print(f"[Executor] Sample {task.sample_idx}: Processing {n_hyps} hypotheses")
+        # print(f"[Executor] Sample {task.sample_idx}: Processing {n_hyps} hypotheses")
         
         # Load fresh image copy
         image = Image.open(task.temp_img_path).copy()
@@ -195,17 +185,6 @@ class ExecutorStage(PipelineStage):
                  results.append(res)
                  
              task.candidates = results
-             
-             # --- LOGGING: Executor Immediate ---
-             if task.candidates:
-                 import random
-                 rand_c = random.choice(task.candidates)
-                 mask = rand_c.get('mask')
-                 area = np.sum(mask) if mask is not None else 0
-                 print(f"\n[Executor] Sample {task.sample_idx} Ready (Masks={len(task.candidates)})")
-                 print(f"  Image Size: {image.size}")
-                 print(f"  Random Mask Area: {area} pixels")
-             # -----------------------------------
              
         except Exception as e:
             print(f"[Executor] Sample {task.sample_idx} Batch Error: {e}")
@@ -266,13 +245,6 @@ class VerifierStage(PipelineStage):
                 sorted_results = sorted(results, key=lambda r: r['rank'])
                 task.ranking = [r['mask_idx'] for r in sorted_results]
                 
-            # --- LOGGING: Verifier Immediate ---
-            if task.ranking:
-                winner_idx = task.ranking[0]
-                print(f"\n[Verifier] Sample {task.sample_idx} Done")
-                print(f"  Winner Candidate Index: {winner_idx}")
-            # -----------------------------------
-
         except Exception as e:
             print(f"[Verifier] Sample {task.sample_idx} error: {e}")
             task.ranking = list(range(len(task.candidates)))
@@ -397,43 +369,6 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
             if not task.candidates or task.gt_mask is None:
                 continue
 
-            # --- DEBUG LOGGING ---
-            import random
-            if task.candidates:
-                # Pick random candidate
-                rand_idx = random.randint(0, len(task.candidates) - 1)
-                rand_cand = task.candidates[rand_idx]
-                
-                # Get rank if available
-                rank = "N/A"
-                if task.ranking:
-                    try:
-                        rank = task.ranking.index(rand_idx) + 1
-                    except ValueError:
-                        pass
-                
-                # Get score if available (verifier stage usually doesn't store scores in task.candidates directly yet in this script, 
-                # but let's check structure. ExecutorStage adds 'hypothesis' and 'mask'. VerifierStage adds 'ranking'.
-                # We might not have scores easily accessible here without modifying VerifierStage to store them.
-                # However, the user asked for "evaluation by verifier result".
-                # In evaluate_pipeline.py, VerifierStage.process calls self.verifier.verify_batch_comparative which returns SCORES.
-                # But VerifierStage only stores 'ranking' indices in the task object. 
-                # To print the score, we would need to store the detailed results in the task. 
-                # For now, I will print the RANK as the verifier result.
-                
-                hyp = rand_cand.get("hypothesis", {})
-                print(f"\n  [DEBUG] Random Sample {task.sample_idx} (Cand #{rand_idx}):")
-                print(f"    Hypothesis: '{hyp.get('noun_phrase')}'")
-                print(f"    Reasoning: {hyp.get('reasoning', '')[:100]}...")
-                print(f"    Box: {hyp.get('box')}")
-                
-                mask = rand_cand.get("mask")
-                mask_area = np.sum(mask) if mask is not None else 0
-                print(f"    Mask Area: {mask_area} pixels")
-                print(f"    Verifier Rank: {rank}/{len(task.candidates)}")
-                print(f"  [DEBUG] End Sample\n")
-            # ---------------------
-            
             # Evaluate for each N
             for n in results_by_n.keys():
                 if n > len(task.candidates):

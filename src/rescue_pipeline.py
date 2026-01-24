@@ -201,27 +201,6 @@ class RESCuePipeline:
             results['best_mask_comparative'] = best_comparative['mask']
             results['best_candidate_comparative'] = best_comparative
             print(f"  -> Comparative Best: {best_comparative['id']} (Rank #{best_comparative.get('rank')})")
-
-            # --- LOGGING REQUEST: Random Hypothesis, Mask, and Evaluation ---
-            import random
-            if candidates:
-                # 1. Random Hypothesis
-                rand_idx = random.randint(0, len(candidates) - 1)
-                rand_cand = candidates[rand_idx]
-                print(f"\n  [DEBUG] Random Sample (ID: {rand_cand['id']}):")
-                print(f"    Hypothesis: '{rand_cand['noun_phrase']}'")
-                print(f"    Reasoning: {rand_cand['reasoning'][:100]}...")
-                print(f"    Box: {rand_cand['box']}")
-                
-                # 2. Random Mask Info
-                mask = rand_cand['mask']
-                mask_area = np.sum(mask) if mask is not None else 0
-                print(f"    Mask Area: {mask_area} pixels")
-
-                # 3. Evaluation Result (for this candidate)
-                print(f"    Verifier Score: {rand_cand.get('score_comparative', 'N/A')} (Rank: {rand_cand.get('rank', 'N/A')})")
-                print(f"  [DEBUG] End Sample\n")
-            # ----------------------------------------------------------------
         
         if verification_mode in ["individual", "both"]:
             print(f"--- Step 3b: Verification (Individual) ---")
