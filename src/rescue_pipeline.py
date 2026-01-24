@@ -6,7 +6,7 @@ import numpy as np
 
 class RESCuePipeline:
     def __init__(self, 
-                 planner_model="Qwen/Qwen3-VL-30B-A3B-Instruct",
+                 planner_model="Qwen/Qwen3-VL-32B-Thinking",
                  verifier_model="Qwen/Qwen3-VL-32B-Thinking",
                  executor_model="facebook/sam3",
                  planner_api_base="http://localhost:8000/v1",
