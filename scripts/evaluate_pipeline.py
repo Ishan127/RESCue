@@ -27,7 +27,7 @@ parser.add_argument("--planner_url", default="http://localhost:8002/v1")
 parser.add_argument("--verifier_url", default="http://localhost:8000/v1")
 parser.add_argument("--executor_url", default="http://localhost:8001",
                     help="SAM load balancer URL (single endpoint, internally routes to multiple backends)")
-parser.add_argument("--parallel_requests", type=int, default=16,
+parser.add_argument("--parallel_requests", type=int, default=8,
                     help="Number of parallel requests to SAM cluster")
 parser.add_argument("--pipeline_depth", type=int, default=3, help="Number of samples to process concurrently")
 parser.add_argument("--mode", choices=["comparative", "heuristic"], default="comparative")

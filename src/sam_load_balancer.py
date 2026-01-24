@@ -128,11 +128,14 @@ async def proxy_request(request: Request, path: str):
     
     t0 = time.time()
     try:
+        # Add timeout to prevent hanging
+        timeout = aiohttp.ClientTimeout(total=30)  # 30 second timeout per request
         async with http_session.request(
             method=request.method,
             url=url,
             headers={k: v for k, v in request.headers.items() if k.lower() != 'host'},
             data=body,
+            timeout=timeout
         ) as resp:
             latency = time.time() - t0
             pool.record_response(backend, latency, resp.status < 500)
@@ -150,7 +153,8 @@ async def proxy_request(request: Request, path: str):
         pool.record_response(backend, latency, False)
         logger.error(f"Backend {backend} error: {e}")
         
-        # Try another backend
+        # Try another backend with shorter timeout
+        retry_timeout = aiohttp.ClientTimeout(total=10)  # 10 second timeout for retries
         for retry_backend in pool.backends:
             if retry_backend != backend and pool.healthy.get(retry_backend, True):
                 try:
@@ -160,6 +164,7 @@ async def proxy_request(request: Request, path: str):
                         url=url,
                         headers={k: v for k, v in request.headers.items() if k.lower() != 'host'},
                         data=body,
+                        timeout=retry_timeout
                     ) as resp:
                         content = await resp.read()
                         from starlette.responses import Response
