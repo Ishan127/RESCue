@@ -442,7 +442,7 @@ class SAM3ImageModel:
                             coco_image_id=q_id,
                             original_image_id=q_id,
                             original_category_id=1,
-                            original_size=[w, h],
+                            original_size=[h, w],
                             object_id=0,
                             frame_index=0,
                         )
@@ -483,7 +483,7 @@ class SAM3ImageModel:
                             coco_image_id=q_id,
                             original_image_id=q_id,
                             original_category_id=1,
-                            original_size=[w, h],
+                            original_size=[h, w],
                             object_id=0,
                             frame_index=0,
                         )
