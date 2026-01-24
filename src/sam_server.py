@@ -136,11 +136,17 @@ def patch_torchvision_for_rocm():
                     logger.error(f"  Boxes values: {boxes}")
                 elif isinstance(boxes, (list, tuple)):
                     logger.error(f"  Boxes list length: {len(boxes)}")
-                    for i, b in enumerate(boxes):
-                        if isinstance(b, torch.Tensor):
-                            logger.error(f"    Box {i}: shape {b.shape}, values {b}")
-                        else:
-                            logger.error(f"    Box {i}: {type(b)} {b}")
+                
+                # --- FILE LOGGING FOR DEBUG ---
+                try:
+                    with open("sam_debug_error.log", "a") as f:
+                        f.write(f"roi_align CRASHED: {e}\n")
+                        f.write(f"Input shape: {input.shape}\n")
+                        f.write(f"Boxes: {boxes}\n")
+                except: 
+                    pass
+                # ------------------------------
+
                 logger.error(f"  Output size: {output_size}")
                 logger.error(f"  Spatial scale: {spatial_scale}")
                 logger.error(f"  Sampling ratio: {sampling_ratio}")
@@ -836,6 +842,20 @@ def segment_image(request: ImageSegmentRequest):
     try:
         image = decode_base64_image(request.image)
         logger.info(f"Processing image of size {image.size}")
+        
+        # --- FILE LOGGING FOR DEBUG ---
+        try:
+            with open("sam_debug_request.log", "a") as f:
+                f.write(f"--- Request ---\n")
+                f.write(f"Image Size: {image.size}\n")
+                f.write(f"Num Prompts: {len(request.prompts)}\n")
+                if request.prompts:
+                     p0 = request.prompts[0]
+                     p_dict = p0.model_dump() if hasattr(p0, 'model_dump') else p0.dict()
+                     f.write(f"First Prompt: {p_dict}\n")
+        except Exception as log_e:
+            logger.error(f"Failed to log request: {log_e}")
+        # ------------------------------
 
         text_prompts = []
         box_prompts = []
