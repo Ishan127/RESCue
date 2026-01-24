@@ -9,6 +9,21 @@ This is much faster than running the full pipeline 7 times.
 import argparse
 import sys
 import os
+
+# Parse args FIRST to set env vars before any imports
+parser = argparse.ArgumentParser(description="Multi-N Evaluation for RESCue Pipeline")
+parser.add_argument("--fraction", type=float, default=0.1)
+parser.add_argument("--max_n", type=int, default=64)
+parser.add_argument("--planner_url", default="http://localhost:8002/v1", help="Planner API (7B model)")
+parser.add_argument("--verifier_url", default="http://localhost:8000/v1", help="Verifier API (32B model)")
+parser.add_argument("--executor_url", default="http://localhost:8001", help="SAM3 executor API")
+parser.add_argument("--mode", choices=["comparative", "individual", "heuristic"], default="comparative")
+args = parser.parse_args()
+
+# Set env vars BEFORE importing src modules
+os.environ["PLANNER_API_BASE"] = args.planner_url
+os.environ["VERIFIER_API_BASE"] = args.verifier_url
+
 import numpy as np
 from datasets import load_dataset
 from tqdm import tqdm
@@ -22,7 +37,8 @@ from src.utils import calculate_iou
 
 N_VALUES = [1, 2, 4, 8, 16, 32, 64]
 
-def evaluate_multi_n(fraction=0.1, max_n=64, planner_url="http://localhost:8000/v1", 
+def evaluate_multi_n(fraction=0.1, max_n=64, planner_url="http://localhost:8002/v1", 
+                     verifier_url="http://localhost:8000/v1",
                      executor_url="http://localhost:8001", verification_mode="comparative"):
     print(f"Loading ReasonSeg dataset...")
     try:
@@ -38,9 +54,10 @@ def evaluate_multi_n(fraction=0.1, max_n=64, planner_url="http://localhost:8000/
     ds = ds.shuffle(seed=42).select(range(num_samples))
     
     pipeline = RESCuePipelineFast(
-        planner_api_base=planner_url, 
+        planner_api_base=planner_url,
+        verifier_api_base=verifier_url,
         executor_api_base=executor_url,
-        verbose=False
+        verbose=True  # Show model info on init
     )
     
     results_by_n = {n: {'ious': [], 'oracle_ious': [], 'times': []} for n in N_VALUES if n <= max_n}
@@ -149,23 +166,12 @@ def save_results(results_by_n, output_file):
     print(f"\nResults saved to {output_file}")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Multi-N Evaluation for RESCue Pipeline")
-    parser.add_argument("--fraction", type=float, default=0.1)
-    parser.add_argument("--max_n", type=int, default=64)
-    parser.add_argument("--planner_url", default="http://localhost:8002/v1", help="Planner API (7B model)")
-    parser.add_argument("--verifier_url", default="http://localhost:8000/v1", help="Verifier API (32B model)")
-    parser.add_argument("--executor_url", default="http://localhost:8001", help="SAM3 executor API")
-    parser.add_argument("--mode", choices=["comparative", "individual", "heuristic"], default="comparative")
-    args = parser.parse_args()
-    
-    # Update environment variables for dual-model setup
-    os.environ["PLANNER_API_BASE"] = args.planner_url
-    os.environ["VERIFIER_API_BASE"] = args.verifier_url
-    
+    # Args already parsed at top of file
     evaluate_multi_n(
         fraction=args.fraction,
         max_n=args.max_n,
         planner_url=args.planner_url,
+        verifier_url=args.verifier_url,
         executor_url=args.executor_url,
         verification_mode=args.mode
     )

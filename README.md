@@ -11,7 +11,7 @@ RESCue uses a **dual-model** setup for optimal speed vs quality:
 | Service | Model | GPU(s) | Port |
 |---------|-------|--------|------|
 | **Verifier** | Qwen3-VL-32B-Thinking | 0, 1 | 8000 |
-| **Planner** | Qwen2.5-VL-7B-Instruct | 2 | 8002 |
+| **Planner** | Qwen3-VL-8B-Instruct | 2 | 8002 |
 | **Executor** | SAM3 | 3 | 8001 |
 
 ## 1. Environment Setup
@@ -62,7 +62,7 @@ Deploys Qwen3-VL-32B-Thinking on vLLM (chain-of-thought model for verification).
 
 ### Terminal 2: Planner (7B) Service  
 
-Deploys Qwen2.5-VL-7B-Instruct for fast hypothesis generation.
+Deploys Qwen3-VL-8B-Instruct for fast hypothesis generation.
 
 ```bash
 ./scripts/deploy_planner_llm.sh

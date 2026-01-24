@@ -11,23 +11,33 @@ from .planner import Planner
 from .executor import Executor
 from .verifier import Verifier
 from .utils import load_image, get_device, calculate_iou
+from .api_utils import PLANNER_MODEL, VERIFIER_MODEL, PLANNER_API_BASE, VERIFIER_API_BASE
 import numpy as np
 
 
 class RESCuePipelineFast:
     def __init__(self, 
-                 planner_model="Qwen/Qwen3-VL-32B-Thinking",
-                 verifier_model="Qwen/Qwen3-VL-32B-Thinking",
+                 planner_model=None,
+                 verifier_model=None,
                  executor_model="facebook/sam3",
-                 planner_api_base="http://localhost:8000/v1",
+                 planner_api_base=None,
+                 verifier_api_base=None,
                  executor_api_base="http://localhost:8001",
                  verbose=False):
+        
+        # Use defaults from api_utils (respects env vars)
+        planner_model = planner_model or PLANNER_MODEL
+        verifier_model = verifier_model or VERIFIER_MODEL
+        planner_api_base = planner_api_base or PLANNER_API_BASE
+        verifier_api_base = verifier_api_base or VERIFIER_API_BASE
         
         self.verbose = verbose
         self.device = get_device()
         
         if verbose:
-            print("Initializing RESCue Pipeline (Fast Mode)...")
+            print(f"Initializing RESCue Pipeline (Fast Mode)...")
+            print(f"  Planner: {planner_model} @ {planner_api_base}")
+            print(f"  Verifier: {verifier_model} @ {verifier_api_base}")
         
         self.planner = Planner(
             model_path=planner_model, 
@@ -41,10 +51,10 @@ class RESCuePipelineFast:
             remote_url=executor_api_base
         )
         
+        # Verifier uses its own client (separate endpoint)
         self.verifier = Verifier(
-            client=self.planner.client,
             model_path=verifier_model,
-            api_base=planner_api_base
+            api_base=verifier_api_base
         )
         
         self._cached_image_path = None

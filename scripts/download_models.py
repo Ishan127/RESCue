@@ -15,11 +15,11 @@ def download_models():
     except Exception as e:
         print(f"Error downloading verifier model: {e}")
 
-    # Planner model (7B for fast hypothesis generation)
-    print("Downloading Qwen2.5-VL-7B-Instruct (Planner)...")
+    # Planner model (8B for fast hypothesis generation)
+    print("Downloading Qwen3-VL-8B-Instruct (Planner)...")
     try:
-        snapshot_download(repo_id="Qwen/Qwen2.5-VL-7B-Instruct", token=token)
-        print("Qwen2.5-VL-7B-Instruct downloaded successfully.")
+        snapshot_download(repo_id="Qwen/Qwen3-VL-8B-Instruct", token=token)
+        print("Qwen3-VL-8B-Instruct downloaded successfully.")
     except Exception as e:
         print(f"Error downloading planner model: {e}")
 
