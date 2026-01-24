@@ -1,0 +1,212 @@
+INFO:sam_lb:Starting load balancer on port 8001
+INFO:sam_lb:Backends: ['http://localhost:8010', 'http://localhost:8011', 'http://localhost:8012', 'http://localhost:8013', 'http://localhost:8014', 'http://localhost:8015', 'http://localhost:8016', 'http://localhost:8017', 'http://localhost:8018', 'http://localhost:8019', 'http://localhost:8020', 'http://localhost:8021', 'http://localhost:8022', 'http://localhost:8023', 'http://localhost:8024', 'http://localhost:8025', 'http://localhost:8026', 'http://localhost:8027', 'http://localhost:8028', 'http://localhost:8029', 'http://localhost:8030', 'http://localhost:8031', 'http://localhost:8032', 'http://localhost:8033']
+INFO:     Started server process [118410]
+INFO:     Waiting for application startup.
+INFO:sam_lb:Load balancer started with 24 backends
+INFO:sam_lb:Configuration: timeouts=[Total:300s, Req:150s, Retry:60s]
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     127.0.0.1:41234 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41250 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38928 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47276 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47290 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47178 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47300 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47170 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47270 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47206 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47254 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47172 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47202 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+ERROR:sam_lb:Backend http://localhost:8022 error after 5.53s: ServerDisconnectedError: Server disconnected
+INFO:     127.0.0.1:47222 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47216 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47186 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47222 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47206 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47206 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47222 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47300 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47178 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47202 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47300 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47172 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47222 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47222 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47172 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47216 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+ERROR:sam_lb:Backend http://localhost:8022 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8022 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8022, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8022)]
+ERROR:sam_lb:Backend http://localhost:8010 error after 4.01s: ClientOSError: [Errno 104] Connection reset by peer
+INFO:     127.0.0.1:47216 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+ERROR:sam_lb:Backend http://localhost:8015 error after 10.72s: ServerDisconnectedError: Server disconnected
+ERROR:sam_lb:Backend http://localhost:8015 error after 3.06s: ClientOSError: [Errno 104] Connection reset by peer
+INFO:     127.0.0.1:47170 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47222 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+ERROR:sam_lb:Backend http://localhost:8020 error after 11.00s: ServerDisconnectedError: Server disconnected
+ERROR:sam_lb:Backend http://localhost:8020 error after 1.55s: ClientOSError: [Errno 104] Connection reset by peer
+INFO:     127.0.0.1:47202 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47178 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47254 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47178 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47202 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47222 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47222 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47202 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47172 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47178 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47254 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+ERROR:sam_lb:Backend http://localhost:8010 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8010 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8010), [Errno 111] Connect call failed ('::1', 8010, 0, 0)]
+INFO:     127.0.0.1:47170 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+ERROR:sam_lb:Backend http://localhost:8011 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8011 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8011), [Errno 111] Connect call failed ('::1', 8011, 0, 0)]
+INFO:     127.0.0.1:47172 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+ERROR:sam_lb:Backend http://localhost:8015 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8015 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8015, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8015)]
+INFO:     127.0.0.1:47202 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+ERROR:sam_lb:Backend http://localhost:8020 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8020 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8020, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8020)]
+INFO:     127.0.0.1:47202 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47222 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47216 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+ERROR:sam_lb:Backend http://localhost:8022 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8022 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8022), [Errno 111] Connect call failed ('::1', 8022, 0, 0)]
+INFO:     127.0.0.1:47222 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47202 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50756 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47222 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47222 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+ERROR:sam_lb:Backend http://localhost:8012 error after 5.53s: ClientOSError: [Errno 104] Connection reset by peer
+INFO:     127.0.0.1:47186 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47216 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47170 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50744 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47172 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47270 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47254 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47300 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47178 - "POST /api/v1/image/segment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47262 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:47198 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:47238 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8029 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8029 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8029, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8029)]
+INFO:     127.0.0.1:47198 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8031 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8031 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8031), [Errno 111] Connect call failed ('::1', 8031, 0, 0)]
+ERROR:sam_lb:Backend http://localhost:8030 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8030 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8030), [Errno 111] Connect call failed ('::1', 8030, 0, 0)]
+ERROR:sam_lb:Backend http://localhost:8032 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8032 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8032), [Errno 111] Connect call failed ('::1', 8032, 0, 0)]
+ERROR:sam_lb:Backend http://localhost:8033 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8033 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8033, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8033)]
+ERROR:sam_lb:Backend http://localhost:8010 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8010 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8010), [Errno 111] Connect call failed ('::1', 8010, 0, 0)]
+INFO:     127.0.0.1:47238 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:47198 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:47262 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:41220 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:41232 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8012 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8012 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8012, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8012)]
+INFO:     127.0.0.1:41232 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8013 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8013 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8013), [Errno 111] Connect call failed ('::1', 8013, 0, 0)]
+INFO:     127.0.0.1:41232 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8014 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8014 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8014, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8014)]
+INFO:     127.0.0.1:41220 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8016 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8016 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8016), [Errno 111] Connect call failed ('::1', 8016, 0, 0)]
+INFO:     127.0.0.1:41220 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8017 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8017 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8017, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8017)]
+INFO:     127.0.0.1:41232 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8018 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8018 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8018), [Errno 111] Connect call failed ('::1', 8018, 0, 0)]
+INFO:     127.0.0.1:41232 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8019 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8019 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8019, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8019)]
+INFO:     127.0.0.1:41232 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8021 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8021 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8021), [Errno 111] Connect call failed ('::1', 8021, 0, 0)]
+ERROR:sam_lb:Backend http://localhost:8023 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8023 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8023, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8023)]
+INFO:     127.0.0.1:41232 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:41220 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8024 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8024 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8024), [Errno 111] Connect call failed ('::1', 8024, 0, 0)]
+INFO:     127.0.0.1:41220 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8025 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8025 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8025, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8025)]
+INFO:     127.0.0.1:41232 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8026 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8026 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8026), [Errno 111] Connect call failed ('::1', 8026, 0, 0)]
+INFO:     127.0.0.1:41232 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8028 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8028 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8028, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8028)]
+INFO:     127.0.0.1:47262 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8027 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8027 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8027), [Errno 111] Connect call failed ('::1', 8027, 0, 0)]
+ERROR:sam_lb:Backend http://localhost:8029 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8029 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8029), [Errno 111] Connect call failed ('::1', 8029, 0, 0)]
+INFO:     127.0.0.1:41220 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:47238 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8031 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8031 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8031), [Errno 111] Connect call failed ('::1', 8031, 0, 0)]
+ERROR:sam_lb:Backend http://localhost:8030 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8030 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8030), [Errno 111] Connect call failed ('::1', 8030, 0, 0)]
+INFO:     127.0.0.1:47262 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8032 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8032 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8032, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8032)]
+INFO:     127.0.0.1:47198 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:41232 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8033 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8033 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8033), [Errno 111] Connect call failed ('::1', 8033, 0, 0)]
+ERROR:sam_lb:Backend http://localhost:8011 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8011 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8011), [Errno 111] Connect call failed ('::1', 8011, 0, 0)]
+INFO:     127.0.0.1:41220 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:47238 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8012 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8012 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8012, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8012)]
+INFO:     127.0.0.1:47198 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8016 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8016 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8016), [Errno 111] Connect call failed ('::1', 8016, 0, 0)]
+ERROR:sam_lb:Backend http://localhost:8014 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8014 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8014, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8014)]
+INFO:     127.0.0.1:41220 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:41244 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8018 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8018 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8018), [Errno 111] Connect call failed ('::1', 8018, 0, 0)]
+ERROR:sam_lb:Backend http://localhost:8013 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8013 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8013), [Errno 111] Connect call failed ('::1', 8013, 0, 0)]
+INFO:     127.0.0.1:47198 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:47238 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8019 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8019 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8019), [Errno 111] Connect call failed ('::1', 8019, 0, 0)]
+INFO:     127.0.0.1:41244 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8021 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8021 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8021, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8021)]
+INFO:     127.0.0.1:41244 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8023 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8023 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8023), [Errno 111] Connect call failed ('::1', 8023, 0, 0)]
+INFO:     127.0.0.1:41244 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8024 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8024 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8024, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8024)]
+INFO:     127.0.0.1:47238 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8026 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8026 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8026), [Errno 111] Connect call failed ('::1', 8026, 0, 0)]
+ERROR:sam_lb:Backend http://localhost:8025 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8025 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8025), [Errno 111] Connect call failed ('::1', 8025, 0, 0)]
+INFO:     127.0.0.1:47198 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:41244 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8027 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8027 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8027), [Errno 111] Connect call failed ('::1', 8027, 0, 0)]
+ERROR:sam_lb:Backend http://localhost:8028 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8028 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8028), [Errno 111] Connect call failed ('::1', 8028, 0, 0)]
+INFO:     127.0.0.1:47238 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:41220 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8029 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8029 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8029), [Errno 111] Connect call failed ('::1', 8029, 0, 0)]
+INFO:     127.0.0.1:47198 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8031 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8031 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8031, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8031)]
+INFO:     127.0.0.1:41220 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8011 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8011 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8011), [Errno 111] Connect call failed ('::1', 8011, 0, 0)]
+ERROR:sam_lb:Backend http://localhost:8033 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8033 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8033, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8033)]
+INFO:     127.0.0.1:41244 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:47238 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8014 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8014 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8014), [Errno 111] Connect call failed ('::1', 8014, 0, 0)]
+INFO:     127.0.0.1:47198 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8017 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8017 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8017, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8017)]
+ERROR:sam_lb:Backend http://localhost:8018 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8018 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8018, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8018)]
+INFO:     127.0.0.1:47198 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:41244 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8021 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8021 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8021, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8021)]
+INFO:     127.0.0.1:41244 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8024 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8024 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8024), [Errno 111] Connect call failed ('::1', 8024, 0, 0)]
+INFO:     127.0.0.1:41244 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8027 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8027 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8027, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8027)]
+ERROR:sam_lb:Backend http://localhost:8026 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8026 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8026, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8026)]
+INFO:     127.0.0.1:47198 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:41244 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8032 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8032 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8032, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8032)]
+INFO:     127.0.0.1:41244 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8016 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8016 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8016), [Errno 111] Connect call failed ('::1', 8016, 0, 0)]
+INFO:     127.0.0.1:41244 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8019 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8019 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8019, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8019)]
+ERROR:sam_lb:Backend http://localhost:8023 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8023 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8023, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8023)]
+INFO:     127.0.0.1:41244 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:47198 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8030 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8030 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8030, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8030)]
+INFO:     127.0.0.1:47238 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8028 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8028 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8028), [Errno 111] Connect call failed ('::1', 8028, 0, 0)]
+ERROR:sam_lb:Backend http://localhost:8013 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8013 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8013), [Errno 111] Connect call failed ('::1', 8013, 0, 0)]
+ERROR:sam_lb:Backend http://localhost:8017 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8017 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8017), [Errno 111] Connect call failed ('::1', 8017, 0, 0)]
+ERROR:sam_lb:Backend http://localhost:8025 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8025 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8025), [Errno 111] Connect call failed ('::1', 8025, 0, 0)]
+INFO:     127.0.0.1:47198 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:41244 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:41220 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:47238 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8012 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8012 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8012), [Errno 111] Connect call failed ('::1', 8012, 0, 0)]
+INFO:     127.0.0.1:41232 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8011 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8011 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('::1', 8011, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 8011)]
+INFO:     127.0.0.1:47262 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+ERROR:sam_lb:Backend http://localhost:8013 error after 0.00s: ClientConnectorError: Cannot connect to host localhost:8013 ssl:default [Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 8013), [Errno 111] Connect call failed ('::1', 8013, 0, 0)]
+INFO:     127.0.0.1:47198 - "POST /api/v1/image/segment HTTP/1.1" 503 Service Unavailable
+(vllm_test) aac@9173127c-7fb4-44ab-ab3a-367b4f90abb3-5bc4dbc986-qb76f:~/RESCue$ 

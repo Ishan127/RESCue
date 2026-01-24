@@ -13,6 +13,11 @@ from PIL import Image
 from pydantic import BaseModel, Field
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from sam3.train.data.sam3_image_dataset import InferenceMetadata, FindQueryLoaded, Image as SAMImage, Datapoint
+from sam3.train.data.collator import collate_fn_api as collate
+from sam3.eval.postprocessors import PostProcessImage
+from sam3.train.transforms.basic_for_api import ComposeAPI, RandomResizeAPI, ToTensorAPI, NormalizeAPI
+from sam3.model.utils.misc import copy_data_to_device
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -377,14 +382,27 @@ class SAM3ImageModel:
                 logger.error(f"Failed to load model: {e2}")
                 raise
 
-        self.processor = Sam3Processor(
-            model=model,
-            resolution=resolution,
-            device=device,
-            confidence_threshold=confidence_threshold,
+        self.transform = ComposeAPI(
+            transforms=[
+                RandomResizeAPI(sizes=resolution, max_size=resolution, square=True, consistent_transform=False),
+                ToTensorAPI(),
+                NormalizeAPI(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            ]
         )
 
+        self.postprocessor = PostProcessImage(
+            max_dets_per_img=-1,
+            iou_type="segm",
+            use_original_sizes_box=True,
+            use_original_sizes_mask=True,
+            convert_mask_to_rle=False,
+            detection_threshold=confidence_threshold,
+            to_cpu=True,
+        )
+
+        self.model = model
         self.feature_cache: Dict[str, Dict] = {}
+        self.global_counter = 1
 
         logger.info("SAM3 image model loaded successfully")
 
@@ -395,54 +413,148 @@ class SAM3ImageModel:
         boxes: Optional[List[Tuple[List[float], bool]]] = None,
         points: Optional[List[Tuple[List[List[float]], List[int]]]] = None,
     ) -> Tuple[List[np.ndarray], List[List[float]], List[float]]:
-        state = self.processor.set_image(image)
-        orig_w, orig_h = image.size
-
+    def segment_combined(
+        self,
+        image: Image.Image,
+        text_prompts: Optional[List[str]] = None,
+        boxes: Optional[List[Tuple[List[float], bool]]] = None,
+        points: Optional[List[Tuple[List[List[float]], List[int]]]] = None,
+    ) -> Tuple[List[np.ndarray], List[List[float]], List[float]]:
+        # 1. Create Datapoint
+        w, h = image.size
+        datapoint = Datapoint(find_queries=[], images=[SAMImage(data=image, objects=[], size=[h, w])])
+        
+        query_ids = []
+        
+        # 2. Add Text Prompts
         if text_prompts:
             for text in text_prompts:
-                state = self.processor.set_text_prompt(prompt=text, state=state)
+                self.global_counter += 1
+                q_id = self.global_counter
+                datapoint.find_queries.append(
+                    FindQueryLoaded(
+                        query_text=text,
+                        image_id=0,
+                        object_ids_output=[], 
+                        is_exhaustive=True,
+                        query_processing_order=0,
+                        inference_metadata=InferenceMetadata(
+                            coco_image_id=q_id,
+                            original_image_id=q_id,
+                            original_category_id=1,
+                            original_size=[w, h],
+                            object_id=0,
+                            frame_index=0,
+                        )
+                    )
+                )
+                query_ids.append(q_id)
 
+        # 3. Add Box Prompts
         if boxes:
             for box, label in boxes:
-                box_pixels = [
-                    box[0] * orig_w,
-                    box[1] * orig_h,
-                    box[2] * orig_w,
-                    box[3] * orig_h,
+                # box is already normalized [0,1], convert to pixel [x1, y1, x2, y2]
+                pixel_box = [
+                    box[0] * w, box[1] * h,
+                    box[2] * w, box[3] * h
                 ]
-                state = self.processor.add_geometric_prompt(
-                    box=box_pixels, label=1 if label else 0, state=state
-                )
-
-        if points:
-            for point_list, point_labels in points:
-                points_pixels = torch.tensor(
-                    [[x * orig_w, y * orig_h] for x, y in point_list],
-                    device=self.device, dtype=torch.float32
-                ).view(-1, 1, 2)
+                # SAM3 expects list of boxes. We treat each box as a separate query here to get separate masks
+                self.global_counter += 1
+                q_id = self.global_counter
                 
-                point_tensor_labels = torch.tensor(
-                    point_labels, device=self.device, dtype=torch.long
-                ).view(-1, 1)
-
-                if "language_features" not in state.get("backbone_out", {}):
-                    dummy_text_outputs = self.processor.model.backbone.forward_text(
-                        ["visual"], device=self.device
+                datapoint.find_queries.append(
+                    FindQueryLoaded(
+                        query_text="visual", # default text as per reference
+                        image_id=0,
+                        object_ids_output=[],
+                        is_exhaustive=True,
+                        query_processing_order=0,
+                        input_bbox=torch.tensor([pixel_box], dtype=torch.float32).view(-1, 4),
+                        input_bbox_label=torch.tensor([label], dtype=torch.bool).view(-1),
+                        inference_metadata=InferenceMetadata(
+                            coco_image_id=q_id,
+                            original_image_id=q_id,
+                            original_category_id=1,
+                            original_size=[w, h],
+                            object_id=0,
+                            frame_index=0,
+                        )
                     )
-                    state["backbone_out"].update(dummy_text_outputs)
-
-                if "geometric_prompt" not in state:
-                    state["geometric_prompt"] = self.processor.model._get_dummy_prompt()
-
-                state["geometric_prompt"].append_points(
-                    points=points_pixels,
-                    labels=point_tensor_labels
                 )
+                query_ids.append(q_id)
 
-                if hasattr(self.processor, '_forward_grounding'):
-                    state = self.processor._forward_grounding(state)
+        # 4. Add Point Prompts (Not implemented in reference but follows similar pattern if needed, skipping for now as per instructions focus)
+        if points:
+             logger.warning("Point prompts temporarily disabled in batch mode pending implementation details")
 
-        return self._extract_results(state, image.size)
+        if not query_ids:
+            return [], [], []
+
+        # 5. Transform and Collate
+        try:
+            datapoint = self.transform(datapoint)
+            batch = collate([datapoint], dict_key="dummy")["dummy"]
+            batch = copy_data_to_device(batch, torch.device(self.device), non_blocking=True) # Ensure device string
+            
+            # 6. Inference
+            with torch.inference_mode():
+                # Handling AMP manually if needed, or rely on global settings. 
+                # Assuming AMP is handled by context if set, else standard float32/16
+                output = self.model(batch)
+                
+            # 7. Post-process
+            # process_results returns a Dict[int, List[Dict]] where int is the query ID (coco_image_id)
+            processed_results = self.postprocessor.process_results(output, batch.find_metadatas)
+            
+            final_masks = []
+            final_boxes = []
+            final_scores = []
+
+            # 8. Extract in order of queries
+            for q_id in query_ids:
+                results = processed_results.get(q_id, [])
+                if not results:
+                    # Placeholder if no detection
+                    final_masks.append(np.zeros((h, w), dtype=bool))
+                    final_boxes.append([0.0, 0.0, 1.0, 1.0])
+                    final_scores.append(0.0)
+                else:
+                    # Take the highest confidence result for this query
+                    best_res = max(results, key=lambda x: x.get("score", 0.0))
+                    
+                    # Mask
+                    mask = best_res.get("mask") # Should be np.ndarray due to to_cpu=True
+                    if isinstance(mask, torch.Tensor):
+                        mask = mask.cpu().numpy()
+                    
+                    # Convert RLE if needed, but we set convert_mask_to_rle=False
+                    # It might be in 'segmentation' field or 'mask' depending on version
+                    # PostProcessImage usually puts full mask in "mask" if rle=False
+                    if mask is None and "segmentation" in best_res:
+                        mask = best_res["segmentation"]
+                        
+                    # Resize is handled by postprocessor (use_original_sizes_mask=True)
+                    # But double check shape
+                    if mask is not None:
+                         final_masks.append(mask.astype(bool))
+                    else:
+                         final_masks.append(np.zeros((h, w), dtype=bool))
+
+                    # Box
+                    bbox = best_res.get("bbox", [0, 0, w, h])
+                    norm_box = [bbox[0]/w, bbox[1]/h, bbox[2]/w, bbox[3]/h]
+                    final_boxes.append(norm_box)
+                    
+                    # Score
+                    final_scores.append(best_res.get("score", 1.0))
+
+            return final_masks, final_boxes, final_scores
+
+        except Exception as e:
+            logger.error(f"Batch inference failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return [], [], []
 
     def cache_features(self, image: Image.Image, cache_key: str) -> str:
         state = self.processor.set_image(image)
@@ -750,6 +862,7 @@ async def segment_image(request: ImageSegmentRequest):
                 detail="At least one text, box, or point prompt is required",
             )
 
+        # Call segment_combined ONCE for true batching
         masks, boxes, scores = image_model.segment_combined(
             image=image,
             text_prompts=text_prompts if text_prompts else None,

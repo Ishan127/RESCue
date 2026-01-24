@@ -142,9 +142,12 @@ class Executor:
         box: Optional[List[float]] = None,
         points: Optional[List[List[float]]] = None,
         point_labels: Optional[List[int]] = None,
+        prompts_list: Optional[List[Dict]] = None
     ) -> List[np.ndarray]:
         if self.remote_url:
-            return self._segment_remote(image, text_prompt, box, points, point_labels)
+            return self._segment_remote(
+                image, text_prompt, box, points, point_labels, prompts_list
+            )
         else:
             return self._segment_local(image, text_prompt, box, points, point_labels)
 
@@ -202,28 +205,42 @@ class Executor:
         else:
             return self._predict_local(box, text_prompt)
 
-    def _segment_remote(
-        self,
-        image: Union[np.ndarray, Image.Image],
         text_prompt: Optional[str] = None,
         box: Optional[List[float]] = None,
         points: Optional[List[List[float]]] = None,
         point_labels: Optional[List[int]] = None,
+        prompts_list: Optional[List[Dict]] = None
     ) -> List[np.ndarray]:
         pil_image = self._to_pil(image)
         orig_w, orig_h = pil_image.size
 
         prompts = []
-        if text_prompt:
-            prompts.append({"type": "text", "text": text_prompt})
-        if box:
-            normalized_box = [
-                box[0] / orig_w,
-                box[1] / orig_h,
-                box[2] / orig_w,
-                box[3] / orig_h,
-            ]
-            prompts.append({"type": "box", "box": normalized_box, "label": True})
+        if prompts_list:
+            # Batch mode: Use provided list
+            for p in prompts_list:
+                # Normalize boxes/points if needed
+                if p["type"] == "box":
+                    b = p["box"]
+                    p_norm = p.copy()
+                    p_norm["box"] = [
+                        b[0] / orig_w, b[1] / orig_h,
+                        b[2] / orig_w, b[3] / orig_h
+                    ]
+                    prompts.append(p_norm)
+                else:
+                    prompts.append(p)
+        else:
+            # Legacy single prompt mode
+            if text_prompt:
+                prompts.append({"type": "text", "text": text_prompt})
+            if box:
+                normalized_box = [
+                    box[0] / orig_w,
+                    box[1] / orig_h,
+                    box[2] / orig_w,
+                    box[3] / orig_h,
+                ]
+                prompts.append({"type": "box", "box": normalized_box, "label": True})
         if points and point_labels:
             normalized_points = [[p[0] / orig_w, p[1] / orig_h] for p in points]
             prompts.append({

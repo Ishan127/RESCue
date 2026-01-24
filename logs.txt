@@ -1,0 +1,156 @@
+Logs:
+Server health: {'status': 'healthy', 'backends_total': 24, 'backends_healthy': 24, 'backends': {'http://localhost:8010': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8011': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8012': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8013': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8014': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8015': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8016': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8017': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8018': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8019': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8020': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8021': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8022': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8023': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8024': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8025': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8026': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8027': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8028': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8029': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8030': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8031': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8032': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8033': {'healthy': True, 'consecutive_failures': 0}}}
+[Executor] Initialized with load balancer at http://localhost:8001
+[Executor] Will send up to 16 parallel requests
+
+======================================================================
+Pipeline Evaluation | Depth=3 | Mode=comparative | Parallel SAM requests=16
+======================================================================
+
+Processing:   0%|                                                                                                                                                       | 0/2 [00:00<?, ?it/s][Executor] Sample 0: Processing 63 hypotheses
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+[Executor] Sample 0: Got 60 masks
+[Executor] Sample 1: Processing 62 hypotheses
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
+[Executor] Sample 1: Got 0 masks
+Timeout waiting for results
+Processing:   0%|                                                                                                                                                       | 0/2 [05:00<?, ?it/s]
+
+======================================================================
+RESULTS (COMPARATIVE - Pipeline Parallel)
+======================================================================
+
+   N |     gIoU |   Oracle |  %Oracle |  Time(s) | Samples
+------------------------------------------------------------
+
+Results saved to results_pipeline_comparative_1pct.json
+[Verifier] Sample 0 error: cannot schedule new futures after interpreter shutdown
+(vllm_test) aac@9173127c-7fb4-44ab-ab3a-367b4f90abb3-5bc4dbc986-qb76f:~/RESCue$ 

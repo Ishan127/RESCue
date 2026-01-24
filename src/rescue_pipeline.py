@@ -115,29 +115,40 @@ class RESCuePipeline:
         # Stateless execution for load balancer compatibility
         # Each request sends the image to allow round-robin routing
         
+        # Batch Execution
+        prompt_list = []
         for i, hyp in enumerate(hypotheses):
-            box = hyp['box']
-            noun_phrase = hyp['noun_phrase']
-            reasoning = hyp['reasoning']
+            prompt_list.append({
+                "type": "box",
+                "box": hyp['box'],
+                "label": True
+            })
             
-            # Stateless call - works with LB
-            masks = self.executor.segment(image, text_prompt=noun_phrase, box=box)
+        print(f"Sending batch request with {len(prompt_list)} prompts...")
+        all_masks = self.executor.segment(image, prompts_list=prompt_list)
+        
+        # Determine how many masks per hypothesis (usually 1, but server might return mulitple)
+        # Server loops prompts and extends 'all_masks'. 
+        # Since we use 1 box -> 1 mask logic in server loop, mask count should equal hypothesis count
+        
+        if len(all_masks) != len(hypotheses):
+             # Handle mismatch (fallback or assignment)
+             print(f"Warning: Sent {len(hypotheses)} prompts, got {len(all_masks)} masks")
+             
+        for i, (hyp, mask) in enumerate(zip(hypotheses, all_masks)):
+            candidates.append({
+                'id': f"H{i}",
+                'mask': mask,
+                'score_comparative': 0.0,
+                'score_individual': 0.0,
+                'rank': 999,
+                'box': hyp['box'],
+                'reasoning': hyp['reasoning'],
+                'noun_phrase': hyp['noun_phrase'],
+                'iou': calculate_iou(mask, gt_mask) if gt_mask is not None else 0.0
+            })
             
-            for j, mask in enumerate(masks):
-                cand = {
-                    'id': f"H{i}_M{j}",
-                    'mask': mask,
-                    'score_comparative': 0.0,
-                    'score_individual': 0.0,
-                    'rank': 999,
-                    'box': box,
-                    'reasoning': reasoning,
-                    'noun_phrase': noun_phrase
-                }
-                if gt_mask is not None:
-                    cand['iou'] = calculate_iou(mask, gt_mask)
-                candidates.append(cand)
-                iou_str = f" | IoU: {cand.get('iou', 0):.4f}" if gt_mask is not None else ""
+        iou_str = "" # Placeholder
                 print(f"  Generated candidate H{i}_M{j}{iou_str} | {noun_phrase}")
         
         if not candidates:
