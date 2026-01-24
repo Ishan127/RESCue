@@ -9,7 +9,7 @@ from typing import List, Dict, Optional, Tuple, Any, Union
 from collections import defaultdict
 
 from .utils import get_device
-from .api_utils import get_openai_client, create_vision_message
+from .api_utils import get_planner_client, create_vision_message, PLANNER_MODEL, PLANNER_API_BASE
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger("RESCue.Planner")
@@ -17,8 +17,8 @@ logger.setLevel(logging.WARNING)
 
 @dataclass(frozen=True)
 class PlannerConfig:
-    model_path: str = "Qwen/Qwen3-VL-30B-A3B-Instruct"
-    api_base: Optional[str] = "http://localhost:8000/v1"
+    model_path: str = PLANNER_MODEL  # Fast 7B model for planning
+    api_base: Optional[str] = PLANNER_API_BASE  # Port 8002 by default
     device: Optional[str] = None
     dtype: str = "auto"
     quantization: Optional[str] = None
@@ -94,7 +94,7 @@ class Planner:
         if self.config.api_base:
             logger.info(f"Initializing Planner with API: {self.config.api_base}")
             try:
-                self.client = get_openai_client(base_url=self.config.api_base)
+                self.client = get_planner_client()
             except Exception as e:
                 logger.error(f"Failed to initialize OpenAI client: {e}")
                 raise e
@@ -102,11 +102,9 @@ class Planner:
              logger.error("API base URL not provided. Local inference is removed in this refactor.")
              raise ValueError("API base URL is required.")
 
-    def generate_hypotheses(self, image_path: str, query: str, N: int = 1, temperature: float = 0.7) -> List[Dict]:
+    def generate_hypotheses(self, image_path: str, query: str, N: int = 1, temperature: float = 0.7, parallel: bool = True) -> List[Dict]:
         if N < 1:
             return []
-            
-        logger.info(f"Generating {N} hypotheses for query: '{query}'")
         
         base_temp = temperature if temperature is not None else self.config.base_temperature
         
@@ -119,31 +117,64 @@ class Planner:
             real_w, real_h = img.size
             img_area = real_w * real_h
         
-        for i, config in enumerate(query_configs):
-            varied_query = config["query"]
-            strategy = config["strategy"]
-            temp = config["temperature"]
-            
-            logger.info(f"Query {i+1}/{len(query_configs)} [{strategy}] (T={temp:.2f}): {varied_query[:80]}...")
-            
-            try:
-                hyp = self._generate_single_hypothesis(
-                    image_path, 
-                    varied_query,
-                    strategy,
-                    temp,
-                    real_w, real_h, img_area
-                )
-                if hyp:
-                    candidates.append(hyp)
-                    logger.info(f"  -> {hyp.target_concept}")
-            except Exception as e:
-                logger.error(f"Failed to generate hypothesis: {e}")
+        if parallel and len(query_configs) > 1:
+            candidates = self._generate_hypotheses_parallel(
+                image_path, query_configs, real_w, real_h, img_area
+            )
+        else:
+            for i, config in enumerate(query_configs):
+                varied_query = config["query"]
+                strategy = config["strategy"]
+                temp = config["temperature"]
+                
+                try:
+                    hyp = self._generate_single_hypothesis(
+                        image_path, 
+                        varied_query,
+                        strategy,
+                        temp,
+                        real_w, real_h, img_area
+                    )
+                    if hyp:
+                        candidates.append(hyp)
+                except Exception as e:
+                    pass
         
         final_hypotheses = self._select_diverse_subset(candidates, N, query)
-        
-        logger.info(f"Final selection: {len(final_hypotheses)} hypotheses")
         return [h.to_dict() for h in final_hypotheses]
+    
+    def _generate_hypotheses_parallel(self, image_path: str, query_configs: List[Dict], 
+                                       w: int, h: int, img_area: int) -> List[Hypothesis]:
+        """Generate hypotheses in parallel using ThreadPoolExecutor."""
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        
+        candidates = []
+        max_workers = min(8, len(query_configs))
+        
+        def generate_one(config):
+            try:
+                return self._generate_single_hypothesis(
+                    image_path,
+                    config["query"],
+                    config["strategy"],
+                    config["temperature"],
+                    w, h, img_area
+                )
+            except:
+                return None
+        
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [executor.submit(generate_one, cfg) for cfg in query_configs]
+            
+            for future in as_completed(futures):
+                try:
+                    hyp = future.result()
+                    if hyp:
+                        candidates.append(hyp)
+                except:
+                    pass
+        
+        return candidates
     
     def _generate_query_configs(self, original_query: str, N: int, base_temp: float) -> List[Dict]:
         configs = []
@@ -200,7 +231,7 @@ class Planner:
                 model=self.config.model_path,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.7,
-                max_tokens=500
+                max_tokens=300
             )
             
             text = completion.choices[0].message.content
@@ -237,7 +268,7 @@ class Planner:
                 model=self.config.model_path,
                 messages=messages,
                 temperature=temperature,
-                max_tokens=800,
+                max_tokens=400,
                 logprobs=True,
                 top_logprobs=1
             )

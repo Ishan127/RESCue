@@ -6,7 +6,7 @@ import os
 import tempfile
 from PIL import Image
 from .utils import apply_red_alpha_overlay
-from .api_utils import create_vision_message, get_openai_client
+from .api_utils import create_vision_message, get_verifier_client, VERIFIER_MODEL, VERIFIER_API_BASE
 
 VERIFIER_VERBOSE = os.environ.get('VERIFIER_VERBOSE', '0') == '1'
 
@@ -16,11 +16,11 @@ class Verifier:
     Comparative verification: Uses pairwise ranking instead of absolute scoring.
     Recommended model: Qwen3-VL-32B-Thinking (chain-of-thought reasoning)
     """
-    def __init__(self, client=None, model_path="Qwen/Qwen3-VL-32B-Thinking", 
-                 api_base="http://localhost:8000/v1", verbose=None):
-        self.model_path = model_path
-        self.client = client if client else get_openai_client(base_url=api_base)
-        self.is_thinking_model = "thinking" in model_path.lower()
+    def __init__(self, client=None, model_path=None, 
+                 api_base=None, verbose=None):
+        self.model_path = model_path or VERIFIER_MODEL
+        self.client = client if client else get_verifier_client()
+        self.is_thinking_model = "thinking" in self.model_path.lower()
         self.verbose = verbose if verbose is not None else VERIFIER_VERBOSE
 
     def _create_comparison_grid(self, image, masks, labels):

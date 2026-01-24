@@ -152,10 +152,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Multi-N Evaluation for RESCue Pipeline")
     parser.add_argument("--fraction", type=float, default=0.1)
     parser.add_argument("--max_n", type=int, default=64)
-    parser.add_argument("--planner_url", default="http://localhost:8000/v1")
-    parser.add_argument("--executor_url", default="http://localhost:8001")
+    parser.add_argument("--planner_url", default="http://localhost:8002/v1", help="Planner API (7B model)")
+    parser.add_argument("--verifier_url", default="http://localhost:8000/v1", help="Verifier API (32B model)")
+    parser.add_argument("--executor_url", default="http://localhost:8001", help="SAM3 executor API")
     parser.add_argument("--mode", choices=["comparative", "individual", "heuristic"], default="comparative")
     args = parser.parse_args()
+    
+    # Update environment variables for dual-model setup
+    os.environ["PLANNER_API_BASE"] = args.planner_url
+    os.environ["VERIFIER_API_BASE"] = args.verifier_url
     
     evaluate_multi_n(
         fraction=args.fraction,

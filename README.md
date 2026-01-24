@@ -1,8 +1,18 @@
 # RESCue: Reasoning Segmentation with Cut-the-chase usage
 
 ## Prerequisites
-- **Hardware**: 2x MI325X GPUs (or equivalent high-VRAM setup).
+- **Hardware**: 4x MI325X GPUs (or equivalent high-VRAM setup).
 - **Software**: ROCm 7.1.1, vLLM 0.14.0, Python 3.10+.
+
+## Architecture
+
+RESCue uses a **dual-model** setup for optimal speed vs quality:
+
+| Service | Model | GPU(s) | Port |
+|---------|-------|--------|------|
+| **Verifier** | Qwen3-VL-32B-Thinking | 0, 1 | 8000 |
+| **Planner** | Qwen2.5-VL-7B-Instruct | 2 | 8002 |
+| **Executor** | SAM3 | 3 | 8001 |
 
 ## 1. Environment Setup
 
@@ -17,7 +27,7 @@ pip install -r requirements.txt
 
 ### Server Setup (GPU Nodes)
 
-**Planner Node (LLM)**:
+**VLM Nodes (LLM)**:
 ```bash
 pip install vllm==0.14.0
 ```
@@ -41,16 +51,25 @@ python scripts/download_models.py
 
 Run the following services in **separate terminals** (e.g., using `tmux`).
 
-### Terminal 1: Planner & Verifier (VLM) Service
+### Terminal 1: Verifier (32B-Thinking) Service
 
-Deploys Qwen3-VL-32B-Thinking on vLLM (chain-of-thought model for better reasoning).
+Deploys Qwen3-VL-32B-Thinking on vLLM (chain-of-thought model for verification).
 
 ```bash
 ./scripts/deploy_llm.sh
 ```
 *Wait for: `Uvicorn running on http://0.0.0.0:8000`*
 
-### Terminal 2: Executor (SAM3) Service
+### Terminal 2: Planner (7B) Service  
+
+Deploys Qwen2.5-VL-7B-Instruct for fast hypothesis generation.
+
+```bash
+./scripts/deploy_planner_llm.sh
+```
+*Wait for: `Uvicorn running on http://0.0.0.0:8002`*
+
+### Terminal 3: Executor (SAM3) Service
 
 Deploys the SAM3 Segmentation Server.
 
@@ -61,10 +80,26 @@ Deploys the SAM3 Segmentation Server.
 
 ## 4. Run Benchmark
 
-Once both services are up, run the main orchestration script. This handles data downloading, health checks, and evaluation.
+Once all services are up, run the main orchestration script:
 
 ```bash
 python main_benchmark.py
+```
+
+### Multi-N Evaluation (Recommended)
+
+Generate once, evaluate for multiple N values:
+
+```bash
+python scripts/evaluate_multi_n.py --fraction 0.1 --max_n 64
+```
+
+## Environment Variables
+
+Override model endpoints if needed:
+```bash
+export PLANNER_API_BASE=http://localhost:8002/v1
+export VERIFIER_API_BASE=http://localhost:8000/v1
 ```
 
 ## Custom Usage
@@ -75,6 +110,7 @@ To run inference on a single image:
 python scripts/run_inference.py \
   --image example.jpg \
   --query "the red car in the background" \
-  --planner_url http://localhost:8000/v1 \
+  --planner_url http://localhost:8002/v1 \
+  --verifier_url http://localhost:8000/v1 \
   --executor_url http://localhost:8001
 ```

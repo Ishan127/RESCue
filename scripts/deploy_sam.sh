@@ -1,8 +1,12 @@
 #!/bin/bash
-# Deploy SAM3 Inference Server
-# Based on rpol-recart/sam3_inference architecture
+# Deploy SAM3 (EXECUTOR) on GPU 3
+# Segmentation model for mask generation
+# Port: 8001
 
 set -e
+
+# GPU Assignment
+export CUDA_VISIBLE_DEVICES=3
 
 # Colors for output
 GREEN='\033[0;32m'

@@ -6,12 +6,28 @@ from openai import OpenAI
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("openai").setLevel(logging.WARNING)
 
+# Default endpoints for dual-model setup
+VERIFIER_API_BASE = os.environ.get("VERIFIER_API_BASE", "http://localhost:8000/v1")
+PLANNER_API_BASE = os.environ.get("PLANNER_API_BASE", "http://localhost:8002/v1")
+
+# Default model paths
+VERIFIER_MODEL = os.environ.get("VERIFIER_MODEL", "Qwen/Qwen3-VL-32B-Thinking")
+PLANNER_MODEL = os.environ.get("PLANNER_MODEL", "Qwen/Qwen2.5-VL-7B-Instruct")
+
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode('utf-8')
 
 def get_openai_client(base_url="http://localhost:8000/v1", api_key="EMPTY"):
     return OpenAI(base_url=base_url, api_key=api_key)
+
+def get_planner_client():
+    """Get client for the fast planning model (7B)."""
+    return OpenAI(base_url=PLANNER_API_BASE, api_key="EMPTY")
+
+def get_verifier_client():
+    """Get client for the verification model (32B-Thinking)."""
+    return OpenAI(base_url=VERIFIER_API_BASE, api_key="EMPTY")
 
 def create_vision_message(text_prompt, image_path):
     base64_image = encode_image(image_path)
