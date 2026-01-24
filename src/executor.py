@@ -205,6 +205,9 @@ class Executor:
         else:
             return self._predict_local(box, text_prompt)
 
+    def _segment_remote(
+        self,
+        image: Union[np.ndarray, Image.Image],
         text_prompt: Optional[str] = None,
         box: Optional[List[float]] = None,
         points: Optional[List[List[float]]] = None,
