@@ -1,5 +1,4 @@
 from .rescue_pipeline import RESCuePipeline
-from .rescue_pipeline_fast import RESCuePipelineFast
 from .planner import Planner
 from .executor import Executor
 from .verifier import Verifier
