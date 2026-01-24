@@ -25,10 +25,15 @@ parser.add_argument("--fraction", type=float, default=0.1)
 parser.add_argument("--max_n", type=int, default=64)
 parser.add_argument("--planner_url", default="http://localhost:8002/v1")
 parser.add_argument("--verifier_url", default="http://localhost:8000/v1")
-parser.add_argument("--executor_url", default="http://localhost:8001")
+parser.add_argument("--executor_urls", default="http://localhost:8001", 
+                    help="Comma-separated SAM server URLs for parallel execution")
 parser.add_argument("--pipeline_depth", type=int, default=3, help="Number of samples to process concurrently")
 parser.add_argument("--mode", choices=["comparative", "heuristic"], default="comparative")
 args = parser.parse_args()
+
+# Parse multiple executor URLs
+EXECUTOR_URLS = [url.strip() for url in args.executor_urls.split(",")]
+print(f"Using {len(EXECUTOR_URLS)} SAM executor(s): {EXECUTOR_URLS}")
 
 os.environ["PLANNER_API_BASE"] = args.planner_url
 os.environ["VERIFIER_API_BASE"] = args.verifier_url
@@ -125,11 +130,14 @@ class PlannerStage(PipelineStage):
 
 
 class ExecutorStage(PipelineStage):
-    """Stage 2: Generate masks for each hypothesis."""
+    """Stage 2: Generate masks using multiple SAM instances in parallel."""
     
-    def __init__(self, input_queue, output_queue, executor_url):
+    def __init__(self, input_queue, output_queue, executor_urls):
         super().__init__("Executor", input_queue, output_queue)
-        self.executor = Executor(remote_url=executor_url)
+        # Create an executor for each SAM server
+        self.executors = [Executor(remote_url=url) for url in executor_urls]
+        self.num_executors = len(self.executors)
+        print(f"[Executor] Initialized {self.num_executors} SAM executors")
     
     def process(self, task: SampleTask) -> SampleTask:
         if not task.hypotheses:
@@ -138,38 +146,58 @@ class ExecutorStage(PipelineStage):
             task.t_exec_done = time.time()
             return task
         
-        print(f"[Executor] Sample {task.sample_idx}: Processing {len(task.hypotheses)} hypotheses")
+        print(f"[Executor] Sample {task.sample_idx}: Processing {len(task.hypotheses)} hypotheses with {self.num_executors} SAM instances")
         
         candidates = []
         
-        # Process hypotheses SEQUENTIALLY to avoid overwhelming SAM server
-        for i, hyp in enumerate(task.hypotheses):
-            try:
-                # Load fresh image for each request
-                image = Image.open(task.temp_img_path).copy()
-                
-                # Extract box and query from hypothesis
-                box = hyp.get("box") or hyp.get("bbox")
-                query = hyp.get("noun_phrase") or hyp.get("query") or task.query
-                
-                # Call executor
-                masks = self.executor.execute(image, box, query)
-                
-                if masks and len(masks) > 0:
-                    mask = masks[0]
-                    result = {"hypothesis": hyp, "mask": mask}
-                    if task.gt_mask is not None:
-                        result["iou"] = calculate_iou(mask, task.gt_mask)
+        if self.num_executors == 1:
+            # Sequential processing with single SAM
+            for i, hyp in enumerate(task.hypotheses):
+                result = self._execute_one(task, hyp, self.executors[0], i)
+                if result:
                     candidates.append(result)
-                    
-            except Exception as e:
-                if i < 3:  # Only print first few errors
-                    print(f"[Executor] Hypothesis {i} error: {e}")
+        else:
+            # Parallel processing with multiple SAM instances
+            def exec_with_instance(args):
+                idx, hyp = args
+                executor = self.executors[idx % self.num_executors]
+                return self._execute_one(task, hyp, executor, idx)
+            
+            # Use ThreadPool with workers = number of SAM instances
+            with ThreadPoolExecutor(max_workers=self.num_executors) as pool:
+                indexed_hyps = list(enumerate(task.hypotheses))
+                results = list(pool.map(exec_with_instance, indexed_hyps))
+            
+            candidates = [r for r in results if r is not None]
         
         task.candidates = candidates
         print(f"[Executor] Sample {task.sample_idx}: Got {len(task.candidates)} masks")
         task.t_exec_done = time.time()
         return task
+    
+    def _execute_one(self, task, hyp, executor, idx):
+        """Execute single hypothesis on given executor."""
+        try:
+            # Load fresh image copy
+            image = Image.open(task.temp_img_path).copy()
+            
+            # Extract box and query
+            box = hyp.get("box") or hyp.get("bbox")
+            query = hyp.get("noun_phrase") or hyp.get("query") or task.query
+            
+            # Call executor
+            masks = executor.execute(image, box, query)
+            
+            if masks and len(masks) > 0:
+                mask = masks[0]
+                result = {"hypothesis": hyp, "mask": mask}
+                if task.gt_mask is not None:
+                    result["iou"] = calculate_iou(mask, task.gt_mask)
+                return result
+        except Exception as e:
+            if idx < 3:
+                print(f"[Executor] Hypothesis {idx} error: {e}")
+        return None
 
 
 class VerifierStage(PipelineStage):
@@ -215,7 +243,7 @@ class VerifierStage(PipelineStage):
         return 50 + (0.3 - abs(coverage - 0.3)) * 100
 
 
-def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor_url, 
+def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor_urls, 
                             pipeline_depth, mode):
     print(f"Loading ReasonSeg dataset...")
     try:
@@ -238,7 +266,7 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
     
     # Create stages
     planner_stage = PlannerStage(q_input, q_planned, planner_url, max_n)
-    executor_stage = ExecutorStage(q_planned, q_executed, executor_url)
+    executor_stage = ExecutorStage(q_planned, q_executed, executor_urls)
     verifier_stage = VerifierStage(q_executed, q_output, verifier_url, mode)
     
     # Start stage threads
@@ -252,7 +280,7 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
         t.start()
     
     print(f"\n{'='*70}")
-    print(f"Pipeline Evaluation | Depth={pipeline_depth} | Mode={mode}")
+    print(f"Pipeline Evaluation | Depth={pipeline_depth} | Mode={mode} | SAM instances={len(executor_urls)}")
     print(f"{'='*70}\n")
     
     # Feed samples into pipeline
@@ -407,7 +435,7 @@ if __name__ == "__main__":
         max_n=args.max_n,
         planner_url=args.planner_url,
         verifier_url=args.verifier_url,
-        executor_url=args.executor_url,
+        executor_urls=EXECUTOR_URLS,
         pipeline_depth=args.pipeline_depth,
         mode=args.mode
     )
