@@ -82,13 +82,46 @@ done
 
 echo -e "${YELLOW}Backend PIDs: ${PIDS[*]}${NC}"
 
-# Wait for backends to initialize
-echo -e "${YELLOW}Waiting for backends to load models (60s)...${NC}"
-for i in $(seq 1 12); do
-    echo -n "."
+# Wait for backends to initialize (Active Polling)
+echo -e "${YELLOW}Waiting for backends to initialize (Max 600s)...${NC}"
+START_TIME=$(date +%s)
+MAX_WAIT=600
+
+while true; do
+    CURRENT_TIME=$(date +%s)
+    ELAPSED=$((CURRENT_TIME - START_TIME))
+    
+    if [ $ELAPSED -gt $MAX_WAIT ]; then
+        echo -e "\n${RED}Timeout waiting for backends!${NC}"
+        break
+    fi
+
+    READY_COUNT=0
+    # Check health of all backends
+    for i in $(seq 0 $((NUM_INSTANCES - 1))); do
+        PORT=$((BACKEND_BASE_PORT + i))
+        # Short timeout info check
+        if curl -s -m 0.5 "http://localhost:$PORT/health" > /dev/null; then
+            ((READY_COUNT++))
+        fi
+    done
+
+    echo -ne "\r${YELLOW}Status: $READY_COUNT/$NUM_INSTANCES backends ready [Elapsed: ${ELAPSED}s]   ${NC}"
+    
+    if [ $READY_COUNT -eq $NUM_INSTANCES ]; then
+        echo -e "\n${GREEN}All backends successfully initialized!${NC}"
+        break
+    fi
+    
     sleep 5
 done
 echo ""
+
+if [ $READY_COUNT -lt $NUM_INSTANCES ]; then
+    echo -e "${RED}Deployment failed: Only $READY_COUNT/$NUM_INSTANCES backends ready.${NC}"
+    # Continue to let the detailed check show WHICH ones failed, or exit?
+    # Let's let it continue so the user sees which ports failed in the next block.
+fi
 
 # Check backend health
 echo -e "${YELLOW}Checking backend health...${NC}"
