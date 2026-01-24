@@ -34,6 +34,7 @@ class BackendPool:
         self.backends = backends
         self.healthy = {b: True for b in backends}
         self.response_times = {b: deque(maxlen=10) for b in backends}
+        self.consecutive_failures = {b: 0 for b in backends}  # Track consecutive failures
         self.rr_index = 0
         self.lock = asyncio.Lock()
     
@@ -42,7 +43,7 @@ class BackendPool:
         healthy_backends = [b for b in self.backends if self.healthy[b]]
         
         if not healthy_backends:
-            # Try all backends if none marked healthy
+            # If no healthy backends, try all backends (they might have recovered)
             healthy_backends = self.backends
         
         if strategy == "round_robin":
@@ -61,16 +62,28 @@ class BackendPool:
             return healthy_backends[0]
     
     def record_response(self, backend: str, latency: float, success: bool):
-        """Record response metrics."""
+        """Record response metrics and update health based on consecutive failures."""
         if backend in self.response_times:
             self.response_times[backend].append(latency)
-        self.healthy[backend] = success
+        
+        if success:
+            # Reset consecutive failures on success
+            self.consecutive_failures[backend] = 0
+            self.healthy[backend] = True
+        else:
+            # Increment consecutive failures
+            self.consecutive_failures[backend] += 1
+            # Mark unhealthy only after 3 consecutive failures
+            if self.consecutive_failures[backend] >= 3:
+                self.healthy[backend] = False
     
     def mark_unhealthy(self, backend: str):
         self.healthy[backend] = False
+        self.consecutive_failures[backend] = 3  # Mark as persistently failing
     
     def mark_healthy(self, backend: str):
         self.healthy[backend] = True
+        self.consecutive_failures[backend] = 0
 
 
 pool: BackendPool = None
@@ -95,12 +108,28 @@ async def shutdown():
 
 @app.get("/health")
 async def health():
+    # Also check backend health and potentially recover unhealthy ones
+    for backend in pool.backends:
+        if not pool.healthy[backend]:
+            try:
+                # Quick health check
+                timeout = aiohttp.ClientTimeout(total=2)
+                async with http_session.get(f"{backend}/health", timeout=timeout) as resp:
+                    if resp.status == 200:
+                        pool.mark_healthy(backend)
+                        logger.info(f"Backend {backend} recovered")
+            except:
+                pass  # Keep as unhealthy
+    
     healthy_count = sum(1 for b in pool.backends if pool.healthy[b])
     return {
         "status": "healthy" if healthy_count > 0 else "degraded",
         "backends_total": len(pool.backends),
         "backends_healthy": healthy_count,
-        "backends": {b: pool.healthy[b] for b in pool.backends}
+        "backends": {b: {
+            "healthy": pool.healthy[b],
+            "consecutive_failures": pool.consecutive_failures[b]
+        } for b in pool.backends}
     }
 
 
@@ -128,8 +157,8 @@ async def proxy_request(request: Request, path: str):
     
     t0 = time.time()
     try:
-        # Add timeout to prevent hanging
-        timeout = aiohttp.ClientTimeout(total=30)  # 30 second timeout per request
+        # Add timeout to prevent hanging - SAM can take time for large images
+        timeout = aiohttp.ClientTimeout(total=60)  # 60 second timeout for large images
         async with http_session.request(
             method=request.method,
             url=url,
@@ -151,10 +180,18 @@ async def proxy_request(request: Request, path: str):
     except Exception as e:
         latency = time.time() - t0
         pool.record_response(backend, latency, False)
-        logger.error(f"Backend {backend} error: {e}")
         
-        # Try another backend with shorter timeout
-        retry_timeout = aiohttp.ClientTimeout(total=10)  # 10 second timeout for retries
+        # Log detailed error information
+        error_type = type(e).__name__
+        if hasattr(e, 'status'):
+            logger.error(f"Backend {backend} HTTP error {e.status} after {latency:.2f}s")
+        elif "timeout" in str(e).lower() or "Timeout" in error_type:
+            logger.error(f"Backend {backend} timeout after {latency:.2f}s")
+        else:
+            logger.error(f"Backend {backend} error after {latency:.2f}s: {error_type}: {e}")
+        
+        # Try another backend with reasonable timeout
+        retry_timeout = aiohttp.ClientTimeout(total=30)  # 30 second timeout for retries
         for retry_backend in pool.backends:
             if retry_backend != backend and pool.healthy.get(retry_backend, True):
                 try:

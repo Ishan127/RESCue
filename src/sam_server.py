@@ -104,12 +104,8 @@ def patch_torchvision_for_rocm():
                         logger.warning(f"Invalid box values (NaN/inf): {boxes_cpu}")
                         return torch.zeros((num_boxes, input_cpu.shape[1], out_h, out_w), dtype=dtype, device=device)
                     
-                    # Check box coordinates are reasonable (not negative or too large)
-                    if boxes_cpu.shape[1] >= 4:  # Has x1,y1,x2,y2
-                        coords = boxes_cpu[:, -4:]  # Last 4 columns are coordinates
-                        if (coords < -1000).any() or (coords > 100000).any():
-                            logger.warning(f"Suspicious box coordinates: {coords}")
-                            return torch.zeros((num_boxes, input_cpu.shape[1], out_h, out_w), dtype=dtype, device=device)
+                    # Note: Large coordinates are OK - SAM handles boxes outside image bounds
+                    # The "suspicious" warnings were too aggressive
                 
                 # Ensure boxes_cpu is float tensor
                 if boxes_cpu.dtype not in [torch.float32, torch.float64]:
