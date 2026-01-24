@@ -177,86 +177,141 @@ class Planner:
         return candidates
     
     def _generate_query_configs(self, original_query: str, N: int, base_temp: float) -> List[Dict]:
+        """Generate N hypothesis configs with diverse strategies."""
         configs = []
         
-        configs.append({
-            "query": original_query,
-            "strategy": "original",
-            "temperature": base_temp
-        })
+        # Define strategy distribution for N hypotheses
+        # Each strategy gets roughly equal share, with different temperatures
+        strategies = [
+            ("original", base_temp),           # Direct match
+            ("conservative", base_temp - 0.2), # Most literal interpretation
+            ("exploratory", base_temp + 0.2),  # Alternative interpretations
+            ("spatial", base_temp + 0.1),      # Different regions
+            ("functional", base_temp),         # By function/purpose
+            ("visual", base_temp + 0.1),       # By visual attributes
+            ("contextual", base_temp),         # By scene context
+            ("part_whole", base_temp),         # Part of larger object or container
+        ]
         
-        if N == 1:
-            return configs
+        # First: one hypothesis with original query for each strategy
+        for strategy, temp in strategies:
+            if len(configs) >= N:
+                break
+            configs.append({
+                "query": original_query,
+                "strategy": strategy,
+                "temperature": max(0.3, min(1.0, temp))
+            })
         
-        variations = self._generate_query_variations(original_query, N - 1)
+        if len(configs) >= N:
+            return configs[:N]
         
+        # Generate query variations for remaining slots
+        remaining = N - len(configs)
+        variations = self._generate_query_variations(original_query, remaining)
+        
+        # Distribute variations across strategies (cycling)
         for i, varied_query in enumerate(variations):
-            if i < 2: 
-                strategy = "conservative"
-                temp = max(0.3, base_temp - 0.2)
-            elif i < 4: 
-                strategy = "exploratory"
-                temp = min(1.0, base_temp + 0.2)
-            else:  
-                strategy = "spatial"
-                temp = base_temp + 0.1
-            
+            strategy, temp = strategies[i % len(strategies)]
+            # Add some randomness to temperature
+            temp_offset = (i % 5 - 2) * 0.1  # -0.2 to +0.2
             configs.append({
                 "query": varied_query,
                 "strategy": strategy,
-                "temperature": temp
+                "temperature": max(0.3, min(1.0, temp + temp_offset))
             })
         
         return configs[:N]  
     
     def _generate_query_variations(self, original_query: str, num_variations: int) -> List[str]:
+        """Generate query variations in batches for reliability."""
+        all_variations = []
+        batch_size = 10  # Generate 10 at a time
+        
+        while len(all_variations) < num_variations:
+            needed = min(batch_size, num_variations - len(all_variations))
+            batch = self._generate_variation_batch(original_query, needed, all_variations)
+            if not batch:
+                break
+            all_variations.extend(batch)
+        
+        # If we didn't get enough, add synthetic variations
+        if len(all_variations) < num_variations:
+            all_variations.extend(self._generate_synthetic_variations(
+                original_query, num_variations - len(all_variations)
+            ))
+        
+        return all_variations[:num_variations]
+    
+    def _generate_variation_batch(self, original_query: str, count: int, existing: List[str]) -> List[str]:
+        """Generate a batch of query variations."""
+        existing_note = ""
+        if existing:
+            existing_note = f"\n\nAlready generated (DO NOT repeat): {existing[:5]}..."
+        
         prompt = f"""Given this image segmentation query: "{original_query}"
 
-        Generate {num_variations} DIFFERENT ways to interpret or rephrase this query. Each variation should:
-        1. Focus on a DIFFERENT aspect or interpretation of what's being asked
-        2. Be specific and actionable for locating an object in an image
-        3. Consider literal, functional, visual, or contextual interpretations
-
-        Output as JSON array of strings:
-        {{"variations": ["variation 1", "variation 2", ...]}}
-
-        Examples of good variations for "What could hold water?":
-        - "a container or vessel that can store liquid" (literal/functional)
-        - "a cup, bowl, or glass visible in the scene" (specific objects)
-        - "something with a concave shape that could collect water" (visual property)
-        - "a sink, bathtub, or plumbing fixture" (contextual/environmental)"""
+Generate {count} DIFFERENT ways to interpret or rephrase this query for object localization.
+Each variation should focus on a different aspect: literal, functional, visual, spatial, or contextual.
+{existing_note}
+Output ONLY a JSON array of strings:
+["variation 1", "variation 2", ...]"""
 
         try:
             completion = self.client.chat.completions.create(
                 model=self.config.model_path,
                 messages=[{"role": "user", "content": prompt}],
-                temperature=0.7,
-                max_tokens=300
+                temperature=0.8,
+                max_tokens=2048
             )
             
             text = completion.choices[0].message.content
             
             import json
-            json_match = re.search(r'\{[^{}]*"variations"[^{}]*\[.*?\][^{}]*\}', text, re.DOTALL)
-            if json_match:
-                data = json.loads(json_match.group())
-                variations = data.get("variations", [])
-                if variations:
-                    return variations[:num_variations]
+            # Try to find JSON array
+            array_match = re.search(r'\[([^\[\]]*)\]', text, re.DOTALL)
+            if array_match:
+                try:
+                    variations = json.loads(array_match.group())
+                    if isinstance(variations, list):
+                        return [v for v in variations if isinstance(v, str) and v not in existing]
+                except:
+                    pass
             
-            quoted = re.findall(r'"([^"]{10,})"', text)
-            if quoted:
-                return quoted[:num_variations]
+            # Fallback: extract quoted strings
+            quoted = re.findall(r'"([^"]{5,100})"', text)
+            return [q for q in quoted if q not in existing][:count]
                 
         except Exception as e:
-            logger.warning(f"Failed to generate query variations: {e}")
+            logger.warning(f"Failed to generate variation batch: {e}")
+            return []
+    
+    def _generate_synthetic_variations(self, original_query: str, count: int) -> List[str]:
+        """Generate synthetic variations without VLM."""
+        words = original_query.split()
+        target = words[-1] if words else "object"
         
-        fallbacks = [
-            f"Find the most obvious {original_query.split()[-1] if original_query.split() else 'object'}",
-            f"Look for something that matches: {original_query}",
-            f"Identify the object described by: {original_query}",
+        templates = [
+            f"the {target} in the image",
+            f"something that looks like {target}",
+            f"the main {target} visible",
+            f"a {target} in the scene",
+            f"the most prominent {target}",
+            f"any {target} that stands out",
+            f"the {target} in the foreground",
+            f"the {target} in the center",
+            f"the largest {target}",
+            f"the closest {target}",
+            f"find {original_query}",
+            f"locate {original_query}",
+            f"identify {original_query}",
+            f"the area containing {target}",
+            f"region with {target}",
         ]
-        return fallbacks[:num_variations]
+        
+        import random
+        random.shuffle(templates)
+        return templates[:count]
     
     def _generate_single_hypothesis(self, image_path: str, query: str, strategy: str, 
                                      temperature: float, w: int, h: int, img_area: int) -> Optional[Hypothesis]:
@@ -313,14 +368,38 @@ class Planner:
         elif strategy == "exploratory":
             instruction = (
                 "Step 1 (Brainstorm): Consider ALTERNATIVE or LESS OBVIOUS interpretations.\n"
-                "Step 2 (Select): Choose an object that matches INDIRECTLY or FUNCTIONALLY.\n"
+                "Step 2 (Select): Choose an object that matches INDIRECTLY or METAPHORICALLY.\n"
                 "Step 3 (Propose): Output the bounding box for this alternative.\n"
             )
         elif strategy == "spatial":
             instruction = (
-                "Step 1 (Scan): Look at DIFFERENT REGIONS - edges, corners, background.\n"
-                "Step 2 (Locate): Find a matching object NOT in the obvious center area.\n"
+                "Step 1 (Scan): Systematically scan DIFFERENT REGIONS - edges, corners, background, foreground.\n"
+                "Step 2 (Locate): Find a matching object that might be PARTIALLY VISIBLE or in an UNEXPECTED location.\n"
                 "Step 3 (Propose): Output the bounding box.\n"
+            )
+        elif strategy == "functional":
+            instruction = (
+                "Step 1 (Function): Think about what FUNCTION or PURPOSE the query implies.\n"
+                "Step 2 (Find): Find an object that SERVES that function, even if it looks different.\n"
+                "Step 3 (Propose): Output the bounding box.\n"
+            )
+        elif strategy == "visual":
+            instruction = (
+                "Step 1 (Attributes): Focus on VISUAL ATTRIBUTES - color, shape, texture, size.\n"
+                "Step 2 (Match): Find objects with SIMILAR visual properties to what the query describes.\n"
+                "Step 3 (Propose): Output the bounding box.\n"
+            )
+        elif strategy == "contextual":
+            instruction = (
+                "Step 1 (Scene): Understand the SCENE TYPE and CONTEXT (indoor, outdoor, kitchen, etc.).\n"
+                "Step 2 (Expect): Find objects that TYPICALLY appear in this context matching the query.\n"
+                "Step 3 (Propose): Output the bounding box.\n"
+            )
+        elif strategy == "part_whole":
+            instruction = (
+                "Step 1 (Decompose): Consider if the query refers to a PART of something larger.\n"
+                "Step 2 (Compose): Or if the query is a CONTAINER/WHOLE that includes smaller parts.\n"
+                "Step 3 (Propose): Output the bounding box for the part or whole.\n"
             )
         else:
             instruction = (
