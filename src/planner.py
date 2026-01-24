@@ -10,7 +10,6 @@ from collections import defaultdict
 
 from .utils import get_device
 from .api_utils import get_openai_client, create_vision_message
-# from vllm import LLM, SamplingParams # Removed vLLM dependency
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("RESCue.Planner")
@@ -103,16 +102,6 @@ class Planner:
              raise ValueError("API base URL is required.")
 
     def generate_hypotheses(self, image_path: str, query: str, N: int = 1, temperature: float = 0.7) -> List[Dict]:
-        """
-        Generate N diverse hypotheses using query variations.
-        
-        Strategy:
-        - N=1: Original query only
-        - N=2: 1 original + 1 conservative rephrasing
-        - N=3: 1 original + 1 conservative + 1 exploratory
-        - N=4: 1 original + 1 conservative + 1 exploratory + 1 conservative
-        - N>4: Add spatial variations
-        """
         if N < 1:
             return []
             
@@ -120,7 +109,6 @@ class Planner:
         
         base_temp = temperature if temperature is not None else self.config.base_temperature
         
-        # Generate query variations based on N
         query_configs = self._generate_query_configs(query, N, base_temp)
         
         candidates: List[Hypothesis] = []
@@ -151,20 +139,14 @@ class Planner:
             except Exception as e:
                 logger.error(f"Failed to generate hypothesis: {e}")
         
-        # Select best N (should already be N, but deduplicate if needed)
         final_hypotheses = self._select_diverse_subset(candidates, N, query)
         
         logger.info(f"Final selection: {len(final_hypotheses)} hypotheses")
         return [h.to_dict() for h in final_hypotheses]
     
     def _generate_query_configs(self, original_query: str, N: int, base_temp: float) -> List[Dict]:
-        """
-        Generate N query configurations with variations.
-        Priority: original -> conservative -> exploratory -> spatial (only N>4)
-        """
         configs = []
         
-        # Always include original query first
         configs.append({
             "query": original_query,
             "strategy": "original",
@@ -174,19 +156,16 @@ class Planner:
         if N == 1:
             return configs
         
-        # Generate varied queries using LLM
         variations = self._generate_query_variations(original_query, N - 1)
         
-        # Assign strategies based on position
-        # Priority order: conservative, exploratory, then spatial (only for N>4)
         for i, varied_query in enumerate(variations):
-            if i < 2:  # First 2 variations are conservative
+            if i < 2: 
                 strategy = "conservative"
                 temp = max(0.3, base_temp - 0.2)
-            elif i < 4:  # Next 2 are exploratory
+            elif i < 4: 
                 strategy = "exploratory"
                 temp = min(1.0, base_temp + 0.2)
-            else:  # Rest are spatial (N > 4)
+            else:  
                 strategy = "spatial"
                 temp = base_temp + 0.1
             
@@ -196,26 +175,24 @@ class Planner:
                 "temperature": temp
             })
         
-        return configs[:N]  # Ensure we return exactly N
+        return configs[:N]  
     
     def _generate_query_variations(self, original_query: str, num_variations: int) -> List[str]:
-        """Generate varied interpretations of the query using the LLM."""
-        
         prompt = f"""Given this image segmentation query: "{original_query}"
 
-Generate {num_variations} DIFFERENT ways to interpret or rephrase this query. Each variation should:
-1. Focus on a DIFFERENT aspect or interpretation of what's being asked
-2. Be specific and actionable for locating an object in an image
-3. Consider literal, functional, visual, or contextual interpretations
+        Generate {num_variations} DIFFERENT ways to interpret or rephrase this query. Each variation should:
+        1. Focus on a DIFFERENT aspect or interpretation of what's being asked
+        2. Be specific and actionable for locating an object in an image
+        3. Consider literal, functional, visual, or contextual interpretations
 
-Output as JSON array of strings:
-{{"variations": ["variation 1", "variation 2", ...]}}
+        Output as JSON array of strings:
+        {{"variations": ["variation 1", "variation 2", ...]}}
 
-Examples of good variations for "What could hold water?":
-- "a container or vessel that can store liquid" (literal/functional)
-- "a cup, bowl, or glass visible in the scene" (specific objects)
-- "something with a concave shape that could collect water" (visual property)
-- "a sink, bathtub, or plumbing fixture" (contextual/environmental)"""
+        Examples of good variations for "What could hold water?":
+        - "a container or vessel that can store liquid" (literal/functional)
+        - "a cup, bowl, or glass visible in the scene" (specific objects)
+        - "something with a concave shape that could collect water" (visual property)
+        - "a sink, bathtub, or plumbing fixture" (contextual/environmental)"""
 
         try:
             completion = self.client.chat.completions.create(
@@ -227,9 +204,7 @@ Examples of good variations for "What could hold water?":
             
             text = completion.choices[0].message.content
             
-            # Parse JSON
             import json
-            # Find JSON in response
             json_match = re.search(r'\{[^{}]*"variations"[^{}]*\[.*?\][^{}]*\}', text, re.DOTALL)
             if json_match:
                 data = json.loads(json_match.group())
@@ -237,7 +212,6 @@ Examples of good variations for "What could hold water?":
                 if variations:
                     return variations[:num_variations]
             
-            # Fallback: extract quoted strings
             quoted = re.findall(r'"([^"]{10,})"', text)
             if quoted:
                 return quoted[:num_variations]
@@ -245,7 +219,6 @@ Examples of good variations for "What could hold water?":
         except Exception as e:
             logger.warning(f"Failed to generate query variations: {e}")
         
-        # Fallback: return simple variations
         fallbacks = [
             f"Find the most obvious {original_query.split()[-1] if original_query.split() else 'object'}",
             f"Look for something that matches: {original_query}",
@@ -255,8 +228,6 @@ Examples of good variations for "What could hold water?":
     
     def _generate_single_hypothesis(self, image_path: str, query: str, strategy: str, 
                                      temperature: float, w: int, h: int, img_area: int) -> Optional[Hypothesis]:
-        """Generate a single hypothesis for a given query."""
-        
         prompt_text = self._construct_prompt(query, strategy)
         messages = create_vision_message(prompt_text, image_path)
         
@@ -276,7 +247,6 @@ Examples of good variations for "What could hold water?":
         choice = completion.choices[0]
         text = choice.message.content
         
-        # Estimate confidence from logprobs
         confidence = 0.5
         if choice.logprobs and choice.logprobs.content:
             try:
@@ -338,20 +308,15 @@ Examples of good variations for "What could hold water?":
         return f"{base_prompt}{instruction}{format_instr}"
 
     def _concepts_similar(self, concept1: str, concept2: str) -> bool:
-        """Check if two concepts are semantically similar."""
-        # Exact match
         if concept1 == concept2:
             return True
         
-        # One contains the other
         if concept1 in concept2 or concept2 in concept1:
             return True
         
-        # Word overlap check
         words1 = set(concept1.split())
         words2 = set(concept2.split())
         
-        # Remove common words
         stopwords = {'the', 'a', 'an', 'in', 'on', 'at', 'of', 'to', 'for', 'with'}
         words1 = words1 - stopwords
         words2 = words2 - stopwords
@@ -359,7 +324,6 @@ Examples of good variations for "What could hold water?":
         if not words1 or not words2:
             return False
         
-        # High overlap = similar
         overlap = len(words1 & words2)
         union = len(words1 | words2)
         
@@ -422,16 +386,13 @@ Examples of good variations for "What could hold water?":
         if not candidates:
             return []
         
-        # First, deduplicate by concept
         concept_groups: Dict[str, List[Hypothesis]] = defaultdict(list)
         for c in candidates:
             concept_key = c.target_concept.lower().strip()
             concept_groups[concept_key].append(c)
         
-        # Take best from each concept group
         unique_candidates = []
         for concept, group in concept_groups.items():
-            # Sort by confidence and take best
             best = max(group, key=lambda h: h.confidence)
             unique_candidates.append(best)
         
@@ -450,20 +411,17 @@ Examples of good variations for "What could hold water?":
         
         selected: List[Hypothesis] = []
         
-        # Select diverse hypotheses based on BOTH box IoU AND concept similarity
         for cand in ranked:
             if len(selected) >= N:
                 break
                 
             is_diverse = True
             for existing in selected:
-                # Check box overlap
                 iou = cand.iou(existing)
                 if iou > self.config.iou_threshold:
                     is_diverse = False
                     break
                 
-                # Check concept similarity
                 if self._concepts_similar(cand.target_concept.lower(), existing.target_concept.lower()):
                     is_diverse = False
                     break
@@ -472,7 +430,6 @@ Examples of good variations for "What could hold water?":
                 selected.append(cand)
                 logger.info(f"  Selected: {cand.target_concept} (conf={cand.confidence:.2f})")
                 
-        # If we still need more, add remaining with lowest overlap
         if len(selected) < N:
             remaining_needed = N - len(selected)
             others = [c for c in ranked if c not in selected]

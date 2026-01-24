@@ -1,0 +1,261 @@
+--- Step 1: Planning (N=4) ---
+INFO:RESCue.Planner:Generating 4 hypotheses for query: 'a car with a color that is closer to lipstick color'
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:Query 1/4 [original] (T=0.70): a car with a color that is closer to lipstick color...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> red Ferrari in the foreground
+INFO:RESCue.Planner:Query 2/4 [conservative] (T=0.50): a vehicle whose body color closely matches the shade of lipstick, such as a deep...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> red Ferrari with deep red body color
+INFO:RESCue.Planner:Query 3/4 [conservative] (T=0.50): a car painted in a hue that visually resembles a common lipstick color, like cri...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> red Ferrari with crimson-like paint
+INFO:RESCue.Planner:Query 4/4 [exploratory] (T=0.90): a car where the dominant color in its paint is within the red-to-pink spectrum, ...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> red Ferrari with dominant red paint
+INFO:RESCue.Planner:Deduplicated 4 -> 4 unique concepts
+INFO:RESCue.Planner:  Selected: red Ferrari with deep red body color (conf=0.88)
+INFO:RESCue.Planner:  Added (fill): red Ferrari with crimson-like paint (conf=0.78)
+INFO:RESCue.Planner:  Added (fill): red Ferrari in the foreground (conf=0.91)
+INFO:RESCue.Planner:  Added (fill): red Ferrari with dominant red paint (conf=0.68)
+INFO:RESCue.Planner:Final selection: 4 hypotheses
+Generated 4 hypotheses.
+--- Step 2: Execution ---
+  - Encoding Image on Executor...
+  Generated candidate H0_M0 | red Ferrari with deep red body color
+  Generated candidate H1_M0 | red Ferrari with crimson-like paint
+  Generated candidate H2_M0 | red Ferrari in the foreground
+  Generated candidate H3_M0 | red Ferrari with dominant red paint
+--- Step 3: Verification ---
+Overlay - Image shape: (1200, 1600, 3) Mask shape: (1200, 1600)
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+[Verifier]: {"identity": 25, "spatial": 25, "completeness": 25, "boundary": 23}
+  H0_M0: Score 98 [I:25 S:25 C:25 B:23] | IoU: 0.9768 | red Ferrari with deep red body color
+Overlay - Image shape: (1200, 1600, 3) Mask shape: (1200, 1600)
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+[Verifier]: {"identity": 25, "spatial": 25, "completeness": 25, "boundary": 24}
+  H1_M0: Score 99 [I:25 S:25 C:25 B:24] | IoU: 0.9793 | red Ferrari with crimson-like paint
+Overlay - Image shape: (1200, 1600, 3) Mask shape: (1200, 1600)
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+[Verifier]: {"identity": 25, "spatial": 25, "completeness": 25, "boundary": 24}
+  H2_M0: Score 99 [I:25 S:25 C:25 B:24] | IoU: 0.9772 | red Ferrari in the foreground
+Overlay - Image shape: (1200, 1600, 3) Mask shape: (1200, 1600)
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+[Verifier]: {"identity": 25, "spatial": 25, "completeness": 25, "boundary": 24}
+  H3_M0: Score 99 [I:25 S:25 C:25 B:24] | IoU: 0.9777 | red Ferrari with dominant red paint
+--- Result ---
+Best Candidate: H1_M0 with Score 99
+  [Debug] Sample 2 Mask Stats:
+    - Pred Shape: (1200, 1600), Unique: [False  True]
+    - GT Shape:   (1200, 1600), Unique: [False  True]
+Overlay - Image shape: (1200, 1600, 3) Mask shape: (1200, 1600)
+Overlay - Image shape: (1200, 1600, 3) Mask shape: (1200, 1600)
+    - Saved debug overlays to debug_output/sample_2_*.png
+Sample 2 | Final Selected IoU: 0.9793
+ 15%|███████████████████████                                                                                                                                   | 3/20 [00:40<03:14, 11.43s/it]--- Step 1: Planning (N=4) ---
+INFO:RESCue.Planner:Generating 4 hypotheses for query: 'In a mechanical workshop, there are various machines and tools used for different purposes. What in the picture could be used to rotate or spin other parts or objects?'
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:Query 1/4 [original] (T=0.70): In a mechanical workshop, there are various machines and tools used for differen...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> large black handwheel with chain attached
+INFO:RESCue.Planner:Query 2/4 [conservative] (T=0.50): objects in the workshop that have rotating components like wheels, shafts, or mo...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> large black handwheel with rotating components
+INFO:RESCue.Planner:Query 3/4 [conservative] (T=0.50): machines or tools in the image that are designed to apply rotational force to ot...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> large black handwheel with chain attached
+INFO:RESCue.Planner:Query 4/4 [exploratory] (T=0.90): items with visible spinning mechanisms such as drills, lathes, or grinding wheel...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> large black handwheel with chain on the left
+INFO:RESCue.Planner:Deduplicated 4 -> 3 unique concepts
+INFO:RESCue.Planner:  Selected: large black handwheel with chain attached (conf=0.75)
+INFO:RESCue.Planner:  Added (fill): large black handwheel with rotating components (conf=0.74)
+INFO:RESCue.Planner:  Added (fill): large black handwheel with chain on the left (conf=0.73)
+INFO:RESCue.Planner:Final selection: 3 hypotheses
+Generated 3 hypotheses.
+--- Step 2: Execution ---
+  - Encoding Image on Executor...
+  Generated candidate H0_M0 | large black handwheel with chain attached
+  Generated candidate H1_M0 | large black handwheel with rotating components
+--- Step 3: Verification ---
+Overlay - Image shape: (1606, 1610, 3) Mask shape: (1606, 1610)
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+[Verifier]: {"identity": 25, "spatial": 25, "completeness": 25, "boundary": 23}
+  H0_M0: Score 98 [I:25 S:25 C:25 B:23] | IoU: 0.9349 | large black handwheel with chain attached
+Overlay - Image shape: (1606, 1610, 3) Mask shape: (1606, 1610)
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+[Verifier]: {"identity": 25, "spatial": 25, "completeness": 25, "boundary": 23}
+  H1_M0: Score 98 [I:25 S:25 C:25 B:23] | IoU: 0.9350 | large black handwheel with rotating components
+  NOTE: Best IoU is H1_M0 (0.9350), but selected H0_M0
+--- Result ---
+Best Candidate: H0_M0 with Score 98
+  [Debug] Sample 3 Mask Stats:
+    - Pred Shape: (1606, 1610), Unique: [False  True]
+    - GT Shape:   (1606, 1610), Unique: [False  True]
+Overlay - Image shape: (1606, 1610, 3) Mask shape: (1606, 1610)
+Overlay - Image shape: (1606, 1610, 3) Mask shape: (1606, 1610)
+    - Saved debug overlays to debug_output/sample_3_*.png
+Sample 3 | Final Selected IoU: 0.9349
+ 20%|██████████████████████████████▊                                                                                                                           | 4/20 [00:47<02:39,  9.95s/it]--- Step 1: Planning (N=4) ---
+INFO:RESCue.Planner:Generating 4 hypotheses for query: 'the area where people can stand without getting wet'
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:Query 1/4 [original] (T=0.70): the area where people can stand without getting wet...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> dry land on the far shore
+INFO:RESCue.Planner:Query 2/4 [conservative] (T=0.50): the elevated or dry ground surface near a body of water where people can stand s...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> dry elevated ground surface near water in the background
+INFO:RESCue.Planner:Query 3/4 [conservative] (T=0.50): the area above the waterline in a flooded space, such as a sidewalk or platform...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:Query 4/4 [exploratory] (T=0.90): the region with no visible water droplets or splashes, indicating it's not wet...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> dry arid land across the river in the background
+INFO:RESCue.Planner:Deduplicated 3 -> 3 unique concepts
+INFO:RESCue.Planner:  Selected: dry land on the far shore (conf=0.76)
+INFO:RESCue.Planner:  Selected: dry elevated ground surface near water in the background (conf=0.79)
+INFO:RESCue.Planner:  Added (fill): dry arid land across the river in the background (conf=0.77)
+INFO:RESCue.Planner:Final selection: 3 hypotheses
+Generated 3 hypotheses.
+--- Step 2: Execution ---
+  - Encoding Image on Executor...
+  Generated candidate H0_M0 | dry land on the far shore
+  Generated candidate H2_M0 | dry arid land across the river in the background
+--- Step 3: Verification ---
+Overlay - Image shape: (600, 800, 3) Mask shape: (600, 800)
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+[Verifier]: {"identity": 25, "spatial": 25, "completeness": 10, "boundary": 15}
+  H0_M0: Score 75 [I:25 S:25 C:10 B:15] | IoU: 0.2634 | dry land on the far shore
+Overlay - Image shape: (600, 800, 3) Mask shape: (600, 800)
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+[Verifier]: {"identity": 25, "spatial": 25, "completeness": 9, "boundary": 18}
+  H2_M0: Score 77 [I:25 S:25 C:9 B:18] | IoU: 0.6863 | dry arid land across the river in the background
+--- Result ---
+Best Candidate: H2_M0 with Score 77
+  [Debug] Sample 4 Mask Stats:
+    - Pred Shape: (600, 800), Unique: [False  True]
+    - GT Shape:   (600, 800), Unique: [False  True]
+Overlay - Image shape: (600, 800, 3) Mask shape: (600, 800)
+Overlay - Image shape: (600, 800, 3) Mask shape: (600, 800)
+    - Saved debug overlays to debug_output/sample_4_*.png
+Sample 4 | Final Selected IoU: 0.6863
+ 25%|██████████████████████████████████████▌                                                                                                                   | 5/20 [00:53<02:03,  8.23s/it]--- Step 1: Planning (N=4) ---
+INFO:RESCue.Planner:Generating 4 hypotheses for query: 'the person who appears to have already won in the battle'
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:Query 1/4 [original] (T=0.70): the person who appears to have already won in the battle...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> boy in black singlet on top
+INFO:RESCue.Planner:Query 2/4 [conservative] (T=0.50): a person standing in a victorious pose, such as raising arms or smiling, indicat...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> boy in black singlet with headgear, smiling and looking at camera, in a dominant wrestling position
+INFO:RESCue.Planner:Query 3/4 [conservative] (T=0.50): a person wearing a medal, trophy, or ceremonial attire that signifies victory in...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:Query 4/4 [exploratory] (T=0.90): a figure in the foreground with a defeated opponent in the background, visually ...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:Deduplicated 2 -> 2 unique concepts
+INFO:RESCue.Planner:  Selected: boy in black singlet with headgear, smiling and looking at camera, in a dominant wrestling position (conf=0.80)
+INFO:RESCue.Planner:  Added (fill): boy in black singlet on top (conf=0.83)
+INFO:RESCue.Planner:Final selection: 2 hypotheses
+Generated 2 hypotheses.
+--- Step 2: Execution ---
+  - Encoding Image on Executor...
+  Generated candidate H1_M0 | boy in black singlet on top
+--- Step 3: Verification ---
+Overlay - Image shape: (1504, 2256, 3) Mask shape: (1504, 2256)
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+[Verifier]: {"identity": 25, "spatial": 25, "completeness": 23, "boundary": 20}
+  H1_M0: Score 93 [I:25 S:25 C:23 B:20] | IoU: 0.9552 | boy in black singlet on top
+--- Result ---
+Best Candidate: H1_M0 with Score 93
+  [Debug] Sample 5 Mask Stats:
+    - Pred Shape: (1504, 2256), Unique: [False  True]
+    - GT Shape:   (1504, 2256), Unique: [False  True]
+Sample 5 | Final Selected IoU: 0.9552
+ 30%|██████████████████████████████████████████████▏                                                                                                           | 6/20 [01:04<02:11,  9.39s/it]--- Step 1: Planning (N=4) ---
+INFO:RESCue.Planner:Generating 4 hypotheses for query: 'In some rural areas, horse-drawn carts are still used for transportation and carrying goods. What is the main source of power that drives the cart in the picture?'
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:Query 1/4 [original] (T=0.70): In some rural areas, horse-drawn carts are still used for transportation and car...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> large black horse harnessed to the cart
+INFO:RESCue.Planner:Query 2/4 [conservative] (T=0.50): Identify the animal pulling the cart in the image, focusing on its physical feat...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> black horse pulling white carriage
+INFO:RESCue.Planner:Query 3/4 [conservative] (T=0.50): Locate the source of motion in the cart's movement by identifying the force prov...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> large black horse pulling the white carriage
+INFO:RESCue.Planner:Query 4/4 [exploratory] (T=0.90): Find the living creature connected to the cart via harness or reins, indicating ...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> large black horse harnessed to a white carriage on the left
+INFO:RESCue.Planner:Deduplicated 4 -> 4 unique concepts
+INFO:RESCue.Planner:  Selected: black horse pulling white carriage (conf=0.77)
+INFO:RESCue.Planner:  Added (fill): large black horse harnessed to a white carriage on the left (conf=0.72)
+INFO:RESCue.Planner:  Added (fill): large black horse harnessed to the cart (conf=0.77)
+INFO:RESCue.Planner:  Added (fill): large black horse pulling the white carriage (conf=0.83)
+INFO:RESCue.Planner:Final selection: 4 hypotheses
+Generated 4 hypotheses.
+--- Step 2: Execution ---
+  - Encoding Image on Executor...
+  Generated candidate H0_M0 | black horse pulling white carriage
+  Generated candidate H1_M0 | large black horse harnessed to a white carriage on the left
+  Generated candidate H2_M0 | large black horse harnessed to the cart
+--- Step 3: Verification ---
+Overlay - Image shape: (2304, 3456, 3) Mask shape: (2304, 3456)
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+[Verifier]: {"identity": 25, "spatial": 25, "completeness": 22, "boundary": 23}
+  H0_M0: Score 95 [I:25 S:25 C:22 B:23] | IoU: 0.4978 | black horse pulling white carriage
+Overlay - Image shape: (2304, 3456, 3) Mask shape: (2304, 3456)
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+[Verifier]: {"identity": 25, "spatial": 25, "completeness": 18, "boundary": 15}
+  H1_M0: Score 83 [I:25 S:25 C:18 B:15] | IoU: 0.2495 | large black horse harnessed to a white carriage on the left
+Overlay - Image shape: (2304, 3456, 3) Mask shape: (2304, 3456)
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+[Verifier]: {"identity": 25, "spatial": 25, "completeness": 18, "boundary": 15}
+  H2_M0: Score 83 [I:25 S:25 C:18 B:15] | IoU: 0.2602 | large black horse harnessed to the cart
+--- Result ---
+Best Candidate: H0_M0 with Score 95
+  [Debug] Sample 6 Mask Stats:
+    - Pred Shape: (2304, 3456), Unique: [False  True]
+    - GT Shape:   (2304, 3456), Unique: [False  True]
+Sample 6 | Final Selected IoU: 0.4978
+ 35%|█████████████████████████████████████████████████████▉                                                                                                    | 7/20 [01:20<02:26, 11.29s/it]--- Step 1: Planning (N=4) ---
+INFO:RESCue.Planner:Generating 4 hypotheses for query: 'something that is noticeably different from the other plants in the picture'
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:Query 1/4 [original] (T=0.70): something that is noticeably different from the other plants in the picture...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> white flower with dark tips in the center
+INFO:RESCue.Planner:Query 2/4 [conservative] (T=0.50): a plant with a distinct color or leaf pattern compared to the surrounding vegeta...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> white flower with green leaves
+INFO:RESCue.Planner:Query 3/4 [conservative] (T=0.50): a plant that stands out due to its size or height relative to others...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> large green plant with white flower in center
+INFO:RESCue.Planner:Query 4/4 [exploratory] (T=0.90): a plant with a unique structural feature, such as a different stem shape or flow...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> white flower head with black-tipped stamens in the center
+INFO:RESCue.Planner:Deduplicated 4 -> 4 unique concepts
+INFO:RESCue.Planner:  Selected: white flower with green leaves (conf=0.77)
+INFO:RESCue.Planner:  Added (fill): white flower head with black-tipped stamens in the center (conf=0.68)
+INFO:RESCue.Planner:  Added (fill): white flower with dark tips in the center (conf=0.79)
+INFO:RESCue.Planner:  Added (fill): large green plant with white flower in center (conf=0.72)
+INFO:RESCue.Planner:Final selection: 4 hypotheses
+Generated 4 hypotheses.
+--- Step 2: Execution ---
+  - Encoding Image on Executor...
+  Generated candidate H1_M0 | white flower head with black-tipped stamens in the center
+  Generated candidate H3_M0 | large green plant with white flower in center
+--- Step 3: Verification ---
+Overlay - Image shape: (3456, 5184, 3) Mask shape: (3456, 5184)
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+[Verifier]: {"identity": 25, "spatial": 25, "completeness": 23, "boundary": 24}
+  H1_M0: Score 97 [I:25 S:25 C:23 B:24] | IoU: 0.9240 | white flower head with black-tipped stamens in the center
+Overlay - Image shape: (3456, 5184, 3) Mask shape: (3456, 5184)
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+[Verifier]: {"identity": 25, "spatial": 25, "completeness": 25, "boundary": 23}
+  H3_M0: Score 98 [I:25 S:25 C:25 B:23] | IoU: 0.0145 | large green plant with white flower in center
+  NOTE: Best IoU is H1_M0 (0.9240), but selected H3_M0
+--- Result ---
+Best Candidate: H3_M0 with Score 98
+  [Debug] Sample 7 Mask Stats:
+    - Pred Shape: (3456, 5184), Unique: [False  True]
+    - GT Shape:   (3456, 5184), Unique: [False  True]
+Sample 7 | Final Selected IoU: 0.0145
+ 40%|█████████████████████████████████████████████████████████████▌    

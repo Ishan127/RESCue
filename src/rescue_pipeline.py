@@ -89,7 +89,8 @@ class RESCuePipeline:
                 iou_info = f" | IoU: {iou:.4f}"
             
             sb = result
-            print(f"  {cand['id']}: Score {cand['score']:.0f} [I:{sb['identity']:.0f} S:{sb['spatial']:.0f} C:{sb['completeness']:.0f} B:{sb['boundary']:.0f}]{iou_info} | {cand['noun_phrase']}")
+            breakdown = f"[C:{sb['correct']} P:{sb['precision']} Cov:{sb['coverage']}]"
+            print(f"  {cand['id']}: Score {cand['score']:.0f} {breakdown}{iou_info} | {cand['noun_phrase']}")
         
         best_candidate = max(candidates, key=lambda x: x['score'])
         

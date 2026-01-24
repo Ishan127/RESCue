@@ -1,11 +1,3 @@
-"""
-SAM3 Executor - Client for SAM3 Inference Server
-Based on rpol-recart/sam3_inference API patterns
-
-This executor provides:
-  - Remote mode: Connects to SAM3 inference server via HTTP
-  - Local mode: Direct model inference (fallback)
-"""
 import torch
 import numpy as np
 import cv2
@@ -18,25 +10,11 @@ from pathlib import Path
 from PIL import Image
 from .utils import get_device
 
-# Logging
 import logging
 logger = logging.getLogger(__name__)
 
 
 class Executor:
-    """
-    SAM3 Executor with remote/local inference support.
-    
-    Based on rpol-recart/sam3_inference implementation patterns.
-    
-    Usage:
-        # Remote mode (recommended)
-        executor = Executor(remote_url="http://localhost:8001")
-        
-        # Local mode
-        executor = Executor(model_path="facebook/sam3", device="cuda")
-    """
-
     def __init__(
         self, 
         model_path: str = "facebook/sam3", 
@@ -46,30 +24,17 @@ class Executor:
         resolution: int = 1008,
         timeout: int = 60
     ):
-        """
-        Initialize the SAM3 Executor.
-        
-        Args:
-            model_path: Model checkpoint path or HuggingFace ID (for local mode)
-            device: Device for local inference (auto-detected if None)
-            remote_url: URL of SAM3 inference server (enables remote mode)
-            confidence_threshold: Confidence threshold for mask filtering
-            resolution: Input resolution for SAM3
-            timeout: Request timeout for remote mode (seconds)
-        """
         self.remote_url = remote_url
         self.device = device or get_device()
         self.confidence_threshold = confidence_threshold
         self.resolution = resolution
         self.timeout = timeout
         
-        # State for caching
         self._cached_image: Optional[Image.Image] = None
         self._cached_image_size: Optional[Tuple[int, int]] = None
         self._session_active: bool = False
         self._active_state = None
         
-        # Local model references
         self.model = None
         self.processor = None
 
@@ -83,7 +48,6 @@ class Executor:
             self._load_local_model(model_path)
 
     def _verify_server_connection(self):
-        """Verify connection to remote SAM3 server."""
         try:
             response = requests.get(f"{self.remote_url}/health", timeout=5)
             response.raise_for_status()
@@ -97,7 +61,6 @@ class Executor:
             print(f"Warning: Could not connect to SAM3 server at {self.remote_url}: {e}")
 
     def _load_local_model(self, model_path: str):
-        """Load SAM3 model locally."""
         try:
             from sam3.model_builder import build_sam3_image_model
             from sam3.model.sam3_image_processor import Sam3Processor
@@ -105,7 +68,6 @@ class Executor:
             logger.error(f"SAM3 not installed: {e}")
             raise ImportError("SAM3 library not installed. Install sam3 or use remote mode.")
 
-        # Checkpoint resolution
         load_from_HF = False
         resolved_checkpoint_path = None
 
@@ -146,12 +108,7 @@ class Executor:
         logger.info("SAM3 model loaded successfully")
         print("SAM3 model loaded successfully")
 
-    # =========================================================================
-    # Image Encoding Utilities
-    # =========================================================================
-
     def _image_to_base64(self, image_input: Union[np.ndarray, Image.Image]) -> str:
-        """Convert image to base64 string."""
         if isinstance(image_input, np.ndarray):
             image = Image.fromarray(image_input.astype(np.uint8))
         else:
@@ -162,20 +119,14 @@ class Executor:
         return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
     def _base64_to_mask(self, b64_string: str) -> np.ndarray:
-        """Convert base64 encoded mask to numpy array."""
         img_data = base64.b64decode(b64_string)
         img = Image.open(io.BytesIO(img_data)).convert("L")
         return np.array(img).astype(bool)
 
     def _to_pil(self, image_input: Union[np.ndarray, Image.Image]) -> Image.Image:
-        """Convert input to PIL Image."""
         if isinstance(image_input, np.ndarray):
             return Image.fromarray(image_input.astype(np.uint8))
         return image_input
-
-    # =========================================================================
-    # Main API Methods
-    # =========================================================================
 
     def segment(
         self,
@@ -185,19 +136,6 @@ class Executor:
         points: Optional[List[List[float]]] = None,
         point_labels: Optional[List[int]] = None,
     ) -> List[np.ndarray]:
-        """
-        Segment image with prompts (main API method).
-        
-        Args:
-            image: Input image (numpy array or PIL Image)
-            text_prompt: Text description of object to segment
-            box: Bounding box [x1, y1, x2, y2] in pixels
-            points: List of [x, y] points in pixels
-            point_labels: Labels for points (1=positive, 0=negative)
-        
-        Returns:
-            List of binary mask arrays
-        """
         if self.remote_url:
             return self._segment_remote(image, text_prompt, box, points, point_labels)
         else:
@@ -209,29 +147,9 @@ class Executor:
         box: Optional[List[float]], 
         text_prompt: Optional[str]
     ) -> List[np.ndarray]:
-        """
-        Legacy execute method (calls segment internally).
-        
-        Args:
-            image_input: Input image
-            box: Bounding box [x1, y1, x2, y2] in pixels
-            text_prompt: Text prompt
-        
-        Returns:
-            List of binary masks
-        """
         return self.segment(image_input, text_prompt=text_prompt, box=box)
 
     def encode_image(self, image_input: Union[np.ndarray, Image.Image]) -> bool:
-        """
-        Cache image for subsequent predictions (optimization).
-        
-        Args:
-            image_input: Input image
-        
-        Returns:
-            True if successful
-        """
         pil_image = self._to_pil(image_input)
         self._cached_image = pil_image
         self._cached_image_size = pil_image.size
@@ -252,7 +170,6 @@ class Executor:
                 print(f"Remote image encoding failed: {e}")
                 return False
         else:
-            # Local: pre-compute features
             try:
                 self._active_state = self.processor.set_image(pil_image)
                 self._session_active = True
@@ -268,16 +185,6 @@ class Executor:
         box: Optional[List[float]] = None, 
         text_prompt: Optional[str] = None
     ) -> List[np.ndarray]:
-        """
-        Predict masks using cached image.
-        
-        Args:
-            box: Bounding box [x1, y1, x2, y2] in pixels
-            text_prompt: Text prompt
-        
-        Returns:
-            List of binary masks
-        """
         if not self._session_active or self._cached_image is None:
             logger.error("No cached image. Call encode_image first.")
             print("Error: No cached image. Call encode_image first.")
@@ -288,10 +195,6 @@ class Executor:
         else:
             return self._predict_local(box, text_prompt)
 
-    # =========================================================================
-    # Remote Inference Implementation
-    # =========================================================================
-
     def _segment_remote(
         self,
         image: Union[np.ndarray, Image.Image],
@@ -300,16 +203,13 @@ class Executor:
         points: Optional[List[List[float]]] = None,
         point_labels: Optional[List[int]] = None,
     ) -> List[np.ndarray]:
-        """Remote segmentation via API."""
         pil_image = self._to_pil(image)
         orig_w, orig_h = pil_image.size
 
-        # Build prompts
         prompts = []
         if text_prompt:
             prompts.append({"type": "text", "text": text_prompt})
         if box:
-            # Normalize box to [0, 1]
             normalized_box = [
                 box[0] / orig_w,
                 box[1] / orig_h,
@@ -318,7 +218,6 @@ class Executor:
             ]
             prompts.append({"type": "box", "box": normalized_box, "label": True})
         if points and point_labels:
-            # Normalize points to [0, 1]
             normalized_points = [[p[0] / orig_w, p[1] / orig_h] for p in points]
             prompts.append({
                 "type": "point", 
@@ -344,7 +243,6 @@ class Executor:
             response.raise_for_status()
             data = response.json()
 
-            # Decode masks
             masks = [self._base64_to_mask(m) for m in data.get("masks", [])]
             logger.info(f"Remote segmentation: {len(masks)} masks, {data.get('inference_time_ms', 0):.1f}ms")
             return masks
@@ -359,7 +257,6 @@ class Executor:
         box: Optional[List[float]] = None, 
         text_prompt: Optional[str] = None
     ) -> List[np.ndarray]:
-        """Remote prediction using cached image."""
         try:
             payload = {}
             if text_prompt:
@@ -383,10 +280,6 @@ class Executor:
             print(f"Remote prediction failed: {e}")
             return []
 
-    # =========================================================================
-    # Local Inference Implementation
-    # =========================================================================
-
     def _segment_local(
         self,
         image: Union[np.ndarray, Image.Image],
@@ -395,31 +288,31 @@ class Executor:
         points: Optional[List[List[float]]] = None,
         point_labels: Optional[List[int]] = None,
     ) -> List[np.ndarray]:
-        """Local segmentation with SAM3."""
         pil_image = self._to_pil(image)
         orig_w, orig_h = pil_image.size
 
         try:
             state = self.processor.set_image(pil_image)
 
-            # Add text prompt
             if text_prompt:
                 state = self.processor.set_text_prompt(prompt=text_prompt, state=state)
 
-            # Add box prompt
             if box:
                 state = self.processor.add_geometric_prompt(
-                    box=box,  # Already in pixels
+                    box=box,
                     label=1,
                     state=state
                 )
+                if "language_features" not in state.get("backbone_out", {}):
+                    dummy_text = self.processor.model.backbone.forward_text(["visual"], device=self.device)
+                    state["backbone_out"].update(dummy_text)
+                if hasattr(self.processor, '_forward_grounding'):
+                    state = self.processor._forward_grounding(state)
 
-            # Add point prompts
             if points and point_labels:
                 pts_tensor = torch.tensor(points, device=self.device, dtype=torch.float32).view(-1, 1, 2)
                 labels_tensor = torch.tensor(point_labels, device=self.device, dtype=torch.long).view(-1, 1)
 
-                # Ensure language features exist
                 if "language_features" not in state.get("backbone_out", {}):
                     dummy_text = self.processor.model.backbone.forward_text(["visual"], device=self.device)
                     state["backbone_out"].update(dummy_text)
@@ -445,13 +338,13 @@ class Executor:
         box: Optional[List[float]] = None, 
         text_prompt: Optional[str] = None
     ) -> List[np.ndarray]:
-        """Local prediction using cached state."""
         if self._active_state is None:
             logger.error("No active state. Call encode_image first.")
             return []
 
         try:
-            state = self._active_state.copy()
+            import copy
+            state = copy.deepcopy(self._active_state)
 
             if text_prompt:
                 state = self.processor.set_text_prompt(prompt=text_prompt, state=state)
@@ -463,7 +356,6 @@ class Executor:
                     state=state
                 )
 
-            # Ensure language features for geometric-only prompts
             if "language_features" not in state.get("backbone_out", {}):
                 dummy_text = self.processor.model.backbone.forward_text(["visual"], device=self.device)
                 state["backbone_out"].update(dummy_text)
@@ -487,53 +379,39 @@ class Executor:
         masks: Any, 
         image_size: Tuple[int, int]
     ) -> List[np.ndarray]:
-        """Process and format mask output."""
         if masks is None:
             return []
 
         orig_w, orig_h = image_size
 
-        # Convert to numpy
         if isinstance(masks, torch.Tensor):
             masks = masks.detach().cpu().numpy()
 
         extracted_masks = []
 
-        # Handle different tensor shapes
         if masks.ndim == 4:
-            # (B, N, H, W)
             for b in range(masks.shape[0]):
                 for n in range(masks.shape[1]):
                     extracted_masks.append(masks[b, n])
         elif masks.ndim == 3:
-            # (N, H, W)
             for n in range(masks.shape[0]):
                 extracted_masks.append(masks[n])
         elif masks.ndim == 2:
             extracted_masks.append(masks)
 
-        # Resize and threshold masks
         final_masks = []
         for m in extracted_masks:
             if m.shape != (orig_h, orig_w):
-                if m.shape == (orig_w, orig_h):
-                    m = m.T
-                else:
-                    m = cv2.resize(
-                        m.astype(np.float32), 
-                        (orig_w, orig_h), 
-                        interpolation=cv2.INTER_NEAREST
-                    )
+                m = cv2.resize(
+                    m.astype(np.float32), 
+                    (orig_w, orig_h), 
+                    interpolation=cv2.INTER_NEAREST
+                )
             final_masks.append((m > 0).astype(bool))
 
         return final_masks
 
-    # =========================================================================
-    # Utility Methods
-    # =========================================================================
-
     def get_server_info(self) -> Optional[Dict]:
-        """Get information about connected SAM3 server."""
         if not self.remote_url:
             return {"mode": "local", "device": self.device}
 
@@ -549,7 +427,6 @@ class Executor:
             return None
 
     def is_healthy(self) -> bool:
-        """Check if executor is ready for inference."""
         if self.remote_url:
             try:
                 response = requests.get(f"{self.remote_url}/health", timeout=5)

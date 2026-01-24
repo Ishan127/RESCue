@@ -15,7 +15,7 @@ class Verifier:
         self.client = client if client else get_openai_client(base_url=api_base)
 
     def verify(self, image_input, mask, query):
-        overlay_img = apply_red_alpha_overlay(image_input, mask, alpha=0.4)
+        overlay_img = apply_red_alpha_overlay(image_input, mask, alpha=0.5)
         
         mask_np = np.array(mask).astype(bool)
         if mask_np.ndim == 3:
@@ -23,35 +23,27 @@ class Verifier:
         
         mask_coverage = mask_np.sum() / mask_np.size * 100
         
-        prompt_text = f"""Evaluate segmentation mask for: "{query}"
+        prompt_text = f"""Look at this image with a RED highlighted region. The task was to segment: "{query}"
 
-        RED region = predicted segmentation ({mask_coverage:.1f}% coverage).
+        Answer these questions about the RED region:
 
-        Score 0-25 each (use ANY integer, not just multiples of 5):
+        Q1: Does the RED region highlight the CORRECT object described in the query? 
+        - "yes" = RED covers the right object
+        - "partial" = RED covers something related but not exact
+        - "no" = RED covers the wrong thing entirely
 
-        1. identity: Is the RED region the correct object type described in the query?
-        - 23-25: Exact object match
-        - 18-22: Correct category, minor ambiguity
-        - 8-17: Related but not exact (e.g., "chair" vs "stool")
-        - 0-7: Wrong object entirely
+        Q2: Is the RED region ONLY on the target object, or does it spill onto other things?
+        - "precise" = RED stays within the object boundaries
+        - "overspill" = RED extends beyond the object onto background/other objects
+        - "underspill" = RED misses significant parts of the object
+        - "both" = RED both misses parts AND extends beyond
 
-        2. spatial: Is the object in the described/expected location?
-        - 23-25: Perfectly positioned as described
-        - 18-22: Correct general region
-        - 8-17: Partially displaced
-        - 0-7: Wrong location
+        Q3: Roughly what percentage of the target object is covered by RED? Give a number 0-100.
 
-        3. completeness: What % of the target object is covered by the mask?
-        - Score ≈ (estimated % of object covered) x 0.25
-        - Example: 72% covered → score ~18
+        Output ONLY this JSON: {{"correct": "yes/partial/no", "precision": "precise/overspill/underspill/both", "coverage_pct": N}}"""
 
-        4. boundary: How accurate are the mask edges?
-        - Score ≈ 25 - (estimated % boundary error x 0.5)
-        - Example: 20% over/under-segmentation → score ~15
-
-        Output ONLY JSON: {{"identity": N, "spatial": N, "completeness": N, "boundary": N}}"""
-
-        scores = {"identity": 0, "spatial": 0, "completeness": 0, "boundary": 0, "total": 0}
+        scores = {"correct": 0, "precision": 0, "coverage": 0, "total": 0}
+        raw_response = {}
         
         if not self.client:
             return scores
@@ -74,10 +66,30 @@ class Verifier:
             print(f"[Verifier]: {text}")
             
             parsed = json_repair.loads(text)
-            for key in ["identity", "spatial", "completeness", "boundary"]:
-                scores[key] = min(25, max(0, float(parsed.get(key, 0))))
+            raw_response = parsed
             
-            scores["total"] = sum(scores[k] for k in ["identity", "spatial", "completeness", "boundary"])
+            correct_val = str(parsed.get("correct", "no")).lower().strip()
+            if correct_val == "yes":
+                scores["correct"] = 40
+            elif correct_val == "partial":
+                scores["correct"] = 20
+            else:
+                scores["correct"] = 0
+            
+            precision_val = str(parsed.get("precision", "both")).lower().strip()
+            if precision_val == "precise":
+                scores["precision"] = 30
+            elif precision_val in ["overspill", "underspill"]:
+                scores["precision"] = 15
+            else:
+                scores["precision"] = 0
+            
+            coverage_pct = float(parsed.get("coverage_pct", 0))
+            coverage_pct = min(100, max(0, coverage_pct))
+            scores["coverage"] = int(coverage_pct * 0.30)
+            
+            scores["total"] = scores["correct"] + scores["precision"] + scores["coverage"]
+            scores["raw"] = raw_response
             
         except Exception as e:
             print(f"Verifier Error: {e}")
