@@ -11,8 +11,9 @@ from collections import defaultdict
 from .utils import get_device
 from .api_utils import get_openai_client, create_vision_message
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger("RESCue.Planner")
+logger.setLevel(logging.WARNING)
 
 @dataclass(frozen=True)
 class PlannerConfig:

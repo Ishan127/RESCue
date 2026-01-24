@@ -1,6 +1,10 @@
 import base64
 import os
+import logging
 from openai import OpenAI
+
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("openai").setLevel(logging.WARNING)
 
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:

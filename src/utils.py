@@ -35,8 +35,6 @@ def apply_red_alpha_overlay(image, mask, alpha=0.5):
     if isinstance(mask, Image.Image):
         mask = np.array(mask)
     
-    print("Overlay - Image shape:", image.shape, "Mask shape:", mask.shape)
-    
     if mask.ndim == 3:
         if mask.shape[2] == 1:
             mask = mask[:, :, 0]

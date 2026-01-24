@@ -8,6 +8,8 @@ from PIL import Image
 from .utils import apply_red_alpha_overlay
 from .api_utils import create_vision_message, get_openai_client
 
+VERIFIER_VERBOSE = os.environ.get('VERIFIER_VERBOSE', '0') == '1'
+
 
 class Verifier:
     """
@@ -15,10 +17,11 @@ class Verifier:
     Recommended model: Qwen3-VL-32B-Thinking (chain-of-thought reasoning)
     """
     def __init__(self, client=None, model_path="Qwen/Qwen3-VL-32B-Thinking", 
-                 api_base="http://localhost:8000/v1"):
+                 api_base="http://localhost:8000/v1", verbose=None):
         self.model_path = model_path
         self.client = client if client else get_openai_client(base_url=api_base)
         self.is_thinking_model = "thinking" in model_path.lower()
+        self.verbose = verbose if verbose is not None else VERIFIER_VERBOSE
 
     def _create_comparison_grid(self, image, masks, labels):
         overlays = []
@@ -106,7 +109,7 @@ Output ONLY JSON: {{"ranking": ["{labels[0]}", "{labels[1]}", ...], "reasoning":
         try:
             messages = create_vision_message(prompt, tmp_path)
             
-            max_tokens = 1024 if self.is_thinking_model else 200
+            max_tokens = 2048 if self.is_thinking_model else 300
             
             completion = self.client.chat.completions.create(
                 model=self.model_path,
@@ -116,22 +119,59 @@ Output ONLY JSON: {{"ranking": ["{labels[0]}", "{labels[1]}", ...], "reasoning":
             )
             
             text = completion.choices[0].message.content.strip()
-            print(f"[Verifier Comparative]: {text[:500]}...")
+            if self.verbose:
+                print(f"[Verifier Comparative]: {text[:500]}...")
             
-            json_match = re.search(r'\{[^{}]*"ranking"[^{}]*\}', text, re.DOTALL)
-            if json_match:
-                parsed = json_repair.loads(json_match.group())
-            else:
-                parsed = json_repair.loads(text)
+            ranking = None
+            reasoning = ""
             
-            ranking = parsed.get("ranking", labels)
-            reasoning = parsed.get("reasoning", "")
+            json_patterns = [
+                r'\{\s*"ranking"\s*:\s*\[([^\]]+)\][^}]*\}',
+                r'"ranking"\s*:\s*\[([^\]]+)\]',
+                r'\[(["\']?[A-Z]["\']?\s*,?\s*)+\]',
+            ]
             
-            ranking = [r.upper().strip() for r in ranking if r.upper().strip() in labels]
+            for pattern in json_patterns:
+                match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+                if match:
+                    try:
+                        full_match = match.group(0)
+                        if full_match.startswith('{'):
+                            parsed = json_repair.loads(full_match)
+                            if isinstance(parsed, dict):
+                                ranking = parsed.get("ranking", [])
+                                reasoning = parsed.get("reasoning", "")
+                                break
+                        else:
+                            letters = re.findall(r'[A-Z]', match.group(1) if match.lastindex else match.group(0))
+                            if letters:
+                                ranking = letters
+                                break
+                    except:
+                        continue
+            
+            if not ranking:
+                letters = re.findall(r'\b([A-Z])\b', text)
+                seen = []
+                for l in letters:
+                    if l in labels and l not in seen:
+                        seen.append(l)
+                if len(seen) >= 2:
+                    ranking = seen
+            
+            if not ranking:
+                if self.verbose:
+                    print(f"[Verifier] Could not parse ranking, using default order")
+                ranking = labels.copy()
+            
+            ranking = [r.upper().strip() for r in ranking if str(r).upper().strip() in labels]
             
             for label in labels:
                 if label not in ranking:
                     ranking.append(label)
+            
+            if self.verbose:
+                print(f"[Verifier] Parsed ranking: {ranking}")
             
             n = len(ranking)
             for rank_idx, label in enumerate(ranking):
@@ -148,7 +188,10 @@ Output ONLY JSON: {{"ranking": ["{labels[0]}", "{labels[1]}", ...], "reasoning":
             results.sort(key=lambda x: x["mask_idx"])
             
         except Exception as e:
-            print(f"Verifier Comparison Error: {e}")
+            if self.verbose:
+                print(f"Verifier Comparison Error: {e}")
+                import traceback
+                traceback.print_exc()
             for i in range(len(masks)):
                 results.append({
                     "mask_idx": i,
@@ -206,7 +249,7 @@ Output ONLY JSON: {{"score": X, "issues": "brief description"}}"""
         try:
             messages = create_vision_message(prompt_text, tmp_path)
             
-            max_tokens = 512 if self.is_thinking_model else 100
+            max_tokens = 1024 if self.is_thinking_model else 150
             
             completion = self.client.chat.completions.create(
                 model=self.model_path,
@@ -216,27 +259,55 @@ Output ONLY JSON: {{"score": X, "issues": "brief description"}}"""
             )
             
             text = completion.choices[0].message.content.strip()
-            print(f"[Verifier]: {text[:300]}...")
+            if self.verbose:
+                print(f"[Verifier]: {text[:300]}...")
             
-            json_match = re.search(r'\{[^{}]*"score"[^{}]*\}', text, re.DOTALL)
+            score = None
+            
+            json_match = re.search(r'\{\s*"score"\s*:\s*(\d+)', text)
             if json_match:
-                parsed = json_repair.loads(json_match.group())
-            else:
-                parsed = json_repair.loads(text)
+                score = int(json_match.group(1))
             
-            score = int(parsed.get("score", 50))
+            if score is None:
+                score_patterns = [
+                    r'"score"\s*:\s*(\d+)',
+                    r'score[:\s]+(\d+)',
+                    r'\b(\d{1,3})/100\b',
+                    r'\b(\d{1,3})\s*(?:out of|/)\s*100\b',
+                ]
+                for pattern in score_patterns:
+                    match = re.search(pattern, text, re.IGNORECASE)
+                    if match:
+                        score = int(match.group(1))
+                        break
+            
+            if score is None:
+                numbers = re.findall(r'\b(\d{2,3})\b', text[-200:])
+                for num in reversed(numbers):
+                    n = int(num)
+                    if 0 <= n <= 100:
+                        score = n
+                        break
+            
+            if score is None:
+                score = 50
+                if self.verbose:
+                    print(f"[Verifier] Could not parse score, defaulting to {score}")
+            
             score = max(0, min(100, score))
+            if self.verbose:
+                print(f"[Verifier] Parsed score: {score}")
             
             scores["score"] = score
-            scores["issues"] = str(parsed.get("issues", ""))
             scores["total"] = score
             
         except Exception as e:
-            print(f"Verifier Error: {e}")
+            if self.verbose:
+                print(f"Verifier Error: {e}")
+                import traceback
+            traceback.print_exc()
         finally:
             if os.path.exists(tmp_path):
                 os.remove(tmp_path)
-        
-        return scores
         
         return scores

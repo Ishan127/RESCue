@@ -1,49 +1,251 @@
+(vllm_test) aac@2159cae2-4cf2-418a-94cd-a4ce9c21e13b-64467947d8-mk69n:~/RESCue$ python scripts/evaluate.py --fraction 0.1 --N 4
+Loading ReasonSeg dataset (Validation)...
+Total samples: 200. Evaluating on 10.0% = 20 samples.
+Initializing RESCue Pipeline...
+Device: ROCm (HIP) detected. Using 'cuda' device alias mapping to AMD Radeon Graphics.
+Pipeline using device: cuda
+INFO:RESCue.Planner:Initializing Planner with API: http://localhost:8000/v1
+INFO:src.executor:Executor initialized in REMOTE mode. Target: http://localhost:8001
+Executor initialized in REMOTE mode. Target: http://localhost:8001
+INFO:src.executor:Server health: {'status': 'healthy', 'gpu_available': True, 'gpu_count': 2, 'gpu_name': 'AMD Radeon Graphics', 'active_sessions': 0}
+Server health: {'status': 'healthy', 'gpu_available': True, 'gpu_count': 2, 'gpu_name': 'AMD Radeon Graphics', 'active_sessions': 0}
+Planner: Qwen/Qwen3-VL-32B-Thinking
+Verifier: Qwen/Qwen3-VL-32B-Thinking
+Pipeline Initialized.
+
+============================================================
+Starting evaluation with BOTH verification methods...
+============================================================
+
+  0%|                                                                                                                                                                  | 0/20 [00:00<?, ?it/s]Dataset columns: dict_keys(['image', 'text', 'mask', 'image_id', 'ann_id', 'img_height', 'img_width'])
 --- Step 1: Planning (N=4) ---
 INFO:RESCue.Planner:Generating 4 hypotheses for query: 'In a television studio, various equipment is used to capture and record video footage. What in the picture could be used to stabilize and hold the camera steady during filming?'
 INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
 INFO:RESCue.Planner:Query 1/4 [original] (T=0.70): In a television studio, various equipment is used to capture and record video fo...
 INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
-INFO:RESCue.Planner:  -> black tripod holding the camera
-INFO:RESCue.Planner:Query 2/4 [conservative] (T=0.50): a tripod or mounting stand visible in the studio that supports a camera...
+INFO:RESCue.Planner:  -> black tripod supporting the camera
+INFO:RESCue.Planner:Query 2/4 [conservative] (T=0.50): In a television studio, various equipment is used to capture and record video fo...
 INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
-INFO:RESCue.Planner:  -> black tripod supporting a camera in the center-left
-INFO:RESCue.Planner:Query 3/4 [conservative] (T=0.50): a handheld stabilizer or gimbal device used to reduce camera shake...
+INFO:RESCue.Planner:  -> black tripod with three legs supporting the camera
+INFO:RESCue.Planner:Query 3/4 [conservative] (T=0.50): an object that provides a stable base for the camera to prevent movement during ...
 INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
-INFO:RESCue.Planner:Query 4/4 [exploratory] (T=0.90): a camera mounted on a dolly or crane system for smooth movement...
+INFO:RESCue.Planner:  -> black tripod with three legs supporting the camera
+INFO:RESCue.Planner:Query 4/4 [exploratory] (T=0.90): a three-legged stand with a platform for mounting a camera...
 INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
-INFO:RESCue.Planner:  -> large black tripod supporting a camera in the center
-INFO:RESCue.Planner:Deduplicated 3 -> 3 unique concepts
-INFO:RESCue.Planner:  Selected: large black tripod supporting a camera in the center (conf=0.73)
-INFO:RESCue.Planner:  Added (fill): black tripod holding the camera (conf=0.79)
-INFO:RESCue.Planner:  Added (fill): black tripod supporting a camera in the center-left (conf=0.81)
+INFO:RESCue.Planner:  -> black three-legged tripod supporting the camera
+INFO:RESCue.Planner:Deduplicated 4 -> 3 unique concepts
+INFO:RESCue.Planner:  Selected: black tripod supporting the camera (conf=0.88)
+INFO:RESCue.Planner:  Added (fill): black three-legged tripod supporting the camera (conf=0.78)
+INFO:RESCue.Planner:  Added (fill): black tripod with three legs supporting the camera (conf=0.86)
 INFO:RESCue.Planner:Final selection: 3 hypotheses
 Generated 3 hypotheses.
 --- Step 2: Execution ---
   - Encoding Image on Executor...
-  Generated candidate H0_M0 | large black tripod supporting a camera in the center
-  Generated candidate H0_M1 | large black tripod supporting a camera in the center
-  Generated candidate H1_M0 | black tripod holding the camera
---- Step 3: Verification ---
+  Generated candidate H0_M0 | IoU: 0.6587 | black tripod supporting the camera
+  Generated candidate H1_M0 | IoU: 0.6602 | black three-legged tripod supporting the camera
+  Generated candidate H2_M0 | IoU: 0.7532 | black tripod with three legs supporting the camera
+--- Step 3a: Verification (Comparative) ---
+Overlay - Image shape: (2573, 3593, 3) Mask shape: (2573, 3593)
+Overlay - Image shape: (2573, 3593, 3) Mask shape: (2573, 3593)
 Overlay - Image shape: (2573, 3593, 3) Mask shape: (2573, 3593)
 INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
-[Verifier]: {"correct": "yes", "precision": "precise", "coverage_pct": 95}
-  H0_M0: Score 98 [C:40 P:30 Cov:28] | IoU: 0.3817 | large black tripod supporting a camera in the center
+[Verifier Comparative]: So, let's tackle this problem step by step. First, the question is about identifying the object that stabilizes and holds the camera steady during filming. That's a tripod, right? So we need to look at the red masks in each panel (A, B, C) and see which one correctly outlines the tripod.
+
+First, let's recall what a tripod is. A tripod is a three-legged stand that supports the camera. In the images, the red masks are supposed to be the tripod. Let's check each mask:
+
+1. **Mask A (top left)**: The...
+Verifier Comparison Error: 'str' object has no attribute 'get'
+  H0_M0 (#1): Score 100 | IoU: 0.6587
+  H1_M0 (#2): Score 90 | IoU: 0.6602
+  H2_M0 (#3): Score 80 | IoU: 0.7532
+  -> Comparative Best: H0_M0 (Rank #1)
+--- Step 3b: Verification (Individual) ---
 Overlay - Image shape: (2573, 3593, 3) Mask shape: (2573, 3593)
 INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
-[Verifier]: {"correct": "yes", "precision": "precise", "coverage_pct": 95}
-  H0_M1: Score 98 [C:40 P:30 Cov:28] | IoU: 0.6901 | large black tripod supporting a camera in the center
+[Verifier]: So, let's tackle this step by step. First, the question is about what equipment stabilizes and holds the camera steady. The red region is highlighting a tripod. 
+
+1. What's the red region? The red part is a tripod. Tripods are used to stabilize cameras, so that's the key equipment here.
+
+2. Is it th...
+  H0_M0: Score 95.0 | IoU: 0.6587
 Overlay - Image shape: (2573, 3593, 3) Mask shape: (2573, 3593)
 INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
-[Verifier]: {"correct": "yes", "precision": "precise", "coverage_pct": 95}
-  H1_M0: Score 98 [C:40 P:30 Cov:28] | IoU: 0.7486 | black tripod holding the camera
-  NOTE: Best IoU is H1_M0 (0.7486), but selected H0_M0
+[Verifier]: So, let's tackle this step by step. First, the question is about what equipment stabilizes and holds the camera steady. The red region in the image is a tripod. Let's check each part.
+
+1. What's the RED region highlighting? The red part is a tripod. Tripods are used to stabilize cameras, so that's t...
+  H1_M0: Score 100.0 | IoU: 0.6602
+Overlay - Image shape: (2573, 3593, 3) Mask shape: (2573, 3593)
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+[Verifier]: So, let's tackle this step by step. First, the question is about what's used to stabilize and hold the camera steady. The red region in the image is the tripod. 
+
+1. The RED region is highlighting a tripod. Let's confirm: a tripod is a three-legged stand used to support cameras, so that's the right ...
+  H2_M0: Score 100.0 | IoU: 0.7532
+  -> Individual Best: H1_M0 (Score 100.0)
+  -> Oracle Best (GT): H2_M0 (IoU 0.7532)
 --- Result ---
-Best Candidate: H0_M0 with Score 98
-  [Debug] Sample 0 Mask Stats:
-    - Pred Shape: (2573, 3593), Unique: [False  True]
-    - GT Shape:   (2573, 3593), Unique: [False  True]
+Comparative: H0_M0
+Individual:  H1_M0
+
+Sample 0 Summary:
+  Comparative [ ]: IoU 0.6587 (H0_M0)
+  Individual  [✓]: IoU 0.6602 (H1_M0)
+  Oracle (GT):     IoU 0.7532 (H2_M0)
 Overlay - Image shape: (2573, 3593, 3) Mask shape: (2573, 3593)
 Overlay - Image shape: (2573, 3593, 3) Mask shape: (2573, 3593)
-    - Saved debug overlays to debug_output/sample_0_*.png
-Sample 0 | Final Selected IoU: 0.3817
-  5%|███████▋          
+Overlay - Image shape: (2573, 3593, 3) Mask shape: (2573, 3593)
+  5%|███████▋                                                                                                                                                  | 1/20 [01:15<23:53, 75.43s/it]--- Step 1: Planning (N=4) ---
+INFO:RESCue.Planner:Generating 4 hypotheses for query: 'When the wind blows, small white objects are blown away and scattered in the air. What in the picture is responsible for this phenomenon?'
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:Query 1/4 [original] (T=0.70): When the wind blows, small white objects are blown away and scattered in the air...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> white fluffy dandelion seed head in the center
+INFO:RESCue.Planner:Query 2/4 [conservative] (T=0.50): When the wind blows, small white objects are blown away and scattered in the air...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> large white dandelion seed head in the center
+INFO:RESCue.Planner:Query 3/4 [conservative] (T=0.50): what in the picture is responsible...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> dandelion seed head (white fluffy structure)
+INFO:RESCue.Planner:Query 4/4 [exploratory] (T=0.90): What in the picture is responsible for this phenomenon?...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> 'large white dandelion seed head in the center' (since it's the main structure enabling the phenomenon).
+INFO:RESCue.Planner:Deduplicated 4 -> 4 unique concepts
+INFO:RESCue.Planner:  Selected: dandelion seed head (white fluffy structure) (conf=0.84)
+INFO:RESCue.Planner:  Added (fill): 'large white dandelion seed head in the center' (since it's the main structure enabling the phenomenon). (conf=0.69)
+INFO:RESCue.Planner:  Added (fill): white fluffy dandelion seed head in the center (conf=0.85)
+INFO:RESCue.Planner:  Added (fill): large white dandelion seed head in the center (conf=0.85)
+INFO:RESCue.Planner:Final selection: 4 hypotheses
+Generated 4 hypotheses.
+--- Step 2: Execution ---
+  - Encoding Image on Executor...
+  Generated candidate H0_M0 | IoU: 0.8242 | dandelion seed head (white fluffy structure)
+  Generated candidate H1_M0 | IoU: 0.8237 | 'large white dandelion seed head in the center' (since it's the main structure enabling the phenomenon).
+  Generated candidate H2_M0 | IoU: 0.8091 | white fluffy dandelion seed head in the center
+  Generated candidate H3_M0 | IoU: 0.8176 | large white dandelion seed head in the center
+--- Step 3a: Verification (Comparative) ---
+Overlay - Image shape: (533, 800, 3) Mask shape: (533, 800)
+Overlay - Image shape: (533, 800, 3) Mask shape: (533, 800)
+Overlay - Image shape: (533, 800, 3) Mask shape: (533, 800)
+Overlay - Image shape: (533, 800, 3) Mask shape: (533, 800)
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+[Verifier Comparative]: So, let's try to figure out this problem. The query is about the object that, when the wind blows, small white objects (like dandelion seeds) are blown away. So we need to find which mask is the dandelion's seed head, because that's where the seeds are attached.
+
+First, let's recall: dandelion seed heads have the fluffy part (pappus) with seeds. The small white objects that get blown away are the seeds with their pappus. So the object responsible is the dandelion's seed head (the red part in the...
+Verifier Comparison Error: 'str' object has no attribute 'get'
+  H0_M0 (#1): Score 100 | IoU: 0.8242
+  H1_M0 (#2): Score 90 | IoU: 0.8237
+  H2_M0 (#3): Score 80 | IoU: 0.8091
+  H3_M0 (#4): Score 70 | IoU: 0.8176
+  -> Comparative Best: H0_M0 (Rank #1)
+--- Step 3b: Verification (Individual) ---
+Overlay - Image shape: (533, 800, 3) Mask shape: (533, 800)
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+[Verifier]: So, let's tackle this step by step. First, the question is about what's responsible for the phenomenon where small white objects are blown away when the wind blows. That's typical of a dandelion's seed head, where the seeds (with their pappus) get scattered. 
+
+1. The RED region in the image is highl...
+Verifier Error: 'str' object has no attribute 'get'
+  H0_M0: Score 50.0 | IoU: 0.8242
+Overlay - Image shape: (533, 800, 3) Mask shape: (533, 800)
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+[Verifier]: So, let's tackle this step by step. First, the question is about the object responsible for the phenomenon where small white objects (like dandelion seeds) are blown away. The red region is highlighting a dandelion seed head. 
+
+1. What's the red region highlighting? The red region is the dandelion's...
+Verifier Error: 'str' object has no attribute 'get'
+  H1_M0: Score 50.0 | IoU: 0.8237
+Overlay - Image shape: (533, 800, 3) Mask shape: (533, 800)
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+[Verifier]: So, let's break this down. The query is about what's responsible for small white objects being blown away when the wind blows. That's the dandelion's seed head, where the white "parachutes" (pappus) carry seeds. 
+
+1. The RED region is highlighting the dandelion seed head (the fluffy part). But wait,...
+Verifier Error: 'str' object has no attribute 'get'
+  H2_M0: Score 50.0 | IoU: 0.8091
+Overlay - Image shape: (533, 800, 3) Mask shape: (533, 800)
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+[Verifier]: So, let's break this down step by step. 
+
+First, the query is about the object responsible for small white objects (like dandelion seeds) being blown away. The key here is the dandelion's seed head. In the image, the red region is highlighting the main dandelion puffball. But wait, the actual part t...
+Verifier Error: 'str' object has no attribute 'get'
+  H3_M0: Score 50.0 | IoU: 0.8176
+  -> Individual Best: H0_M0 (Score 50.0)
+  -> Oracle Best (GT): H0_M0 (IoU 0.8242)
+--- Result ---
+Comparative: H0_M0
+Individual:  H0_M0
+
+Sample 1 Summary:
+  Comparative [✓]: IoU 0.8242 (H0_M0)
+  Individual  [✓]: IoU 0.8242 (H0_M0)
+  Oracle (GT):     IoU 0.8242 (H0_M0)
+Overlay - Image shape: (533, 800, 3) Mask shape: (533, 800)
+Overlay - Image shape: (533, 800, 3) Mask shape: (533, 800)
+Overlay - Image shape: (533, 800, 3) Mask shape: (533, 800)
+ 10%|███████████████▍                                                                                                                                          | 2/20 [02:18<20:30, 68.37s/it]--- Step 1: Planning (N=4) ---
+INFO:RESCue.Planner:Generating 4 hypotheses for query: 'a car with a color that is closer to lipstick color'
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:Query 1/4 [original] (T=0.70): a car with a color that is closer to lipstick color...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> red Ferrari with lipstick-like color in the foreground
+INFO:RESCue.Planner:Query 2/4 [conservative] (T=0.50): a car with a color that is closer to lipstick color...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> red Ferrari in the foreground
+INFO:RESCue.Planner:Query 3/4 [conservative] (T=0.50): lipstick color...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:Query 4/4 [exploratory] (T=0.90): closer to lipstick color...
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:RESCue.Planner:  -> red Ferrari sports car in the foreground
+INFO:RESCue.Planner:Deduplicated 3 -> 3 unique concepts
+INFO:RESCue.Planner:  Selected: red Ferrari sports car in the foreground (conf=0.81)
+INFO:RESCue.Planner:  Added (fill): red Ferrari with lipstick-like color in the foreground (conf=0.86)
+INFO:RESCue.Planner:  Added (fill): red Ferrari in the foreground (conf=0.88)
+INFO:RESCue.Planner:Final selection: 3 hypotheses
+Generated 3 hypotheses.
+--- Step 2: Execution ---
+  - Encoding Image on Executor...
+  Generated candidate H0_M0 | IoU: 0.9782 | red Ferrari sports car in the foreground
+  Generated candidate H1_M0 | IoU: 0.9787 | red Ferrari with lipstick-like color in the foreground
+  Generated candidate H2_M0 | IoU: 0.9772 | red Ferrari in the foreground
+--- Step 3a: Verification (Comparative) ---
+Overlay - Image shape: (1200, 1600, 3) Mask shape: (1200, 1600)
+Overlay - Image shape: (1200, 1600, 3) Mask shape: (1200, 1600)
+Overlay - Image shape: (1200, 1600, 3) Mask shape: (1200, 1600)
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+[Verifier Comparative]: So, let's try to figure out this problem. The query is about a car with a color closer to lipstick color. First, I need to understand what "lipstick color" means here. Lipstick is usually a vibrant, bright red, maybe a bit pinkish. Now, looking at the masks A, B, C.
+
+First, let's check each mask. The image has two red cars? Wait, no, the main red car is the Ferrari in the foreground. The question is about which mask (A, B, C) best captures that car. Wait, the problem says "a car with a color tha...
+Verifier Comparison Error: 'str' object has no attribute 'get'
+  H0_M0 (#1): Score 100 | IoU: 0.9782
+  H1_M0 (#2): Score 90 | IoU: 0.9787
+  H2_M0 (#3): Score 80 | IoU: 0.9772
+  -> Comparative Best: H0_M0 (Rank #1)
+--- Step 3b: Verification (Individual) ---
+Overlay - Image shape: (1200, 1600, 3) Mask shape: (1200, 1600)
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+[Verifier]: So, let's tackle this step by step. First, the problem is about identifying the car with a color closer to lipstick color. Lipstick color is typically a bright, vibrant red, which matches the red Ferrari in the foreground.
+
+1. What object is the RED region highlighting? The red region is the red Fer...
+  H0_M0: Score 100.0 | IoU: 0.9782
+Overlay - Image shape: (1200, 1600, 3) Mask shape: (1200, 1600)
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+[Verifier]: So, let's tackle this step by step. First, the question is about a car with a color closer to lipstick color. Lipstick color is typically a bright, vibrant red, so we need to identify which car in the image is that color.
+
+1. What object is the RED region highlighting? The image shows two cars: a br...
+  H1_M0: Score 95.0 | IoU: 0.9787
+Overlay - Image shape: (1200, 1600, 3) Mask shape: (1200, 1600)
+INFO:httpx:HTTP Request: POST http://localhost:8000/v1/chat/completions "HTTP/1.1 200 OK"
+[Verifier]: So, let's tackle this step by step. First, the query is about a car with a color closer to lipstick color. Lipstick color is a shade of red, so we need to find the red car in the image.
+
+1. What object is the RED region highlighting? The image shows a red Ferrari in the foreground, and the RED regio...
+  H2_M0: Score 100.0 | IoU: 0.9772
+  -> Individual Best: H0_M0 (Score 100.0)
+  -> Oracle Best (GT): H1_M0 (IoU 0.9787)
+--- Result ---
+Comparative: H0_M0
+Individual:  H0_M0
+
+Sample 2 Summary:
+  Comparative [✓]: IoU 0.9782 (H0_M0)
+  Individual  [✓]: IoU 0.9782 (H0_M0)
+  Oracle (GT):     IoU 0.9787 (H1_M0)
+Overlay - Image shape: (1200, 1600, 3) Mask shape: (1200, 1600)
+Overlay - Image shape: (1200, 1600, 3) Mask shape: (1200, 1600)
+Overlay - Image shape: (1200, 1600, 3) Mask shape: (1200, 1600)
+ 15%|███████████████████████                         
