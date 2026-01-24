@@ -155,17 +155,51 @@ class ExecutorStage(PipelineStage):
         n_hyps = len(task.hypotheses)
         print(f"[Executor] Sample {task.sample_idx}: Processing {n_hyps} hypotheses")
         
-        # Parallel processing through load balancer
-        def exec_one(args):
-            idx, hyp = args
-            return self._execute_one(task, hyp, idx)
+        # Load fresh image copy
+        image = Image.open(task.temp_img_path).copy()
         
-        with ThreadPoolExecutor(max_workers=self.parallel_requests) as pool:
-            indexed_hyps = list(enumerate(task.hypotheses))
-            results = list(pool.map(exec_one, indexed_hyps))
+        # Since Executor/Pipeline now supports batching, we just pass all hypotheses at once
+        # logic moved to Executor.execute (which calls segment_batch) or handled here if using raw Executor.
+        # But wait, evaluate_pipeline imports Executor, not RESCuePipeline.
+        # We need to adapt this.
         
-        task.candidates = [r for r in results if r is not None]
-        print(f"[Executor] Sample {task.sample_idx}: Got {len(task.candidates)} masks")
+        # The Executor class (in src/executor.py) exposes 'segment', 'execute', etc.
+        # 'execute' takes single inputs. 
+        # We should use the new batch capability of Executor.sengment (prompts_list) directly here.
+        
+        prompts_list = []
+        for hyp in task.hypotheses:
+            box = hyp.get("box") or hyp.get("bbox")
+            # Ensure box is [0,1]
+            if box and any(x > 1 for x in box): 
+                 # Handle absolute coords if necessary, but assuming normalized from Planner
+                 pass 
+
+            prompts_list.append({
+                "type": "box",
+                "box": box,
+                "label": True
+            })
+
+        try:
+             # Batch call
+             masks = self.executor.segment(image, prompts_list=prompts_list)
+             
+             # Map back
+             results = []
+             for i, (hyp, mask) in enumerate(zip(task.hypotheses, masks)):
+                 res = {"hypothesis": hyp, "mask": mask}
+                 if task.gt_mask is not None:
+                     res["iou"] = calculate_iou(mask, task.gt_mask)
+                 results.append(res)
+                 
+             task.candidates = results
+             print(f"[Executor] Sample {task.sample_idx}: Got {len(task.candidates)} masks (Batch)")
+             
+        except Exception as e:
+            print(f"[Executor] Sample {task.sample_idx} Batch Error: {e}")
+            task.candidates = []
+
         task.t_exec_done = time.time()
         return task
     

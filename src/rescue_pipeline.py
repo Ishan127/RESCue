@@ -149,7 +149,7 @@ class RESCuePipeline:
             })
             
         iou_str = "" # Placeholder
-                print(f"  Generated candidate H{i}_M{j}{iou_str} | {noun_phrase}")
+
         
         if not candidates:
             print("WARNING: No candidates generated!")
