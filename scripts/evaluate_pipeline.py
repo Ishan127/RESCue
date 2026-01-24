@@ -239,10 +239,24 @@ class VerifierStage(PipelineStage):
                 scores = [self._heuristic_score(m) for m in masks]
                 task.ranking = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
             else:
-                # Full VLM tournament
-                results = self.verifier.verify_batch_comparative(task.image, masks, task.query)
+                # Full VLM tournament using Hybrid strategy for better scaling
+                # This handles N=64 efficiently by fast-filtering to Top-8 then running tournament
+                results = self.verifier.verify_batch_hybrid(task.image, masks, task.query, top_k=8)
+                
+                # Sort by rank (1 is best)
                 sorted_results = sorted(results, key=lambda r: r['rank'])
                 task.ranking = [r['mask_idx'] for r in sorted_results]
+                
+                # Store full detailed results back into candidates if possible
+                # This allows saving the rich pointwise breakdown into the JSON
+                for res in sorted_results:
+                     idx = res['mask_idx']
+                     if idx < len(task.candidates):
+                         # Inject the rich reasoning/score back into candidate
+                         task.candidates[idx]['verifier_score'] = res['score']
+                         task.candidates[idx]['verifier_reasoning'] = res.get('reasoning')
+                         if 'pointwise_details' in res:
+                             task.candidates[idx]['pointwise_details'] = res['pointwise_details']
                 
         except Exception as e:
             print(f"[Verifier] Sample {task.sample_idx} error: {e}")
@@ -347,7 +361,7 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
     
     while completed < num_samples:
         try:
-            task = q_output.get(timeout=300)  # 5 min timeout
+            task = q_output.get(timeout=1200)  # 20 min timeout for high N
             if task is None:
                 break
             
@@ -397,7 +411,12 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
                     'reasoning': hyp.get('reasoning'),
                     'box': box,
                     'iou': iou_score,
-                    'verifier_rank': rank_map.get(i, -1)
+                    'verifier_rank': rank_map.get(i, -1),
+                    # NEW: Enrich with hybrid verificaton details
+                    'verifier_score': cand.get('verifier_score'),
+                    'verifier_reasoning': cand.get('verifier_reasoning'),
+                    'pointwise_breakdown': cand.get('pointwise_details', {}).get('breakdown'),
+                    'pointwise_raw': cand.get('pointwise_details', {}).get('raw_response')
                 }
                 sample_info['candidates'].append(cand_info)
             

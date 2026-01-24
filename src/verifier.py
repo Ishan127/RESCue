@@ -574,3 +574,298 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
         finally:
             if os.path.exists(tmp_path):
                 os.remove(tmp_path)
+    def verify_batch_hybrid(self, image_input, masks, query, top_k=8):
+        """
+        Hybrid "Filter & Fight" Strategy:
+        1. Fast Filter: Pointwise score all masks using detailed composite metrics.
+        2. Elite Tournament: Run pairwise tournament on Top-K pointwise winners.
+        3. Merge: Rank 1-K from tournament, K+1-N from pointwise scores.
+        """
+        n = len(masks)
+        if n == 0: return []
+        if n == 1: return [{"mask_idx": 0, "rank": 1, "score": 100, "reasoning": "Only candidate"}]
+        
+        # --- Step 1: Fast Pointwise Scoring (Parallel) ---
+        if self.verbose:
+             print(f"[Hybrid] Scoring {n} masks pointwise...")
+        
+        pointwise_results = self._pointwise_score_batch(image_input, masks, query)
+        
+        # Sort by (Score DESC, GeometricHeuristic DESC, Index ASC)
+        # Compute geometric heuristic for tie-breaking
+        heuristics = {r['mask_idx']: self._compute_mask_heuristic(masks[r['mask_idx']]) for r in pointwise_results}
+        
+        sorted_candidates = sorted(
+            pointwise_results,
+            key=lambda r: (r['total_score'], heuristics[r['mask_idx']], -r['mask_idx']),
+            reverse=True
+        )
+        
+        # --- Step 2: Elite Tournament ---
+        # Take Top-K (or all if N <= K)
+        k = min(n, top_k)
+        elite_candidates = sorted_candidates[:k]
+        elite_indices = [c['mask_idx'] for c in elite_candidates]
+        
+        if self.verbose:
+            print(f"[Hybrid] Running tournament on top {k} candidates: {elite_indices}")
+            
+        # Run tournament on just these indices
+        # We reuse _tournament_rank but need to map indices specifically
+        tournament_results = self._parallel_full_ranking_subset(image_input, masks, query, elite_indices)
+        
+        # --- Step 3: Merge Results ---
+        final_ranking = []
+        
+        # 1. Add Tournament Winners (Ranks 1..K)
+        # tournament_results returns objects with {mask_idx, rank, score}
+        # Re-assign scores to be > max_pointwise to ensure consistency
+        max_pt_score = sorted_candidates[k]['total_score'] if k < n else 0
+        
+        for res in tournament_results:
+            # Map tournament rank 1..K to score 100..90 approx, but keep above max_pt_score
+            # Or just accept the tournament score if it's high enough.
+            # Let's enforce strictly that tournament winners > losers.
+            res['rank'] = res['rank'] # pure rank 1..K
+            
+            # Augment with the detailed reasoning from pointwise if available
+            pt_res = next((p for p in pointwise_results if p['mask_idx'] == res['mask_idx']), {})
+            res['pointwise_details'] = pt_res
+            final_ranking.append(res)
+            
+        # 2. Add The Rest (Ranks K+1..N)
+        for i, pt_res in enumerate(sorted_candidates[k:]):
+            rank = k + 1 + i
+            final_ranking.append({
+                "mask_idx": pt_res['mask_idx'],
+                "rank": rank,
+                "score": pt_res['total_score'],
+                "reasoning": "Pointwise ranking (did not qualify for tournament)",
+                "pointwise_details": pt_res
+            })
+            
+        return final_ranking
+
+    def _parallel_full_ranking_subset(self, image, masks, query, subset_indices):
+        """Run tournament only on a subset of indices."""
+        # This is a modified version of _parallel_full_ranking that accepts specific indices
+        # Logic is identical to _parallel_full_ranking but initializes with subset_indices
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        import random
+        
+        indices = list(subset_indices)
+        n = len(indices)
+        
+        elimination_round = {}
+        heuristics = {i: self._compute_mask_heuristic(masks[i]) for i in indices}
+        
+        current_round = list(indices)
+        random.shuffle(current_round)
+        
+        round_num = 0
+        while len(current_round) > 1:
+            round_num += 1
+            pairs = []
+            for i in range(0, len(current_round) - 1, 2):
+                pairs.append((current_round[i], current_round[i + 1]))
+            
+            bye_idx = current_round[-1] if len(current_round) % 2 == 1 else None
+            
+            winners = []
+            losers = []
+            
+            with ThreadPoolExecutor(max_workers=16) as executor:
+                future_to_pair = {}
+                for idx_a, idx_b in pairs:
+                    future = executor.submit(
+                        self._compare_pair, image, masks[idx_a], masks[idx_b],
+                        query, idx_a, idx_b
+                    )
+                    future_to_pair[future] = (idx_a, idx_b)
+                
+                for future in as_completed(future_to_pair):
+                    idx_a, idx_b = future_to_pair[future]
+                    winner = future.result()
+                    loser = idx_b if winner == idx_a else idx_a
+                    winners.append(winner)
+                    losers.append(loser)
+            
+            for loser in losers:
+                elimination_round[loser] = round_num
+            
+            current_round = winners
+            if bye_idx is not None:
+                current_round.append(bye_idx)
+                
+        if current_round:
+            winner = current_round[0]
+            elimination_round[winner] = round_num + 1
+
+        ranking = sorted(
+            indices,
+            key=lambda i: (elimination_round.get(i, 0), heuristics.get(i, 0)),
+            reverse=True
+        )
+        
+        results = []
+        for rank, idx in enumerate(ranking):
+            score = max(90, 100 - rank * 2) # Elite scores are high
+            results.append({
+                "mask_idx": idx,
+                "rank": rank + 1,
+                "score": score,
+                "reasoning": f"Tournament survivor (Round {elimination_round.get(idx, 0)})"
+            })
+        return results
+
+    def _pointwise_score_batch(self, image, masks, query):
+        """
+        Run parallel pointwise scoring for all masks.
+        Returns list of dicts with scores and breakdown.
+        """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        
+        results = []
+        with ThreadPoolExecutor(max_workers=32) as executor: # Batch efficiently
+            future_to_idx = {
+                executor.submit(self._score_single_composite, image, mask, query): i 
+                for i, mask in enumerate(masks)
+            }
+            
+            for future in as_completed(future_to_idx):
+                idx = future_to_idx[future]
+                try:
+                    res = future.result()
+                    res['mask_idx'] = idx
+                    results.append(res)
+                except Exception as e:
+                    if self.verbose: print(f"Pointwise error on {idx}: {e}")
+                    results.append({'mask_idx': idx, 'total_score': 0, 'error': str(e)})
+                    
+        return results
+
+    def _score_single_composite(self, image, mask, query):
+        """
+        Score a single mask using the 5-part composite metric (0-100).
+        1. Geometric (10%)
+        2. Rating (20%)
+        3. IoU (30%)
+        4. Boundary (20%)
+        5. Semantic (20% - 4 sub-metrics)
+        """
+        # 1. Geometric (10%) - purely local calculation
+        geo_score_raw = self._compute_mask_heuristic(mask) # 0-100
+        geo_score = geo_score_raw * 0.10
+        
+        # Prepare VLM Input
+        overlay = apply_red_alpha_overlay(image, mask, alpha=0.5)
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+            overlay.save(tmp.name, quality=95)
+            tmp_path = tmp.name
+            
+        try:
+            prompt = f"""Evaluate this segmentation mask (red region) for the query: "{query}"
+
+You must score it on these specific criteria:
+
+1. RATING_CLASS (20%): Choose exactly one [PERFECT, GOOD, AVERAGE, BAD, WRONG].
+   - PERFECT: Exact object, perfect edges (100)
+   - GOOD: Correct object, minor boundary errors (75)
+   - AVERAGE: Mostly correct but includes background or misses parts (50)
+   - BAD: Partial overlap or major noise (25)
+   - WRONG: Completely wrong object (0)
+
+2. PREDICTED_IOU (30%): Estimate the Intersection-over-Union (0-100%) with the ground truth. Be critical.
+
+3. BOUNDARY_QUALITY (20%): Rate the tightness and accuracy of edges (0-100).
+
+4. SEMANTIC_FIDELITY (20%): Rate these 4 aspects from 0 to 5 each:
+   - Category Match: Is it the correct object class? (e.g. dog vs cat)
+   - Attribute Match: Do color/texture/shape match description? 
+   - Context/Action: Is it performing the right action or in right context?
+   - Count/Singularity: Is exactly the correct number/instance selected? (No merging)
+
+Output strictly in JSON format:
+{{
+  "rating_class": "PERFECT/GOOD/...",
+  "predicted_iou": 0-100,
+  "boundary_score": 0-100,
+  "semantic_scores": {{
+    "category": 0-5,
+    "attribute": 0-5,
+    "context": 0-5,
+    "count": 0-5
+  }}
+}}
+"""
+            messages = create_vision_message(prompt, tmp_path)
+            
+            completion = self.client.chat.completions.create(
+                model=self.model_path,
+                messages=messages,
+                temperature=0.1,
+                max_tokens=300
+            )
+            text = completion.choices[0].message.content.strip()
+            
+            # --- Parse JSON ---
+            json_match = re.search(r'\{.*\}', text, re.DOTALL)
+            if json_match:
+                data = json_repair.loads(json_match.group(0))
+            else:
+                data = {}
+
+            # --- Calculate Scores ---
+            
+            # 2. Rating (20%)
+            rating_map = {"PERFECT": 100, "GOOD": 75, "AVERAGE": 50, "BAD": 25, "WRONG": 0}
+            r_class = data.get("rating_class", "BAD").upper()
+            # fuzzy match
+            if "PERFECT" in r_class: r_val = 100
+            elif "GOOD" in r_class: r_val = 75
+            elif "AVERAGE" in r_class: r_val = 50
+            elif "WRONG" in r_class: r_val = 0
+            elif "BAD" in r_class: r_val = 25
+            else: r_val = 25
+            score_rating = r_val * 0.20
+            
+            # 3. IoU (30%)
+            pred_iou = float(data.get("predicted_iou", 0))
+            score_iou = min(100, max(0, pred_iou)) * 0.30
+            
+            # 4. Boundary (20%)
+            b_qual = float(data.get("boundary_score", 0))
+            score_boundary = min(100, max(0, b_qual)) * 0.20
+            
+            # 5. Semantic (20%) - sum of 4 * 5pts = 20pts max
+            sem = data.get("semantic_scores", {})
+            s1 = sem.get("category", 0)
+            s2 = sem.get("attribute", 0)
+            s3 = sem.get("context", 0)
+            s4 = sem.get("count", 0)
+            # Ensure they are 0-5
+            s_sum = min(5, s1) + min(5, s2) + min(5, s3) + min(5, s4) # max 20
+            # score is direct since total is 20
+            score_semantic = s_sum 
+            
+            # Total
+            total_score = geo_score + score_rating + score_iou + score_boundary + score_semantic
+            
+            return {
+                "total_score": round(total_score, 2),
+                "breakdown": {
+                    "geo": round(geo_score, 2),
+                    "rating": round(score_rating, 2),
+                    "iou": round(score_iou, 2),
+                    "boundary": round(score_boundary, 2),
+                    "semantic": s_sum
+                },
+                "raw_response": data
+            }
+            
+        except Exception as e:
+            if self.verbose: print(f"Composite score error: {e}")
+            return {"total_score": 0, "error": str(e)}
+        finally:
+             if os.path.exists(tmp_path):
+                 os.remove(tmp_path)
