@@ -573,12 +573,15 @@ class SAM3ImageModel:
                     
                     # Mask
                     mask = best_res.get("mask") # Should be np.ndarray due to to_cpu=True
+                    
+                    # Fallback for "masks" (plural) key which we observed in logs
+                    if mask is None and "masks" in best_res:
+                        mask = best_res["masks"]
+
                     if isinstance(mask, torch.Tensor):
                         mask = mask.cpu().numpy()
                     
-                    # Convert RLE if needed, but we set convert_mask_to_rle=False
-                    # It might be in 'segmentation' field or 'mask' depending on version
-                    # PostProcessImage usually puts full mask in "mask" if rle=False
+                    # Convert RLE if needed
                     if mask is None and "segmentation" in best_res:
                         mask = best_res["segmentation"]
                         
