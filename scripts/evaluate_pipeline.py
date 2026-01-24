@@ -340,6 +340,7 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
     # Collect results
     N_VALUES = [1, 2, 4, 8, 16, 32, 64]
     results_by_n = {n: {'ious': [], 'oracle_ious': [], 'times': []} for n in N_VALUES if n <= max_n}
+    detailed_samples = []
     
     completed = 0
     pbar = tqdm(total=num_samples, desc="Processing")
@@ -367,6 +368,40 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
             
             if not task.candidates or task.gt_mask is None:
                 continue
+
+            # NEW: Collect detailed sample info
+            sample_info = {
+                'sample_idx': task.sample_idx,
+                'query': task.query,
+                'candidates': []
+            }
+            
+            # Create a map from candidate index to rank
+            rank_map = {}
+            if task.ranking:
+                for rank, candidate_idx in enumerate(task.ranking):
+                    rank_map[candidate_idx] = rank
+            
+            for i, cand in enumerate(task.candidates):
+                hyp = cand.get('hypothesis', {})
+                # Convert numpy types to python native for JSON serialization
+                iou_score = float(cand.get('iou', 0))
+                
+                # Check if box is numpy/tensor
+                box = hyp.get('box')
+                if hasattr(box, 'tolist'):
+                    box = box.tolist()
+                
+                cand_info = {
+                    'hypothesis': hyp.get('noun_phrase') or hyp.get('raw_text'),
+                    'reasoning': hyp.get('reasoning'),
+                    'box': box,
+                    'iou': iou_score,
+                    'verifier_rank': rank_map.get(i, -1)
+                }
+                sample_info['candidates'].append(cand_info)
+            
+            detailed_samples.append(sample_info)
 
             # Evaluate for each N
             for n in results_by_n.keys():
@@ -408,7 +443,7 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
     
     # Save results
     output_file = f"results_pipeline_{mode}_{int(fraction*100)}pct.json"
-    save_results(results_by_n, output_file)
+    save_results(results_by_n, output_file, detailed_samples)
 
 
 def print_results(results_by_n, mode):
@@ -432,10 +467,13 @@ def print_results(results_by_n, mode):
         print(f"{n:>4} | {mean_iou:>8.4f} | {mean_oracle:>8.4f} | {pct_oracle:>7.1f}% | {mean_time:>8.2f} | {len(data['ious']):>7}")
 
 
-def save_results(results_by_n, output_file):
-    output = {}
+def save_results(results_by_n, output_file, detailed_samples=None):
+    output = {
+        'metrics': {},
+        'samples': detailed_samples if detailed_samples else []
+    }
     for n, data in results_by_n.items():
-        output[str(n)] = {
+        output['metrics'][str(n)] = {
             'mean_iou': float(np.mean(data['ious'])) if data['ious'] else 0,
             'mean_oracle': float(np.mean(data['oracle_ious'])) if data['oracle_ious'] else 0,
             'mean_time': float(np.mean(data['times'])) if data['times'] else 0,
