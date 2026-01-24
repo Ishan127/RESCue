@@ -732,7 +732,15 @@ async def segment_image(request: ImageSegmentRequest):
             if prompt_type == "text":
                 text_prompts.append(prompt_dict["text"])
             elif prompt_type == "box":
-                box_prompts.append((prompt_dict["box"], prompt_dict.get("label", True)))
+                # Safety clamp to [0, 1] to prevent roi_align crashes
+                box = prompt_dict["box"]
+                clamped_box = [
+                    max(0.0, min(1.0, float(c))) for c in box
+                ]
+                if box != clamped_box:
+                    logger.warning(f"Clamped box {box} to {clamped_box}")
+                    
+                box_prompts.append((clamped_box, prompt_dict.get("label", True)))
             elif prompt_type == "point":
                 point_prompts.append((prompt_dict["points"], prompt_dict["point_labels"]))
 

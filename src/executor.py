@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import cv2
 import requests
+from requests.adapters import HTTPAdapter
 import base64
 import io
 import time
@@ -42,6 +43,10 @@ class Executor:
             logger.info(f"Executor initialized in REMOTE mode. Target: {self.remote_url}")
             print(f"Executor initialized in REMOTE mode. Target: {self.remote_url}")
             self.session = requests.Session()
+            adapter = HTTPAdapter(pool_connections=100, pool_maxsize=100)
+            self.session.mount("http://", adapter)
+            self.session.mount("https://", adapter)
+            self.session.mount("http://localhost", adapter)
             self._verify_server_connection()
         else:
             logger.info(f"Executor initializing in LOCAL mode on {self.device}...")

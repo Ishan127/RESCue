@@ -308,6 +308,46 @@ Output ONLY a JSON array of strings:
             f"identify {original_query}",
             f"the area containing {target}",
             f"region with {target}",
+            f"where is {target}?",
+            f"show me {target}",
+            f"detect {target}",
+            f"segment {target}",
+            f"outline {target}",
+            f"the visible {target}",
+            f"a specific {target}",
+            f"that {target}",
+            f"look for {target}",
+            f"search for {target}",
+            f"spot the {target}",
+            f"point out {target}",
+            f"highlight {target}",
+            f"isolate {target}",
+            f"focus on {target}",
+            f"the left {target}",
+            f"the right {target}",
+            f"the top {target}",
+            f"the bottom {target}",
+            f"a small {target}",
+            f"a big {target}",
+            f"a dark {target}",
+            f"a bright {target}",
+            f"the {target} nearby",
+            f"the {target} far away",
+            f"an object matching '{original_query}'",
+            f"the thing described as '{original_query}'",
+            f"candidate for '{original_query}'",
+            f"possible '{original_query}'",
+            f"instance of {target}",
+            f"example of {target}",
+            f"rendering of {target}",
+            f"view of {target}",
+            f"part of {target}",
+            f"whole {target}",
+            f"container of {target}",
+            f"surface of {target}",
+            f"side of {target}",
+            f"edge of {target}",
+            f"corner of {target}",
         ]
         
         import random
@@ -498,66 +538,53 @@ Output ONLY a JSON array of strings:
         if not candidates:
             return []
         
-        concept_groups: Dict[str, List[Hypothesis]] = defaultdict(list)
-        for c in candidates:
-            concept_key = c.target_concept.lower().strip()
-            concept_groups[concept_key].append(c)
-        
-        unique_candidates = []
-        for concept, group in concept_groups.items():
-            best = max(group, key=lambda h: h.confidence)
-            unique_candidates.append(best)
-        
-        logger.info(f"Deduplicated {len(candidates)} -> {len(unique_candidates)} unique concepts")
-        
-        if not unique_candidates:
-            return []
-            
-        max_len = max(len(c.reasoning) for c in unique_candidates) if unique_candidates else 1
+        # Initial scoring
+        max_len = max(len(c.reasoning) for c in candidates) if candidates else 1
         
         def score_fn(h: Hypothesis):
             len_score = len(h.reasoning) / max_len if max_len > 0 else 0
             return 0.6 * h.confidence + 0.4 * len_score
 
-        ranked = sorted(unique_candidates, key=score_fn, reverse=True)
-        
+        # Start with all candidates ranked by score
+        remaining = sorted(candidates, key=score_fn, reverse=True)
         selected: List[Hypothesis] = []
         
-        for cand in ranked:
+        # Pass 1: Select high-diversity subset
+        for cand in remaining:
             if len(selected) >= N:
                 break
                 
             is_diverse = True
             for existing in selected:
                 iou = cand.iou(existing)
+                # Stricter IoU threshold for diversity pass
                 if iou > self.config.iou_threshold:
                     is_diverse = False
                     break
                 
-                if self._concepts_similar(cand.target_concept.lower(), existing.target_concept.lower()):
+                # Relaxed semantic check - only exact matches or very high overlap
+                if cand.target_concept.lower() == existing.target_concept.lower():
                     is_diverse = False
                     break
             
             if is_diverse:
                 selected.append(cand)
-                logger.info(f"  Selected: {cand.target_concept} (conf={cand.confidence:.2f})")
                 
+        # Pass 2: Fill remaining slots with next best candidates (ignoring diversity if needed)
         if len(selected) < N:
-            remaining_needed = N - len(selected)
-            others = [c for c in ranked if c not in selected]
+            needed = N - len(selected)
+            # Filter out already selected
+            pool = [c for c in remaining if c not in selected]
             
+            # Sort remaining by a mix of confidence and dissimilarity to current set
             def diversity_score(h):
                 if not selected:
                     return 1.0
-                max_iou = max(h.iou(s) for s in selected)
-                concept_penalty = 0.5 if any(self._concepts_similar(h.target_concept.lower(), s.target_concept.lower()) for s in selected) else 0
-                return 1.0 - max_iou - concept_penalty
+                max_iou = max((h.iou(s) for s in selected), default=0)
+                return 0.5 * h.confidence + 0.5 * (1.0 - max_iou)
                 
-            others_sorted = sorted(others, key=diversity_score, reverse=True)
-            
-            for h in others_sorted[:remaining_needed]:
-                selected.append(h)
-                logger.info(f"  Added (fill): {h.target_concept} (conf={h.confidence:.2f})")
+            pool_sorted = sorted(pool, key=diversity_score, reverse=True)
+            selected.extend(pool_sorted[:needed])
             
         return selected
 
