@@ -1,0 +1,758 @@
+{
+    "metrics": {
+        "1": {
+            "mean_iou": 0.4636305266316142,
+            "mean_oracle": 0.4636305266316142,
+            "mean_time": 118.9489096403122,
+            "num_samples": 4
+        },
+        "2": {
+            "mean_iou": 0.4636305266316142,
+            "mean_oracle": 0.46428290763661173,
+            "mean_time": 118.9489096403122,
+            "num_samples": 4
+        },
+        "4": {
+            "mean_iou": 0.4636305266316142,
+            "mean_oracle": 0.4923346266109837,
+            "mean_time": 118.9489096403122,
+            "num_samples": 4
+        },
+        "8": {
+            "mean_iou": 0.4636305266316142,
+            "mean_oracle": 0.6986023421674937,
+            "mean_time": 118.9489096403122,
+            "num_samples": 4
+        }
+    },
+    "samples": [
+        {
+            "sample_idx": 0,
+            "query": "In a television studio, various equipment is used to capture and record video footage. What in the picture could be used to stabilize and hold the camera steady during filming?",
+            "candidates": [
+                {
+                    "hypothesis": "black tripod supporting the camera in the center",
+                    "reasoning": "The scene is an indoor television studio or event space, as indicated by the professional camera setup and the person in uniform operating the equipment. In this context, the object used to stabilize and hold the camera steady is a tripod. The tripod is black, has three legs, and is positioned directly beneath the camera, which is mounted on its head. The camera operator is using it to hold the camera steady while filming. The tripod is located in the lower central part of the image, supporting the camera.",
+                    "box": [
+                        1616,
+                        1080,
+                        2425,
+                        2573
+                    ],
+                    "iou": 0.7564361057151531,
+                    "verifier_rank": 3,
+                    "verifier_score": 94,
+                    "verifier_reasoning": "Tournament survivor (Round 2)",
+                    "pointwise_breakdown": {
+                        "geo": 5.47,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "hands gripping the camera mount",
+                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. The most direct object fulfilling this is the tripod the camera is mounted on. However, following the instruction to consider indirect or metaphorical interpretations, one could argue that the camera operator's hands are also stabilizing the camera. The hands are gripping the camera mount and controls, actively holding it steady. While the tripod provides primary stabilization, the hands provide fine-tuned, active stabilization. The hands are located around the camera mount, which is the central point of interaction for stabilization.",
+                    "box": [
+                        1710,
+                        1026,
+                        2385,
+                        1536
+                    ],
+                    "iou": 0.011437885732595885,
+                    "verifier_rank": 7,
+                    "verifier_score": 90,
+                    "verifier_reasoning": "Tournament survivor (Round 1)",
+                    "pointwise_breakdown": {
+                        "geo": 0.05,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "black tripod supporting the camera",
+                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. The object in the image that serves this purpose is the tripod, which is a three-legged stand designed to support and stabilize cameras. The camera is mounted on this tripod, and the operator is using it to hold the camera steady while filming. The tripod is black and located directly under the camera.",
+                    "box": [
+                        1616,
+                        1157,
+                        2428,
+                        2573
+                    ],
+                    "iou": 0.6691502239756421,
+                    "verifier_rank": 1,
+                    "verifier_score": 98,
+                    "verifier_reasoning": "Tournament survivor (Round 3)",
+                    "pointwise_breakdown": {
+                        "geo": 5.42,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "black tripod holding the camera steady",
+                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. In the image, the camera is mounted on a three-legged stand, which is a tripod. The tripod is black and is positioned under the camera, holding it steady. The operator is using it to support the camera, which is consistent with its function. The tripod is the whole object that serves this purpose.",
+                    "box": [
+                        1631,
+                        1103,
+                        2436,
+                        2573
+                    ],
+                    "iou": 0.7473586804025236,
+                    "verifier_rank": 0,
+                    "verifier_score": 100,
+                    "verifier_reasoning": "Tournament survivor (Round 4)",
+                    "pointwise_breakdown": {
+                        "geo": 5.47,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "black tripod supporting the camera",
+                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. The image shows a professional video camera mounted on a three-legged stand, which is a tripod. The tripod is directly supporting the camera and is designed to keep it steady during filming. The operator is using it, confirming its function. No other object in the image serves this purpose as directly as the tripod.",
+                    "box": [
+                        1624,
+                        1070,
+                        2436,
+                        2573
+                    ],
+                    "iou": 0.7558216876242754,
+                    "verifier_rank": 2,
+                    "verifier_score": 96,
+                    "verifier_reasoning": "Tournament survivor (Round 2)",
+                    "pointwise_breakdown": {
+                        "geo": 5.47,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "black tripod holding a camera in the center",
+                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. The object in the image that fulfills this function is the tripod, which is black, has three legs, and is positioned directly under the camera. It is designed to hold the camera steady during filming. The visual attributes include its black color, metallic texture, and three-legged structure. The camera is mounted on top of it, and the operator is adjusting it, confirming its role in stabilization.",
+                    "box": [
+                        1624,
+                        1070,
+                        2439,
+                        2573
+                    ],
+                    "iou": 0.7555431906941587,
+                    "verifier_rank": 4,
+                    "verifier_score": 92,
+                    "verifier_reasoning": "Tournament survivor (Round 1)",
+                    "pointwise_breakdown": {
+                        "geo": 5.48,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "black tripod holding the camera steady",
+                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. The most obvious and literal object for this purpose is the tripod, which is directly supporting the camera. The tripod is black, has three legs, and is positioned under the camera mount. The operator is holding the camera mount, but the tripod is the device designed to stabilize and hold the camera steady. Other objects like the microphone or headphones are not for stabilization.",
+                    "box": [
+                        1631,
+                        1075,
+                        2425,
+                        2573
+                    ],
+                    "iou": 0.7566960370965365,
+                    "verifier_rank": 5,
+                    "verifier_score": 90,
+                    "verifier_reasoning": "Tournament survivor (Round 1)",
+                    "pointwise_breakdown": {
+                        "geo": 5.47,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "black tripod supporting the camera in the center",
+                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. The image shows a professional video camera mounted on a three-legged stand, which is a tripod. The tripod is positioned directly under the camera and is being used to hold it steady. The operator is also holding the camera, but the tripod is the primary equipment for stabilization. The tripod is black and located in the lower center of the image, supporting the camera.",
+                    "box": [
+                        1616,
+                        1093,
+                        2425,
+                        2573
+                    ],
+                    "iou": 0.7538293197413924,
+                    "verifier_rank": 6,
+                    "verifier_score": 90,
+                    "verifier_reasoning": "Tournament survivor (Round 1)",
+                    "pointwise_breakdown": {
+                        "geo": 5.47,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                }
+            ]
+        },
+        {
+            "sample_idx": 1,
+            "query": "When the wind blows, small white objects are blown away and scattered in the air. What in the picture is responsible for this phenomenon?",
+            "candidates": [
+                {
+                    "hypothesis": "white dandelion seed head with feathery parachutes",
+                    "reasoning": "The query describes small white objects being blown away and scattered in the air, which is a characteristic behavior of a dandelion seed head when exposed to wind. The image shows a dandelion seed head (often called a \"dandelion clock\") composed of many tiny white seeds attached to feathery parachutes. When the wind blows, these seeds detach and are carried away. The entire seed head is the source of this phenomenon. The query does not refer to a part of something larger, nor is it a container; it directly describes the dandelion seed head as the entity responsible for the scattering of the small white objects. The bounding box should encompass the entire dandelion seed head.",
+                    "box": [
+                        262,
+                        93,
+                        587,
+                        396
+                    ],
+                    "iou": 0.09504062000747816,
+                    "verifier_rank": 3,
+                    "verifier_score": 94,
+                    "verifier_reasoning": "Tournament survivor (Round 2)",
+                    "pointwise_breakdown": {
+                        "geo": 5.2,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "white dandelion seed head in the center",
+                    "reasoning": "The query describes small white objects being blown away and scattered in the air by the wind. The image shows a dandelion seed head, which consists of many tiny white seeds attached to feathery parachutes. When the wind blows, these seeds detach and are carried away, perfectly matching the description. The dandelion head is the source of these small white objects.",
+                    "box": [
+                        256,
+                        88,
+                        589,
+                        392
+                    ],
+                    "iou": 0.09007073853732048,
+                    "verifier_rank": 2,
+                    "verifier_score": 96,
+                    "verifier_reasoning": "Tournament survivor (Round 2)",
+                    "pointwise_breakdown": {
+                        "geo": 5.21,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "white dandelion seed head in the center",
+                    "reasoning": "The query describes small white objects being blown away by the wind. In the image, the dandelion seed head is composed of many tiny white seeds attached to feathery parachutes, which are designed to be dispersed by the wind. When the wind blows, these seeds detach and scatter, matching the description perfectly. This is the most literal and obvious object responsible for the phenomenon.",
+                    "box": [
+                        256,
+                        88,
+                        590,
+                        386
+                    ],
+                    "iou": 0.0979245409612417,
+                    "verifier_rank": 4,
+                    "verifier_score": 92,
+                    "verifier_reasoning": "Tournament survivor (Round 1)",
+                    "pointwise_breakdown": {
+                        "geo": 5.24,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "white spherical dandelion seed head in the center",
+                    "reasoning": "The query describes small white objects being blown away and scattered in the air by the wind. This is the characteristic dispersal mechanism of a dandelion seed head. The object in the image is a mature dandelion seed head (often called a \"dandelion clock\"), which consists of many tiny white seeds attached to feathery parachutes. When the wind blows, these seeds detach and are carried away, fulfilling the description. The object is centrally located, spherical, and white against the green grass background.",
+                    "box": [
+                        260,
+                        93,
+                        588,
+                        386
+                    ],
+                    "iou": 0.0921197793538219,
+                    "verifier_rank": 6,
+                    "verifier_score": 90,
+                    "verifier_reasoning": "Tournament survivor (Round 1)",
+                    "pointwise_breakdown": {
+                        "geo": 5.21,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "white fluffy dandelion seed head in the center",
+                    "reasoning": "The query describes small white objects being blown away and scattered in the air by the wind. The image shows a dandelion seed head, which is composed of many tiny, white, fluffy seeds attached to feathery parachutes. These seeds are designed to be easily carried by the wind, matching the description perfectly. The visual attributes are: color (white), shape (fluffy, spherical cluster), texture (feathery, light), and size (small individual units). The dandelion head is the source of these objects.",
+                    "box": [
+                        256,
+                        93,
+                        596,
+                        384
+                    ],
+                    "iou": 0.0904862061674401,
+                    "verifier_rank": 5,
+                    "verifier_score": 90,
+                    "verifier_reasoning": "Tournament survivor (Round 1)",
+                    "pointwise_breakdown": {
+                        "geo": 5.23,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "white fluffy dandelion seed head in center",
+                    "reasoning": "The query describes small white objects being blown away by the wind, which is a characteristic behavior of a dandelion seed head. In the image, the central object is a spherical, fluffy, white structure composed of many tiny seeds attached to feathery parachutes. This is the dandelion seed head, and when disturbed by wind, these seeds detach and scatter. The object is located in the center of the image, surrounded by green grass. The small white objects described are the individual seeds of this dandelion head.",
+                    "box": [
+                        260,
+                        106,
+                        592,
+                        394
+                    ],
+                    "iou": 0.07250755287009064,
+                    "verifier_rank": 7,
+                    "verifier_score": 90,
+                    "verifier_reasoning": "Tournament survivor (Round 1)",
+                    "pointwise_breakdown": {
+                        "geo": 5.16,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "white fluffy dandelion seed head in the center",
+                    "reasoning": "The scene is an outdoor, natural setting with green grass, indicating a garden or field. The query describes small white objects being blown away and scattered in the air by the wind. This is characteristic of a dandelion seed head, which consists of many tiny white seeds attached to feathery parachutes. When the wind blows, these seeds detach and are carried away. The image clearly shows a dandelion seed head, which is the object responsible for this phenomenon.",
+                    "box": [
+                        260,
+                        94,
+                        584,
+                        407
+                    ],
+                    "iou": 0.8262793098363074,
+                    "verifier_rank": 1,
+                    "verifier_score": 98,
+                    "verifier_reasoning": "Tournament survivor (Round 3)",
+                    "pointwise_breakdown": {
+                        "geo": 6.71,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "white fluffy seed head of a dandelion in the center",
+                    "reasoning": "The query describes small white objects being blown away and scattered by the wind. While the dandelion seed head is the source of these objects, the phenomenon itself is caused by the seeds detaching and being carried away. The most direct object responsible for this is the dandelion seed head, which is the source of the seeds. However, the query asks for the object \"responsible for this phenomenon,\" which is the dandelion seed head as it contains the seeds that are dispersed. The seeds are the white objects, but the seed head is the structure that releases them. Therefore, the seed head is the correct target.",
+                    "box": [
+                        256,
+                        95,
+                        595,
+                        383
+                    ],
+                    "iou": 0.0865895940868906,
+                    "verifier_rank": 0,
+                    "verifier_score": 100,
+                    "verifier_reasoning": "Tournament survivor (Round 4)",
+                    "pointwise_breakdown": {
+                        "geo": 5.22,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                }
+            ]
+        },
+        {
+            "sample_idx": 3,
+            "query": "In a mechanical workshop, there are various machines and tools used for different purposes. What in the picture could be used to rotate or spin other parts or objects?",
+            "candidates": [
+                {
+                    "hypothesis": "large black handwheel in the center",
+                    "reasoning": "The scene is an indoor mechanical workshop setting, as indicated by the presence of industrial machinery and tools. The query asks for an object used to rotate or spin other parts. The object in the image is a large, black, circular handwheel with a central hub and three spokes, which is a common component on machinery for manual rotation. It is designed to be turned by hand to drive a shaft or mechanism, thus fulfilling the purpose of rotating or spinning other parts. The object is centrally located and dominates the frame.",
+                    "box": [
+                        19,
+                        38,
+                        1601,
+                        1580
+                    ],
+                    "iou": 0.9108443820337649,
+                    "verifier_rank": 4,
+                    "verifier_score": 92,
+                    "verifier_reasoning": "Tournament survivor (Round 1)",
+                    "pointwise_breakdown": {
+                        "geo": 6.07,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "large black handwheel with three spokes",
+                    "reasoning": "The image shows a large, black, wheel-like handle with a central hub and three spokes, which is clearly designed to be turned by hand. This type of handle is commonly used on machinery to rotate or spin other parts or objects, such as in a press, lathe, or similar equipment. It is the most literal and obvious object in the image that fulfills the query's description.",
+                    "box": [
+                        19,
+                        38,
+                        1603,
+                        1585
+                    ],
+                    "iou": 0.9134539060537553,
+                    "verifier_rank": 6,
+                    "verifier_score": 90,
+                    "verifier_reasoning": "Tournament survivor (Round 1)",
+                    "pointwise_breakdown": {
+                        "geo": 6.05,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "large black handwheel in the center",
+                    "reasoning": "The image shows a large, black, circular handwheel with a scalloped edge and three spokes. This type of wheel is commonly found on machinery and is designed to be turned by hand to rotate or spin other parts or objects connected to it via a shaft or gear mechanism. The object is centrally located and dominates the foreground, making it the most likely candidate for the query. It is partially visible, as the background machinery is blurred, but its function as a rotating component is clear from its design.",
+                    "box": [
+                        22,
+                        43,
+                        1597,
+                        1585
+                    ],
+                    "iou": 0.9111985216624693,
+                    "verifier_rank": 0,
+                    "verifier_score": 100,
+                    "verifier_reasoning": "Tournament survivor (Round 4)",
+                    "pointwise_breakdown": {
+                        "geo": 6.07,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "large black hand crank in the center",
+                    "reasoning": "The object in the image is a large, black, wheel-shaped hand crank with a scalloped edge. Hand cranks are mechanical devices specifically designed to be turned by hand to rotate or spin other parts or objects connected to them, such as gears or shafts. This matches the query perfectly. No other object in the image has the function of rotating or spinning parts.",
+                    "box": [
+                        19,
+                        38,
+                        1603,
+                        1586
+                    ],
+                    "iou": 0.9139881714897162,
+                    "verifier_rank": 7,
+                    "verifier_score": 90,
+                    "verifier_reasoning": "Tournament survivor (Round 1)",
+                    "pointwise_breakdown": {
+                        "geo": 6.05,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "large black hand crank in the center",
+                    "reasoning": "The query asks for something that can be used to rotate or spin other parts or objects. The object in the image is a large, black, wheel-shaped hand crank with a central hub and three spokes. This type of crank is commonly used in mechanical workshops to manually rotate gears, shafts, or other components. It is clearly a part of a larger machine, but the crank itself is the functional element for rotation. Therefore, it fits the description perfectly.",
+                    "box": [
+                        22,
+                        40,
+                        1601,
+                        1583
+                    ],
+                    "iou": 0.9116738967043806,
+                    "verifier_rank": 2,
+                    "verifier_score": 96,
+                    "verifier_reasoning": "Tournament survivor (Round 2)",
+                    "pointwise_breakdown": {
+                        "geo": 6.06,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "large black handwheel with scalloped edge in the center",
+                    "reasoning": "The query asks for an object used to rotate or spin other parts. The object in the image is a large, black handwheel with a scalloped edge and three spokes. Handwheels are commonly used in mechanical workshops to manually rotate shafts, gears, or other components. Although it is not a motorized device, its function is to impart rotational motion to connected parts. The object is centrally located and clearly designed for manual rotation.",
+                    "box": [
+                        19,
+                        40,
+                        1601,
+                        1581
+                    ],
+                    "iou": 0.9111324086836664,
+                    "verifier_rank": 5,
+                    "verifier_score": 90,
+                    "verifier_reasoning": "Tournament survivor (Round 1)",
+                    "pointwise_breakdown": {
+                        "geo": 6.07,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "large black hand crank in the center",
+                    "reasoning": "The query asks for an object used to rotate or spin other parts. The image shows a large, black, wheel-like handle with a central hub and three spokes, which is characteristic of a hand crank. Hand cranks are specifically designed to be turned by hand to rotate a shaft or mechanism, making them the perfect match for the query. Its visual attributes \u2014 large, black, circular shape with a handle-like design \u2014 are consistent with a tool used for rotation.",
+                    "box": [
+                        19,
+                        40,
+                        1603,
+                        1581
+                    ],
+                    "iou": 0.9117068149417911,
+                    "verifier_rank": 3,
+                    "verifier_score": 94,
+                    "verifier_reasoning": "Tournament survivor (Round 2)",
+                    "pointwise_breakdown": {
+                        "geo": 6.06,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "large black handwheel with three spokes",
+                    "reasoning": "The object in the image is a large, black, three-spoke handwheel or crank. While its primary function is to manually rotate a shaft or mechanism to which it is attached, it can be interpreted metaphorically as a \u201crotating or spinning\u201d device. The term \u201cspin\u201d is often used to describe the action of turning something, and this handwheel is designed for that purpose. The bounding box captures the entire handwheel, which is the most prominent object in the image and directly relates to the concept of rotation.",
+                    "box": [
+                        19,
+                        43,
+                        1601,
+                        1580
+                    ],
+                    "iou": 0.9105837621214764,
+                    "verifier_rank": 1,
+                    "verifier_score": 98,
+                    "verifier_reasoning": "Tournament survivor (Round 3)",
+                    "pointwise_breakdown": {
+                        "geo": 6.07,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                }
+            ]
+        },
+        {
+            "sample_idx": 4,
+            "query": "the area where people can stand without getting wet",
+            "candidates": [
+                {
+                    "hypothesis": "dry land in the background",
+                    "reasoning": "The query asks for \"the area where people can stand without getting wet.\" In the image, the person is water skiing on the water, which means they are standing on a board in the water and are therefore getting wet. The only area where people can stand without getting wet would be on the dry land visible in the background, specifically the sandy or dirt shoreline. However, the image does not show a clearly defined, isolated \"area\" for standing dry \u2014 the land is a continuous background element. Since the query asks for an object that directly matches, and the only dry area is the background land, that is the best match. The land is mostly brownish-yellow and spans the upper portion of the image.",
+                    "box": [
+                        0,
+                        114,
+                        800,
+                        174
+                    ],
+                    "iou": 0.0922009987700606,
+                    "verifier_rank": 6,
+                    "verifier_score": 90,
+                    "verifier_reasoning": "Tournament survivor (Round 1)",
+                    "pointwise_breakdown": {
+                        "geo": 5.13,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "black wakeboard under the rider",
+                    "reasoning": "The query asks for \"the area where people can stand without getting wet.\" In the context of water sports like wakeboarding, the person is standing on a board that keeps them above the water. The board is the object that serves the function of allowing a person to stand without getting wet. The board is located under the person's feet, partially submerged in water, but it is the platform that enables standing dry. The board is black and is positioned in the center of the image, under the wakeboarder.",
+                    "box": [
+                        320,
+                        237,
+                        352,
+                        261
+                    ],
+                    "iou": 0.002963226360861706,
+                    "verifier_rank": 1,
+                    "verifier_score": 98,
+                    "verifier_reasoning": "Tournament survivor (Round 3)",
+                    "pointwise_breakdown": {
+                        "geo": 0.0,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "dry brown land in the background",
+                    "reasoning": "The query \"the area where people can stand without getting wet\" is metaphorical. In the image, the person is water skiing, and the only dry area is the land in the background. The land is a dry, arid, brownish area with sparse vegetation, located behind the water and above the horizon line. This land is the only place where one could stand without getting wet.",
+                    "box": [
+                        0,
+                        75,
+                        800,
+                        168
+                    ],
+                    "iou": 0.20098968827782387,
+                    "verifier_rank": 3,
+                    "verifier_score": 94,
+                    "verifier_reasoning": "Tournament survivor (Round 2)",
+                    "pointwise_breakdown": {
+                        "geo": 5.28,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "dry riverbank in the background",
+                    "reasoning": "The query asks for \"the area where people can stand without getting wet.\" In the image, the person is water skiing on the water, which is inherently wet. The only area where someone could stand without getting wet would be on the dry land, specifically the riverbank visible in the background. The riverbank is located at the top of the image, stretching across the horizon, and is clearly dry and elevated above the water. This area is the only logical location in the image where one could stand without getting wet.",
+                    "box": [
+                        0,
+                        120,
+                        800,
+                        168
+                    ],
+                    "iou": 0.08120563697523821,
+                    "verifier_rank": 0,
+                    "verifier_score": 100,
+                    "verifier_reasoning": "Tournament survivor (Round 4)",
+                    "pointwise_breakdown": {
+                        "geo": 5.11,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "dry land on the far bank of the river",
+                    "reasoning": "The query \"the area where people can stand without getting wet\" refers to a part of the scene \u2014 specifically, the dry land on the far bank of the river, which is visible in the background. This area is distinct from the water where the person is water-skiing. The land is dry and elevated, making it the only area in the image where one could stand without getting wet. The person is on the water, and the water is splashing around them, so the area they are standing on is not dry. The query is asking for the dry land area, which is a part of the larger scene.",
+                    "box": [
+                        0,
+                        108,
+                        800,
+                        180
+                    ],
+                    "iou": 0.2974458502474147,
+                    "verifier_rank": 4,
+                    "verifier_score": 92,
+                    "verifier_reasoning": "Tournament survivor (Round 1)",
+                    "pointwise_breakdown": {
+                        "geo": 5.42,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "random fill",
+                    "reasoning": "Random fill to meet N requirement",
+                    "box": [
+                        324,
+                        153,
+                        702,
+                        474
+                    ],
+                    "iou": 7.40433597914939e-05,
+                    "verifier_rank": 7,
+                    "verifier_score": 90,
+                    "verifier_reasoning": "Tournament survivor (Round 1)",
+                    "pointwise_breakdown": {
+                        "geo": 0.0,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "random fill",
+                    "reasoning": "Random fill to meet N requirement",
+                    "box": [
+                        180,
+                        347,
+                        298,
+                        531
+                    ],
+                    "iou": 0.0,
+                    "verifier_rank": 5,
+                    "verifier_score": 90,
+                    "verifier_reasoning": "Tournament survivor (Round 1)",
+                    "pointwise_breakdown": {
+                        "geo": 5.28,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                },
+                {
+                    "hypothesis": "random fill",
+                    "reasoning": "Random fill to meet N requirement",
+                    "box": [
+                        195,
+                        11,
+                        396,
+                        559
+                    ],
+                    "iou": 0.008812702190161009,
+                    "verifier_rank": 2,
+                    "verifier_score": 96,
+                    "verifier_reasoning": "Tournament survivor (Round 2)",
+                    "pointwise_breakdown": {
+                        "geo": 5.29,
+                        "rating": 5.0,
+                        "iou": 0.0,
+                        "boundary": 0.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {}
+                }
+            ]
+        }
+    ]
+}

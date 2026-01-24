@@ -766,38 +766,28 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
         try:
             prompt = f"""Evaluate this segmentation mask (red region) for the query: "{query}"
 
-You must score it on these specific criteria:
+Score 0-5 for these specific metrics:
 
-1. RATING_CLASS (20%): Choose exactly one [PERFECT, GOOD, AVERAGE, BAD, WRONG].
-   - PERFECT: Exact object, perfect edges (100)
-   - GOOD: Correct object, minor boundary errors (75)
-   - AVERAGE: Mostly correct but includes background or misses parts (50)
-   - BAD: Partial overlap or major noise (25)
-   - WRONG: Completely wrong object (0)
+1. RATING.CLASS: One of [PERFECT, GOOD, AVERAGE, BAD, WRONG]
+2. PREDICTED.IOU: Estimated IoU 0-100%
+3. BOUNDARY: Edge quality 0-100%
+4. SEMANTIC.CATEGORY: Correct object class? (0-5)
+5. SEMANTIC.ATTRIBUTE: Color/shape match? (0-5)
+6. SEMANTIC.CONTEXT: Action/context match? (0-5)
+7. SEMANTIC.COUNT: Correct instance count? (0-5)
 
-2. PREDICTED_IOU (30%): Estimate the Intersection-over-Union (0-100%) with the ground truth. Be critical.
-
-3. BOUNDARY_QUALITY (20%): Rate the tightness and accuracy of edges (0-100).
-
-4. SEMANTIC_FIDELITY (20%): Rate these 4 aspects from 0 to 5 each:
-   - Category Match: Is it the correct object class? (e.g. dog vs cat)
-   - Attribute Match: Do color/texture/shape match description? 
-   - Context/Action: Is it performing the right action or in right context?
-   - Count/Singularity: Is exactly the correct number/instance selected? (No merging)
-
-Output strictly in JSON format:
+Output ONLY valid JSON like this:
 {{
-  "rating_class": "PERFECT/GOOD/...",
-  "predicted_iou": 0-100,
-  "boundary_score": 0-100,
+  "rating_class": "GOOD",
+  "predicted_iou": 75,
+  "boundary_score": 80,
   "semantic_scores": {{
-    "category": 0-5,
-    "attribute": 0-5,
-    "context": 0-5,
-    "count": 0-5
+    "category": 5,
+    "attribute": 4,
+    "context": 5,
+    "count": 5
   }}
-}}
-"""
+}}"""
             messages = create_vision_message(prompt, tmp_path)
             
             completion = self.client.chat.completions.create(
@@ -809,10 +799,12 @@ Output strictly in JSON format:
             text = completion.choices[0].message.content.strip()
             
             # --- Parse JSON ---
-            json_match = re.search(r'\{.*\}', text, re.DOTALL)
-            if json_match:
-                data = json_repair.loads(json_match.group(0))
-            else:
+            # json_repair is robust to markdown blocks and messy comments
+            try:
+                import json_repair
+                data = json_repair.loads(text)
+            except Exception as e:
+                if self.verbose: print(f"JSON Parsing failed: {e}")
                 data = {}
 
             # --- Calculate Scores ---
