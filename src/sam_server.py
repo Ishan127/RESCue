@@ -34,92 +34,68 @@ def is_rocm_pytorch():
 def patch_torchvision_for_rocm():
     try:
         import torchvision.ops as ops
+        import torchvision.ops.roi_align as roi_align_module
         
         if not is_rocm_pytorch():
             logger.info("Not running on ROCm, skipping torchvision patches")
             return False
         
-        logger.info("Detected ROCm/AMD GPU, applying torchvision compatibility patches...")
+        logger.info("Detected ROCm/AMD GPU, applying AGGRESSIVE torchvision compatibility patches...")
         
-        _original_roi_align = ops.roi_align
-        _original_nms = ops.nms
-        _original_roi_pool = getattr(ops, 'roi_pool', None)
-        _original_ps_roi_align = getattr(ops, 'ps_roi_align', None)
-        _original_ps_roi_pool = getattr(ops, 'ps_roi_pool', None)
-        _original_deform_conv2d = getattr(ops, 'deform_conv2d', None)
+        # AGGRESSIVE PATCH: Replace roi_align with CPU-only version
+        def cpu_roi_align(input, boxes, output_size, spatial_scale=1.0, sampling_ratio=-1, aligned=False):
+            """ROCm-compatible roi_align that runs on CPU then moves back to GPU."""
+            device = input.device
+            
+            # Move to CPU
+            input_cpu = input.cpu()
+            if isinstance(boxes, torch.Tensor):
+                boxes_cpu = boxes.cpu()
+            else:
+                boxes_cpu = [b.cpu() if isinstance(b, torch.Tensor) else b for b in boxes]
+            
+            # Run on CPU using the C++ implementation
+            result = torch.ops.torchvision.roi_align(
+                input_cpu, boxes_cpu, spatial_scale, 
+                output_size[0] if isinstance(output_size, (tuple, list)) else output_size,
+                output_size[1] if isinstance(output_size, (tuple, list)) else output_size,
+                sampling_ratio, aligned
+            )
+            
+            # Move back to original device
+            return result.to(device)
         
-        def cpu_fallback_wrapper(original_fn, op_name):
-            def wrapper(*args, **kwargs):
-                try:
-                    return original_fn(*args, **kwargs)
-                except (NotImplementedError, RuntimeError) as e:
-                    error_str = str(e).lower()
-                    if 'cuda' in error_str or op_name.lower() in error_str or 'backend' in error_str:
-                        logger.warning(f"{op_name} falling back to CPU (ROCm compatibility)")
-                        
-                        cpu_args = []
-                        devices = []
-                        for arg in args:
-                            if isinstance(arg, torch.Tensor):
-                                devices.append(arg.device)
-                                cpu_args.append(arg.cpu())
-                            elif isinstance(arg, (list, tuple)) and len(arg) > 0 and isinstance(arg[0], torch.Tensor):
-                                devices.append(arg[0].device)
-                                cpu_args.append([t.cpu() if isinstance(t, torch.Tensor) else t for t in arg])
-                            else:
-                                cpu_args.append(arg)
-                        
-                        cpu_kwargs = {}
-                        for k, v in kwargs.items():
-                            if isinstance(v, torch.Tensor):
-                                if not devices:
-                                    devices.append(v.device)
-                                cpu_kwargs[k] = v.cpu()
-                            else:
-                                cpu_kwargs[k] = v
-                        
-                        result = original_fn(*cpu_args, **cpu_kwargs)
-                        
-                        target_device = devices[0] if devices else torch.device('cpu')
-                        if isinstance(result, torch.Tensor):
-                            return result.to(target_device)
-                        elif isinstance(result, (tuple, list)):
-                            return type(result)(
-                                r.to(target_device) if isinstance(r, torch.Tensor) else r 
-                                for r in result
-                            )
-                        return result
-                    raise
-            return wrapper
+        # Patch at multiple levels
+        ops.roi_align = cpu_roi_align
+        roi_align_module.roi_align = cpu_roi_align
         
-        ops.roi_align = cpu_fallback_wrapper(_original_roi_align, 'roi_align')
-        ops.nms = cpu_fallback_wrapper(_original_nms, 'nms')
-        
-        if _original_roi_pool:
-            ops.roi_pool = cpu_fallback_wrapper(_original_roi_pool, 'roi_pool')
-        if _original_ps_roi_align:
-            ops.ps_roi_align = cpu_fallback_wrapper(_original_ps_roi_align, 'ps_roi_align')
-        if _original_ps_roi_pool:
-            ops.ps_roi_pool = cpu_fallback_wrapper(_original_ps_roi_pool, 'ps_roi_pool')
-        if _original_deform_conv2d:
-            ops.deform_conv2d = cpu_fallback_wrapper(_original_deform_conv2d, 'deform_conv2d')
-        
+        # Also patch the RoIAlign class
         if hasattr(ops, 'RoIAlign'):
             _OriginalRoIAlign = ops.RoIAlign
-            class PatchedRoIAlign(_OriginalRoIAlign):
+            class PatchedRoIAlign(torch.nn.Module):
+                def __init__(self, output_size, spatial_scale, sampling_ratio=-1, aligned=False):
+                    super().__init__()
+                    self.output_size = output_size
+                    self.spatial_scale = spatial_scale
+                    self.sampling_ratio = sampling_ratio
+                    self.aligned = aligned
+                
                 def forward(self, input, rois):
-                    try:
-                        return super().forward(input, rois)
-                    except (NotImplementedError, RuntimeError) as e:
-                        if 'cuda' in str(e).lower() or 'roi_align' in str(e).lower():
-                            logger.warning("RoIAlign.forward falling back to CPU")
-                            device = input.device
-                            result = super().forward(input.cpu(), rois.cpu())
-                            return result.to(device)
-                        raise
+                    return cpu_roi_align(
+                        input, rois, self.output_size, 
+                        self.spatial_scale, self.sampling_ratio, self.aligned
+                    )
             ops.RoIAlign = PatchedRoIAlign
         
-        logger.info("Successfully applied ROCm compatibility patches for torchvision ops")
+        # Patch NMS similarly
+        _original_nms = ops.nms
+        def cpu_nms(boxes, scores, iou_threshold):
+            device = boxes.device
+            result = _original_nms(boxes.cpu(), scores.cpu(), iou_threshold)
+            return result.to(device)
+        ops.nms = cpu_nms
+        
+        logger.info("Successfully applied AGGRESSIVE ROCm compatibility patches")
         return True
         
     except ImportError as e:
