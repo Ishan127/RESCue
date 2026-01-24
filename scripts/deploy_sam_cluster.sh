@@ -1,8 +1,6 @@
 #!/bin/bash
 # Deploy SAM3 cluster with load balancer
-# Uses tmux sessions to keep processes running
-
-set -e
+# Works both inside and outside tmux - uses background processes
 
 # GPU Assignment - all SAM instances share GPU 3
 export CUDA_VISIBLE_DEVICES=3
@@ -32,7 +30,6 @@ echo ""
 echo -e "${YELLOW}Cleaning up existing processes...${NC}"
 pkill -f "sam_server.py" 2>/dev/null || true
 pkill -f "sam_load_balancer.py" 2>/dev/null || true
-tmux kill-session -t sam_cluster 2>/dev/null || true
 sleep 2
 
 # Check dependencies
@@ -43,9 +40,8 @@ python -c "from sam3.model_builder import build_sam3_image_model; print('SAM3: O
     exit 1
 }
 
-# Create tmux session
-echo -e "${YELLOW}Creating tmux session 'sam_cluster'...${NC}"
-tmux new-session -d -s sam_cluster -n "control"
+# Create log directory
+mkdir -p /tmp/sam_logs
 
 # Build backend URLs
 BACKEND_URLS=""
@@ -58,9 +54,10 @@ for i in $(seq 0 $((NUM_INSTANCES - 1))); do
     fi
 done
 
-# Start backends in batches (4 at a time to avoid overwhelming GPU)
+# Start backends in batches using nohup
 echo -e "${YELLOW}Starting $NUM_INSTANCES SAM backends...${NC}"
 BATCH_SIZE=4
+PIDS=()
 
 for batch_start in $(seq 0 $BATCH_SIZE $((NUM_INSTANCES - 1))); do
     batch_end=$((batch_start + BATCH_SIZE - 1))
@@ -73,14 +70,17 @@ for batch_start in $(seq 0 $BATCH_SIZE $((NUM_INSTANCES - 1))); do
     for i in $(seq $batch_start $batch_end); do
         PORT=$((BACKEND_BASE_PORT + i))
         
-        # Create a new tmux window for each backend
-        tmux new-window -t sam_cluster -n "sam_$PORT" \
-            "CUDA_VISIBLE_DEVICES=3 HIP_VISIBLE_DEVICES=3 python src/sam_server.py --host $HOST --port $PORT 2>&1 | tee /tmp/sam_$PORT.log; echo 'Process exited, press enter to close'; read"
+        # Start backend with nohup
+        nohup python src/sam_server.py --host $HOST --port $PORT \
+            > /tmp/sam_logs/sam_$PORT.log 2>&1 &
+        PIDS+=($!)
     done
     
-    # Wait a bit between batches
+    # Wait a bit between batches for GPU memory allocation
     sleep 5
 done
+
+echo -e "${YELLOW}Backend PIDs: ${PIDS[*]}${NC}"
 
 # Wait for backends to initialize
 echo -e "${YELLOW}Waiting for backends to load models (60s)...${NC}"
@@ -93,15 +93,19 @@ echo ""
 # Check backend health
 echo -e "${YELLOW}Checking backend health...${NC}"
 HEALTHY=0
-FAILED_PORTS=""
+HEALTHY_URLS=""
 for i in $(seq 0 $((NUM_INSTANCES - 1))); do
     PORT=$((BACKEND_BASE_PORT + i))
     if curl -s --connect-timeout 2 "http://localhost:$PORT/health" > /dev/null 2>&1; then
         ((HEALTHY++))
         echo -e "  Port $PORT: ${GREEN}OK${NC}"
+        if [ -z "$HEALTHY_URLS" ]; then
+            HEALTHY_URLS="http://localhost:$PORT"
+        else
+            HEALTHY_URLS="$HEALTHY_URLS,http://localhost:$PORT"
+        fi
     else
         echo -e "  Port $PORT: ${RED}FAILED${NC}"
-        FAILED_PORTS="$FAILED_PORTS $PORT"
     fi
 done
 
@@ -110,35 +114,23 @@ echo -e "${GREEN}$HEALTHY/$NUM_INSTANCES backends healthy${NC}"
 
 if [ $HEALTHY -eq 0 ]; then
     echo -e "${RED}No backends started successfully!${NC}"
-    echo -e "${RED}Check logs: cat /tmp/sam_8010.log${NC}"
     echo ""
-    echo "Last 50 lines from first backend:"
-    tail -50 /tmp/sam_8010.log 2>/dev/null || echo "No log file found"
+    echo "Last 50 lines from first backend log:"
+    tail -50 /tmp/sam_logs/sam_8010.log 2>/dev/null || echo "No log file found"
     exit 1
 fi
 
-# Update BACKEND_URLS to only include healthy backends
-if [ $HEALTHY -lt $NUM_INSTANCES ]; then
-    echo -e "${YELLOW}Rebuilding backend list with healthy instances only...${NC}"
-    BACKEND_URLS=""
-    for i in $(seq 0 $((NUM_INSTANCES - 1))); do
-        PORT=$((BACKEND_BASE_PORT + i))
-        if curl -s --connect-timeout 2 "http://localhost:$PORT/health" > /dev/null 2>&1; then
-            if [ -z "$BACKEND_URLS" ]; then
-                BACKEND_URLS="http://localhost:$PORT"
-            else
-                BACKEND_URLS="$BACKEND_URLS,http://localhost:$PORT"
-            fi
-        fi
-    done
-fi
-
-# Start load balancer
+# Start load balancer with healthy backends only
 echo ""
 echo -e "${YELLOW}Starting load balancer on port $LB_PORT...${NC}"
-tmux new-window -t sam_cluster -n "loadbalancer" \
-    "python src/sam_load_balancer.py --port $LB_PORT --host $HOST --backends '$BACKEND_URLS' 2>&1 | tee /tmp/sam_lb.log; echo 'LB exited, press enter'; read"
+nohup python src/sam_load_balancer.py \
+    --port $LB_PORT \
+    --host $HOST \
+    --backends "$HEALTHY_URLS" \
+    > /tmp/sam_logs/sam_lb.log 2>&1 &
+LB_PID=$!
 
+echo -e "${YELLOW}Load balancer PID: $LB_PID${NC}"
 sleep 5
 
 # Verify load balancer
@@ -147,7 +139,7 @@ if curl -s --connect-timeout 5 "http://localhost:$LB_PORT/health" > /dev/null 2>
 else
     echo -e "${RED}Load balancer failed to start!${NC}"
     echo "Last 30 lines from load balancer log:"
-    tail -30 /tmp/sam_lb.log 2>/dev/null || echo "No log file"
+    tail -30 /tmp/sam_logs/sam_lb.log 2>/dev/null || echo "No log file"
     exit 1
 fi
 
@@ -161,12 +153,13 @@ echo -e "${GREEN}Endpoint: http://localhost:$LB_PORT${NC}"
 echo -e "${YELLOW}Health:   curl http://localhost:$LB_PORT/health${NC}"
 echo -e "${YELLOW}Stats:    curl http://localhost:$LB_PORT/stats${NC}"
 echo ""
-echo -e "${GREEN}Tmux session: sam_cluster${NC}"
-echo -e "${YELLOW}  Attach: tmux attach -t sam_cluster${NC}"
-echo -e "${YELLOW}  List windows: tmux list-windows -t sam_cluster${NC}"
+echo -e "${YELLOW}Logs: /tmp/sam_logs/${NC}"
+echo -e "${YELLOW}  Backend logs: /tmp/sam_logs/sam_80XX.log${NC}"
+echo -e "${YELLOW}  LB log: /tmp/sam_logs/sam_lb.log${NC}"
 echo ""
-echo -e "${GREEN}To stop: tmux kill-session -t sam_cluster${NC}"
+echo -e "${GREEN}To stop all: pkill -f sam_server; pkill -f sam_load_balancer${NC}"
 echo ""
 
 # Show health
+echo "Cluster health:"
 curl -s "http://localhost:$LB_PORT/health" | python -m json.tool 2>/dev/null || true
