@@ -799,13 +799,30 @@ Output ONLY valid JSON like this:
             text = completion.choices[0].message.content.strip()
             
             # --- Parse JSON ---
-            # json_repair is robust to markdown blocks and messy comments
+            # Robust parsing strategy:
+            # 1. Try json_repair (best for LLM output)
+            # 2. Key-based regex fallback if json_repair fails/missing
+            data = {}
             try:
-                import json_repair
-                data = json_repair.loads(text)
+                try:
+                    import json_repair
+                    data = json_repair.loads(text)
+                except ImportError:
+                    if self.verbose: print("json_repair not found, using regex fallback")
+                    # Fallback to regex extraction + json
+                    json_match = re.search(r'\{[\s\S]*\}', text)
+                    if json_match:
+                        data = json.loads(json_match.group(0))
             except Exception as e:
-                if self.verbose: print(f"JSON Parsing failed: {e}")
-                data = {}
+                if self.verbose: print(f"JSON Parsing fully failed: {e}")
+                
+            # Final fallback: manual key extraction
+            if not data:
+                 if "PERFECT" in text: data["rating_class"] = "PERFECT"
+                 elif "GOOD" in text: data["rating_class"] = "GOOD"
+                 # Extract numbers
+                 iou_m = re.search(r'IOU.*?(\d+)', text, re.IGNORECASE)
+                 if iou_m: data["predicted_iou"] = int(iou_m.group(1))
 
             # --- Calculate Scores ---
             

@@ -416,7 +416,8 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
                     'verifier_score': cand.get('verifier_score'),
                     'verifier_reasoning': cand.get('verifier_reasoning'),
                     'pointwise_breakdown': cand.get('pointwise_details', {}).get('breakdown'),
-                    'pointwise_raw': cand.get('pointwise_details', {}).get('raw_response')
+                    'pointwise_raw': cand.get('pointwise_details', {}).get('raw_response'),
+                    'pointwise_error': cand.get('pointwise_details', {}).get('error')
                 }
                 sample_info['candidates'].append(cand_info)
             
