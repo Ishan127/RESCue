@@ -501,6 +501,15 @@ class SAM3ImageModel:
         # 5. Transform and Collate
         try:
             datapoint = self.transform(datapoint)
+            
+            # --- FILE LOGGING DEEP DEBUG ---
+            try:
+                with open("sam_debug_deep.log", "a") as f:
+                    if datapoint.find_queries and hasattr(datapoint.find_queries[0], 'input_bbox'):
+                        f.write(f"Box After Transform: {datapoint.find_queries[0].input_bbox}\n")
+            except: pass
+            # -------------------------------
+
             batch = collate([datapoint], dict_key="dummy")["dummy"]
             batch = copy_data_to_device(batch, torch.device(self.device), non_blocking=True) # Ensure device string
             
