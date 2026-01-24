@@ -93,10 +93,11 @@ http_session: aiohttp.ClientSession = None
 @app.on_event("startup")
 async def startup():
     global http_session
-    timeout = aiohttp.ClientTimeout(total=120)
+    timeout = aiohttp.ClientTimeout(total=300)  # Increased to 5 minutes
     connector = aiohttp.TCPConnector(limit=100)
     http_session = aiohttp.ClientSession(timeout=timeout, connector=connector)
     logger.info(f"Load balancer started with {len(pool.backends)} backends")
+    logger.info("Configuration: timeouts=[Total:300s, Req:150s, Retry:60s]")
 
 
 @app.on_event("shutdown")
@@ -158,7 +159,7 @@ async def proxy_request(request: Request, path: str):
     t0 = time.time()
     try:
         # Add timeout to prevent hanging - SAM can take time for large images
-        timeout = aiohttp.ClientTimeout(total=60)  # 60 second timeout for large images
+        timeout = aiohttp.ClientTimeout(total=150)  # 150s (matches Executor 120s + buffer)
         async with http_session.request(
             method=request.method,
             url=url,
@@ -191,7 +192,7 @@ async def proxy_request(request: Request, path: str):
             logger.error(f"Backend {backend} error after {latency:.2f}s: {error_type}: {e}")
         
         # Try another backend with reasonable timeout
-        retry_timeout = aiohttp.ClientTimeout(total=30)  # 30 second timeout for retries
+        retry_timeout = aiohttp.ClientTimeout(total=60)  # 60 second retry
         for retry_backend in pool.backends:
             if retry_backend != backend and pool.healthy.get(retry_backend, True):
                 try:
