@@ -138,8 +138,10 @@ async def proxy_request(request: Request, path: str):
             pool.record_response(backend, latency, resp.status < 500)
             
             content = await resp.read()
-            return JSONResponse(
-                content=content.decode() if content else "{}",
+            # Return raw response (don't re-serialize JSON)
+            from starlette.responses import Response
+            return Response(
+                content=content,
                 status_code=resp.status,
                 media_type=resp.content_type
             )
@@ -160,8 +162,9 @@ async def proxy_request(request: Request, path: str):
                         data=body,
                     ) as resp:
                         content = await resp.read()
-                        return JSONResponse(
-                            content=content.decode() if content else "{}",
+                        from starlette.responses import Response
+                        return Response(
+                            content=content,
                             status_code=resp.status,
                             media_type=resp.content_type
                         )
