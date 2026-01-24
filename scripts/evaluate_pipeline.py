@@ -114,7 +114,7 @@ class PlannerStage(PipelineStage):
         task.t_start = time.time()
         
         try:
-            hypotheses = self.planner.plan(task.temp_img_path, task.query, N=self.max_n)
+            hypotheses = self.planner.generate_hypotheses(task.temp_img_path, task.query, N=self.max_n)
             task.hypotheses = hypotheses if hypotheses else []
         except Exception as e:
             print(f"[Planner] Sample {task.sample_idx} error: {e}")
