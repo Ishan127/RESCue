@@ -406,13 +406,7 @@ class SAM3ImageModel:
 
         logger.info("SAM3 image model loaded successfully")
 
-    def segment_combined(
-        self,
-        image: Image.Image,
-        text_prompts: Optional[List[str]] = None,
-        boxes: Optional[List[Tuple[List[float], bool]]] = None,
-        points: Optional[List[Tuple[List[List[float]], List[int]]]] = None,
-    ) -> Tuple[List[np.ndarray], List[List[float]], List[float]]:
+
     def segment_combined(
         self,
         image: Image.Image,
