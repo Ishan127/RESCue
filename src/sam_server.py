@@ -49,10 +49,37 @@ def patch_torchvision_for_rocm():
             
             # Move to CPU
             input_cpu = input.cpu()
+            
+            # Handle boxes - can be tensor or list of tensors
             if isinstance(boxes, torch.Tensor):
                 boxes_cpu = boxes.cpu()
+            elif isinstance(boxes, (list, tuple)):
+                # Convert list of tensors to single tensor with batch indices
+                # Format: [batch_idx, x1, y1, x2, y2]
+                all_boxes = []
+                for batch_idx, box_tensor in enumerate(boxes):
+                    if isinstance(box_tensor, torch.Tensor):
+                        box_tensor = box_tensor.cpu()
+                        if box_tensor.numel() > 0:
+                            # Add batch index as first column
+                            batch_indices = torch.full((box_tensor.shape[0], 1), batch_idx, dtype=box_tensor.dtype)
+                            boxes_with_idx = torch.cat([batch_indices, box_tensor], dim=1)
+                            all_boxes.append(boxes_with_idx)
+                
+                if all_boxes:
+                    boxes_cpu = torch.cat(all_boxes, dim=0)
+                else:
+                    # Empty boxes - create empty tensor with correct shape
+                    boxes_cpu = torch.zeros((0, 5), dtype=input_cpu.dtype)
             else:
-                boxes_cpu = [b.cpu() if isinstance(b, torch.Tensor) else b for b in boxes]
+                boxes_cpu = boxes
+            
+            # Handle empty boxes case
+            if isinstance(boxes_cpu, torch.Tensor) and boxes_cpu.numel() == 0:
+                # Return empty output
+                h = output_size[0] if isinstance(output_size, (tuple, list)) else output_size
+                w = output_size[1] if isinstance(output_size, (tuple, list)) else output_size
+                return torch.zeros((0, input_cpu.shape[1], h, w), dtype=input_cpu.dtype, device=device)
             
             # Run on CPU using the C++ implementation
             result = torch.ops.torchvision.roi_align(
