@@ -107,7 +107,7 @@ class PlannerStage(PipelineStage):
     
     def __init__(self, input_queue, output_queue, planner_url, max_n):
         super().__init__("Planner", input_queue, output_queue)
-        self.planner = Planner(api_base=planner_url, verbose=False)
+        self.planner = Planner(api_base=planner_url)
         self.max_n = max_n
     
     def process(self, task: SampleTask) -> SampleTask:
@@ -129,7 +129,7 @@ class ExecutorStage(PipelineStage):
     
     def __init__(self, input_queue, output_queue, executor_url):
         super().__init__("Executor", input_queue, output_queue)
-        self.executor = Executor(api_base=executor_url, verbose=False)
+        self.executor = Executor(remote_url=executor_url)
     
     def process(self, task: SampleTask) -> SampleTask:
         if not task.hypotheses:
@@ -165,7 +165,7 @@ class VerifierStage(PipelineStage):
     
     def __init__(self, input_queue, output_queue, verifier_url, mode):
         super().__init__("Verifier", input_queue, output_queue)
-        self.verifier = Verifier(verbose=False)
+        self.verifier = Verifier()
         self.mode = mode
     
     def process(self, task: SampleTask) -> SampleTask:
