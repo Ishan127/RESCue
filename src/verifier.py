@@ -264,7 +264,7 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
             if self.verbose:
                 print(f"[Duel] {wa_idx} (Score {winner_res['score']}) vs {wb_idx} (Score {challenger_res['score']})")
 
-            winner_is_a = self._compare_pair(image, masks[wa_idx], masks[wb_idx], query)
+            winner_is_a = self._compare_pair(image, masks[wa_idx], masks[wb_idx], winner_res, challenger_res, query)
             
             if winner_is_a:
                 # Winner stays, challenger loses
@@ -286,16 +286,13 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
                 
         return ranking
 
-    def _compare_pair(self, image, mask_a, mask_b, query):
+    def _compare_pair(self, image, mask_a, mask_b, res_a, res_b, query):
         """
         Pairwise VLM comparison. Returns True if A is better, False if B is better.
+        Includes pointwise metrics in the prompt context.
         """
         try:
             # Prepare composite images
-            # Red overlay for both? Or maybe Red vs Blue?
-            # User said "put them in a single prompt". 
-            # Safest is showing two separate images to VLM.
-            
             img_a = apply_red_alpha_overlay(image, mask_a, alpha=0.5, black_background=True)
             img_b = apply_red_alpha_overlay(image, mask_b, alpha=0.5, black_background=True)
             
@@ -310,16 +307,32 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
             b64_a = to_b64(img_a)
             b64_b = to_b64(img_b)
             
+            # Format Metrics for Context
+            def format_metrics(res):
+                details = res.get('pointwise_details', {}).get('breakdown', {})
+                return (
+                    f"Total: {res.get('total_score', 0)} "
+                    f"(VLM: {res.get('vlm_score', 0)}, CLIP: {res.get('clip_score', 0)}, Cons: {res.get('cons_score', 0)})\n"
+                    f"   VLM Detail: IoU={details.get('iou', 0)}, Boundary={details.get('boundary', 0)}, Semantic={details.get('semantic', 0)}"
+                )
+
+            metrics_a = format_metrics(res_a)
+            metrics_b = format_metrics(res_b)
+            
             prompt = f"""Compare these two segmentation masks for the query: "{query}"
 
-Image 1: Candidate A
-Image 2: Candidate B
+Image 1 (Candidate A) Metrics:
+{metrics_a}
+
+Image 2 (Candidate B) Metrics:
+{metrics_b}
 
 Which mask is better?
 Think step-by-step:
 1. Analyze Candidate A: Does it cover the object fully? Is it too tight/loose?
 2. Analyze Candidate B: Compare coverage and boundary precision.
-3. Decision: Which one is closer to the ground truth intent?
+3. Compare Metrics: Does the visual evidence match the high/low scores?
+4. Decision: Which one is closer to the ground truth intent?
 
 Output JSON: {{ "winner": "A" or "B", "reason": "short explanation" }}"""
 
