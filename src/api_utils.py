@@ -19,15 +19,15 @@ def encode_image(image_path):
         return base64.b64encode(image_file.read()).decode('utf-8')
 
 def get_openai_client(base_url="http://localhost:8000/v1", api_key="EMPTY"):
-    return OpenAI(base_url=base_url, api_key=api_key)
+    return OpenAI(base_url=base_url, api_key=api_key, timeout=600.0)
 
 def get_planner_client():
     """Get client for the fast planning model (8B)."""
-    return OpenAI(base_url=PLANNER_API_BASE, api_key="EMPTY")
+    return OpenAI(base_url=PLANNER_API_BASE, api_key="EMPTY", timeout=600.0)
 
 def get_verifier_client():
     """Get client for the verification model (30B-A3B MoE)."""
-    return OpenAI(base_url=VERIFIER_API_BASE, api_key="EMPTY")
+    return OpenAI(base_url=VERIFIER_API_BASE, api_key="EMPTY", timeout=600.0)
 
 def create_vision_message(text_prompt, image_path=None, base64_image=None):
     if base64_image is None:
