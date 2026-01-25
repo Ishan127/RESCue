@@ -540,9 +540,14 @@ class SAM3ImageModel:
                         
                     if mask is not None:
                          # Ensure mask is 2D (H, W)
-                         # It appears to be (1, 1, H, W) sometimes
+                         # It can be (1, 1, H, W), (N, H, W), or (N, 1, H, W)
+                         # We need to handle cases where leading dims are NOT size 1
                          while mask.ndim > 2:
-                             mask = mask.squeeze(0)
+                             if mask.shape[0] == 1:
+                                 mask = mask.squeeze(0)
+                             else:
+                                 # Take first element if multiple masks returned
+                                 mask = mask[0]
                          
                          final_masks.append(mask.astype(bool))
                     else:
@@ -562,6 +567,12 @@ class SAM3ImageModel:
             logger.error(f"Batch inference failed: {e}")
             import traceback
             traceback.print_exc()
+            # Return zero masks for each query to avoid length mismatch downstream
+            num_queries = len(query_ids) if query_ids else 0
+            if num_queries > 0:
+                return [np.zeros((h, w), dtype=bool) for _ in range(num_queries)], \
+                       [[0.0, 0.0, 1.0, 1.0] for _ in range(num_queries)], \
+                       [0.0 for _ in range(num_queries)]
             return [], [], []
 
     def cache_features(self, image: Image.Image, cache_key: str) -> str:
@@ -632,8 +643,23 @@ class SAM3ImageModel:
                         )
                     final_masks.append((mask > 0).astype(bool))
         elif masks_np.ndim == 3:
-            for n in range(masks_np.shape[0]):
-                mask = masks_np[n]
+            # Handle case where first dim might be batch > 1
+            # Take first element if batch, otherwise iterate as usual
+            if masks_np.shape[0] > 1 and masks_np.shape[1] == masks_np.shape[2]:
+                # Likely (N, H, W) - multiple masks
+                for n in range(masks_np.shape[0]):
+                    mask = masks_np[n]
+                    if mask.shape != (orig_h, orig_w):
+                        import cv2
+                        mask = cv2.resize(
+                            mask.astype(np.float32), 
+                            (orig_w, orig_h), 
+                            interpolation=cv2.INTER_NEAREST
+                        )
+                    final_masks.append((mask > 0).astype(bool))
+            else:
+                # (1, H, W) - single mask with batch dimension
+                mask = masks_np[0] if masks_np.shape[0] == 1 else masks_np[0]
                 if mask.shape != (orig_h, orig_w):
                     import cv2
                     mask = cv2.resize(

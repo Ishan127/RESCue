@@ -36,11 +36,18 @@ def apply_red_alpha_overlay(image, mask, alpha=0.5):
         mask = np.array(mask)
     
     if mask.ndim == 3:
-        if mask.shape[2] == 1:
+        # Check for common 3D patterns
+        if mask.shape[0] == 1:
+            # (1, H, W) - single mask with leading dimension
+            mask = mask[0]
+        elif mask.shape[2] == 1:
+            # (H, W, 1) - single mask with trailing dimension
             mask = mask[:, :, 0]
         elif mask.shape[2] == 3:
+            # (H, W, 3) - RGB mask, take first channel
             mask = mask[:, :, 0]
-        elif mask.shape[0] == 1:
+        else:
+            # (N, H, W) - multiple masks, take first
             mask = mask[0]
 
     mask = mask > 0

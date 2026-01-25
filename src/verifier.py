@@ -806,7 +806,16 @@ Output ONLY valid JSON like this:
             try:
                 try:
                     import json_repair
-                    data = json_repair.loads(text)
+                    parsed = json_repair.loads(text)
+                    # CRITICAL: json_repair can return a string if parsing fails
+                    if isinstance(parsed, dict):
+                        data = parsed
+                    elif isinstance(parsed, str):
+                        if self.verbose: print(f"json_repair returned string, using regex fallback")
+                        # Try to extract JSON from the string
+                        json_match = re.search(r'\{[\s\S]*\}', parsed)
+                        if json_match:
+                            data = json.loads(json_match.group(0))
                 except ImportError:
                     if self.verbose: print("json_repair not found, using regex fallback")
                     # Fallback to regex extraction + json
@@ -848,6 +857,9 @@ Output ONLY valid JSON like this:
             
             # 5. Semantic (20%) - sum of 4 * 5pts = 20pts max
             sem = data.get("semantic_scores", {})
+            # Handle case where semantic_scores is not a dict
+            if not isinstance(sem, dict):
+                sem = {}
             s1 = sem.get("category", 0)
             s2 = sem.get("attribute", 0)
             s3 = sem.get("context", 0)

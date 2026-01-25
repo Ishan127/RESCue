@@ -31,6 +31,15 @@ def get_verifier_client():
 
 def create_vision_message(text_prompt, image_path):
     base64_image = encode_image(image_path)
+    # Detect image type from file extension
+    ext = image_path.lower().split('.')[-1] if '.' in image_path else 'jpeg'
+    mime_type = {
+        'png': 'image/png',
+        'gif': 'image/gif',
+        'webp': 'image/webp',
+        'bmp': 'image/bmp',
+    }.get(ext, 'image/jpeg')
+    
     return [
         {
             "role": "user",
@@ -39,7 +48,7 @@ def create_vision_message(text_prompt, image_path):
                 {
                     "type": "image_url",
                     "image_url": {
-                        "url": f"data:image/jpeg;base64,{base64_image}"
+                        "url": f"data:{mime_type};base64,{base64_image}"
                     },
                 },
             ],

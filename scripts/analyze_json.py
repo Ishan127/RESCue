@@ -34,8 +34,10 @@ def analyze_output(file_path):
     print("\n--- Metric Statistics ---")
     for k, v in breakdowns.items():
         if v:
+            # Fix: Use sum with generator for proper float comparison instead of list.count(0)
+            zeros_count = sum(1 for x in v if abs(x) < 0.001)
             print(f"{k.upper()}: Mean={np.mean(v):.2f}, Max={np.max(v)}, Min={np.min(v)}, Count={len(v)}")
-            print(f"  Zeros: {v.count(0)} ({v.count(0)/len(v)*100:.1f}%)")
+            print(f"  Zeros: {zeros_count} ({zeros_count/len(v)*100:.1f}%)")
         else:
             print(f"{k.upper()}: NO DATA")
 

@@ -225,10 +225,13 @@ class Executor:
                 if p["type"] == "box":
                     b = p["box"]
                     p_norm = p.copy()
-                    p_norm["box"] = [
-                        b[0] / orig_w, b[1] / orig_h,
-                        b[2] / orig_w, b[3] / orig_h
-                    ]
+                    # Only normalize if box values are > 1 (pixel coordinates)
+                    # If already normalized (0-1 range), keep as is
+                    if b and any(coord > 1 for coord in b):
+                        p_norm["box"] = [
+                            b[0] / orig_w, b[1] / orig_h,
+                            b[2] / orig_w, b[3] / orig_h
+                        ]
                     prompts.append(p_norm)
                 else:
                     prompts.append(p)

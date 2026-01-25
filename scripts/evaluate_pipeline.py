@@ -430,7 +430,8 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
                 
                 # Find best among first N according to ranking
                 if task.ranking:
-                    best_idx = min((i for i in task.ranking if i < n), default=0)
+                    # Get the first (best) ranked candidate that's within top-N candidates
+                    best_idx = next((i for i in task.ranking if i < n), 0)
                 else:
                     best_idx = 0
                 

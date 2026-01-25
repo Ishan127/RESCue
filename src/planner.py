@@ -1,6 +1,5 @@
 import re
 import numpy as np
-import torch
 import logging
 import random
 import math
@@ -13,7 +12,6 @@ from .api_utils import get_planner_client, create_vision_message, PLANNER_MODEL,
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger("RESCue.Planner")
-logger.setLevel(logging.WARNING)
 
 @dataclass(frozen=True)
 class PlannerConfig:
@@ -149,11 +147,20 @@ class Planner:
             import random
             
             for i in range(needed):
-                # Random box within image coords
-                x1 = random.randint(0, int(real_w * 0.8))
-                y1 = random.randint(0, int(real_h * 0.8))
-                w = random.randint(int(real_w * 0.05), int(real_w - x1))
-                h = random.randint(int(real_h * 0.05), int(real_h - y1))
+                # Random box within image coords - with bounds checking
+                max_x1 = max(1, int(real_w * 0.8))
+                max_y1 = max(1, int(real_h * 0.8))
+                x1 = random.randint(0, max_x1)
+                y1 = random.randint(0, max_y1)
+                
+                # Ensure valid width/height ranges
+                min_w = max(1, int(real_w * 0.05))
+                max_w = max(min_w + 1, int(real_w - x1))
+                min_h = max(1, int(real_h * 0.05))
+                max_h = max(min_h + 1, int(real_h - y1))
+                
+                w = random.randint(min_w, max_w)
+                h = random.randint(min_h, max_h)
                 
                 box = [x1, y1, x1 + w, y1 + h]
                 
@@ -240,12 +247,13 @@ class Planner:
         # Distribute variations across strategies (cycling)
         for i, varied_query in enumerate(variations):
             strategy, temp = strategies[i % len(strategies)]
-            # Add some randomness to temperature
-            temp_offset = (i % 5 - 2) * 0.1  # -0.2 to +0.2
+            # Add some randomness to temperature, but ensure it stays positive before clamping
+            temp_offset = (i % 3 - 1) * 0.1  # -0.1 to +0.1 (smaller range)
+            adjusted_temp = max(0.3, min(1.0, temp + temp_offset))
             configs.append({
                 "query": varied_query,
                 "strategy": strategy,
-                "temperature": max(0.3, min(1.0, temp + temp_offset))
+                "temperature": adjusted_temp
             })
         
         return configs[:N]  
@@ -588,8 +596,9 @@ Output ONLY a JSON array of strings:
                     is_diverse = False
                     break
                 
-                # Relaxed semantic check - only exact matches or very high overlap
-                if cand.target_concept.lower() == existing.target_concept.lower():
+                # Use similarity check instead of exact match to allow variations
+                # like "left tripod" vs "right tripod" (different position modifiers)
+                if self._concepts_similar(cand.target_concept, existing.target_concept):
                     is_diverse = False
                     break
             

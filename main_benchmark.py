@@ -35,7 +35,7 @@ def main():
     
     # 2. Check Endpoints
     print("\n--- Step 2: Verifying Endpoints ---")
-    planner_url = "http://localhost:8000/v1"
+    planner_url = "http://localhost:8002/v1"  # Planner on port 8002
     executor_url = "http://localhost:8001"
     
     # We give the user a chance to start them if they haven't
