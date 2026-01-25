@@ -313,9 +313,27 @@ Focus on: literal, functional, visual, spatial, and contextual aspects.
                 }
             )
             
-            import json
             text = completion.choices[0].message.content
-            data = json.loads(text)
+            
+            import json
+            data = {}
+            try:
+                data = json.loads(text)
+            except:
+                try:
+                    import json_repair
+                    data = json_repair.loads(text)
+                except:
+                    # Fallback regex
+                    match = re.search(r'\{.*\}', text, re.DOTALL)
+                    if match:
+                        try:
+                            data = json.loads(match.group())
+                        except:
+                            pass
+            
+            if not data and "variations" not in data:
+                 logger.warning(f"Failed to parse JSON from Planner. Raw text: {text[:100]}...")
             
             variations = data.get("variations", [])
             return [v for v in variations if isinstance(v, str) and v not in existing]
