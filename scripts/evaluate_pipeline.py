@@ -239,9 +239,9 @@ class VerifierStage(PipelineStage):
                 scores = [self._heuristic_score(m) for m in masks]
                 task.ranking = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
             else:
-                # Full VLM tournament using Hybrid strategy for better scaling
-                # This handles N=64 efficiently by fast-filtering to Top-8 then running tournament
-                results = self.verifier.verify_batch_hybrid(task.image, masks, task.query, top_k=8)
+                # Pointwise-only scoring: no tournament, pure score-based ranking
+                # Each mask scored independently on 5 metrics: geo, rating, iou, boundary, semantic
+                results = self.verifier.verify_batch_pointwise(task.image, masks, task.query)
                 
                 # Sort by rank (1 is best)
                 sorted_results = sorted(results, key=lambda r: r['rank'])
@@ -428,9 +428,14 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
                 if n > len(task.candidates):
                     continue
                 
-                # Find best among first N according to ranking
-                if task.ranking:
-                    # Get the first (best) ranked candidate that's within top-N candidates
+                # For N=1: Always use the original query candidate (index 0)
+                # For N>1: Find the best-ranked candidate among the first N candidates
+                if n == 1:
+                    # Original query is always the first hypothesis (index 0)
+                    best_idx = 0
+                elif task.ranking:
+                    # Get the best-ranked candidate whose index is in [0, n-1]
+                    # task.ranking is ordered best-first, so first match wins
                     best_idx = next((i for i in task.ranking if i < n), 0)
                 else:
                     best_idx = 0
