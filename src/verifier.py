@@ -192,6 +192,8 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
         """
         Score a single mask using the 5-part composite metric (0-100).
         
+        Uses vLLM guided JSON decoding to guarantee all fields are returned.
+        
         Components:
         1. Geometric (10%) - mask size/coverage heuristic
         2. Rating (20%) - LLM rates PERFECT/GOOD/AVERAGE/BAD/WRONG  
@@ -208,39 +210,93 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
         with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
             overlay.save(tmp.name, quality=95)
             tmp_path = tmp.name
+        
+        # JSON Schema for guided decoding - enforces all 7 fields
+        scoring_schema = {
+            "type": "object",
+            "properties": {
+                "rating_class": {
+                    "type": "string",
+                    "enum": ["PERFECT", "GOOD", "AVERAGE", "BAD", "WRONG"]
+                },
+                "predicted_iou": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                },
+                "boundary_score": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                },
+                "semantic_category": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5
+                },
+                "semantic_attribute": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5
+                },
+                "semantic_context": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5
+                },
+                "semantic_count": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5
+                }
+            },
+            "required": [
+                "rating_class", "predicted_iou", "boundary_score",
+                "semantic_category", "semantic_attribute", "semantic_context", "semantic_count"
+            ]
+        }
             
         try:
-            prompt = f"""Evaluate this segmentation mask (red region) for the query: "{query}"
+            prompt = f"""You are evaluating a segmentation mask for the query: "{query}"
 
-Score 0-5 for these specific metrics:
+The RED highlighted region in this image is the proposed segmentation mask.
 
-1. RATING.CLASS: One of [PERFECT, GOOD, AVERAGE, BAD, WRONG]
-2. PREDICTED.IOU: Estimated IoU 0-100%
-3. BOUNDARY: Edge quality 0-100%
-4. SEMANTIC.CATEGORY: Correct object class? (0-5)
-5. SEMANTIC.ATTRIBUTE: Color/shape match? (0-5)
-6. SEMANTIC.CONTEXT: Action/context match? (0-5)
-7. SEMANTIC.COUNT: Correct instance count? (0-5)
+Rate the mask quality on these 7 metrics:
 
-Output ONLY valid JSON like this:
-{{
-  "rating_class": "GOOD",
-  "predicted_iou": 75,
-  "boundary_score": 80,
-  "semantic_scores": {{
-    "category": 5,
-    "attribute": 4,
-    "context": 5,
-    "count": 5
-  }}
-}}"""
+1. rating_class: How well does the mask match the query?
+   - PERFECT: Exactly correct object with tight boundaries
+   - GOOD: Correct object with minor boundary issues
+   - AVERAGE: Mostly correct but noticeable problems
+   - BAD: Significant issues, wrong parts included
+   - WRONG: Completely incorrect object
+
+2. predicted_iou: Estimated overlap with ground truth (0-100%)
+
+3. boundary_score: Edge quality (0-100%)
+   - 100: Pixel-perfect boundaries
+   - 75: Minor imperfections
+   - 50: Noticeable boundary issues
+   - 25: Poor boundaries
+   - 0: Very bad boundaries
+
+4. semantic_category: Is this the correct object class? (0-5)
+5. semantic_attribute: Do color/shape/size match? (0-5)
+6. semantic_context: Does the action/context match the query? (0-5)
+7. semantic_count: Is the instance count correct? (0-5)
+
+Respond with ONLY the JSON object, no other text."""
+
             messages = create_vision_message(prompt, tmp_path)
             
+            # Use guided decoding via extra_body for vLLM OpenAI-compatible API
             completion = self.client.chat.completions.create(
                 model=self.model_path,
                 messages=messages,
-                temperature=0.1,
-                max_tokens=300
+                temperature=0.0,  # Deterministic for consistency
+                max_tokens=200,
+                extra_body={
+                    "guided_json": scoring_schema
+                }
             )
             text = completion.choices[0].message.content.strip()
             
@@ -309,13 +365,11 @@ Output ONLY valid JSON like this:
             score_boundary = min(100, max(0, b_qual)) * 0.20
             
             # 5. Semantic (20%) - sum of 4 * 5pts = 20pts max
-            sem = data.get("semantic_scores", {})
-            if not isinstance(sem, dict):
-                sem = {}
-            s1 = sem.get("category", 0)
-            s2 = sem.get("attribute", 0)
-            s3 = sem.get("context", 0)
-            s4 = sem.get("count", 0)
+            # Now using flat field names from guided JSON schema
+            s1 = int(data.get("semantic_category", 0))
+            s2 = int(data.get("semantic_attribute", 0))
+            s3 = int(data.get("semantic_context", 0))
+            s4 = int(data.get("semantic_count", 0))
             s_sum = min(5, s1) + min(5, s2) + min(5, s3) + min(5, s4)  # max 20
             score_semantic = s_sum 
             
