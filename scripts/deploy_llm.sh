@@ -6,7 +6,7 @@
 export CUDA_VISIBLE_DEVICES=0,1,2,3
 
 python -m vllm.entrypoints.openai.api_server \
-    --model Qwen/Qwen3-VL-8B-Thinking \
+    --model Qwen/Qwen3-VL-32B-Thinking \
     --trust-remote-code \
     --tensor-parallel-size 4 \
     --gpu-memory-utilization 0.9 \
