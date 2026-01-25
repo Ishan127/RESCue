@@ -322,7 +322,7 @@ Output ONLY a JSON object with this exact format:
                 model=self.config.model_path,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.8,
-                max_tokens=2048*16,
+                max_tokens=2048*12,
                 extra_body={
                     "guided_json": schema,
                     "guided_decoding_backend": "outlines"
