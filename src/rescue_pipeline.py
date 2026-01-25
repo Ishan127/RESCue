@@ -6,10 +6,11 @@ import numpy as np
 
 class RESCuePipeline:
     def __init__(self, 
-                 planner_model="Qwen/Qwen3-VL-32B-Thinking",
-                 verifier_model="Qwen/Qwen3-VL-32B-Thinking",
+                 planner_model="Qwen/Qwen3-VL-8B-Instruct",
+                 verifier_model="Qwen/Qwen3-VL-30B-A3B-Instruct",
                  executor_model="facebook/sam3",
-                 planner_api_base="http://localhost:8000/v1",
+                 planner_api_base="http://localhost:8002/v1",
+                 verifier_api_base="http://localhost:8000/v1",
                  executor_api_base="http://localhost:8001",
                  device=None,
                  dtype="auto",
@@ -32,10 +33,12 @@ class RESCuePipeline:
             remote_url=executor_api_base
         )
         
+        
+        from .api_utils import get_openai_client
         self.verifier = Verifier(
-            client=self.planner.client,
+            client=get_openai_client(base_url=verifier_api_base),
             model_path=verifier_model,
-            api_base=planner_api_base
+            api_base=verifier_api_base
         )
         
         print(f"Planner: {planner_model}")

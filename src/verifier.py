@@ -257,65 +257,48 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
         }
             
         try:
-            # Comprehensive prompt with JSON example and detailed scoring rubrics
+            # Balanced prompt for accurate scoring with good variation
             prompt = f"""/no_think
-You are a segmentation quality evaluator. The RED highlighted region in the image is a proposed segmentation mask for the query: "{query}"
+You are evaluating a segmentation mask. The RED region in the image is the proposed mask for: "{query}"
 
-Your task: Evaluate how well this RED mask matches the query requirements. Output ONLY a JSON object.
+Output ONLY a JSON object with these 7 scores:
 
-=== SCORING METRICS ===
+=== RATING CLASS ===
+- "PERFECT": Exact object, pixel-perfect boundaries (rare, <10% of masks)
+- "GOOD": Correct object, minor boundary imperfections (most correct masks: 60%)
+- "AVERAGE": Right object but visible issues - boundary bleeds, extra parts (20%)
+- "BAD": Partially wrong - includes incorrect regions or misses key parts
+- "WRONG": Completely wrong object (only if mask is on unrelated object)
 
-1. rating_class (string): Overall quality assessment
-   - "PERFECT": Mask covers exactly the correct object with pixel-accurate boundaries. Very rare - only for exceptional masks.
-   - "GOOD": Correct object selected, boundaries are mostly accurate with minor imperfections. Most good masks fall here.
-   - "AVERAGE": Right general area/object but noticeable issues (boundary bleeds, includes wrong parts, slightly off).
-   - "BAD": Significant problems - wrong parts included, major boundary errors, or partially incorrect object.
-   - "WRONG": Completely incorrect object selected, does not match the query at all.
+=== NUMERIC SCORES ===
+predicted_iou (0-100): Overlap with ideal mask
+- 80-95 typical for GOOD masks, 60-79 for AVERAGE, <60 for BAD
 
-2. predicted_iou (integer 0-100): Estimated Intersection-over-Union with the ideal ground truth mask
-   - 90-100: Near-perfect overlap (extremely rare)
-   - 75-89: Good overlap with minor differences
-   - 50-74: Moderate overlap, noticeable discrepancies
-   - 25-49: Poor overlap, significant mismatch
-   - 0-24: Very poor or no meaningful overlap
+boundary_score (0-100): Edge accuracy
+- 80-90 for clean edges, 60-79 for minor issues, <60 for poor edges
 
-3. boundary_score (integer 0-100): How well the mask edges follow the object contours
-   - 90-100: Pixel-perfect edges following exact object boundaries (rare)
-   - 70-89: Clean edges with minor imperfections
-   - 50-69: Visible boundary issues - jagged edges, bleeding into background
-   - 25-49: Poor boundaries - significant edge errors
-   - 0-24: Very poor boundaries - mask edges don't follow object at all
+semantic_category (0-5): Correct object type? (5=exact, 3-4=related, 0=wrong type)
+semantic_attribute (0-5): Attributes match? (color/size/shape - 5=perfect, 3-4=mostly, 1-2=some)
+semantic_context (0-5): Context/action matches query? (5=perfect, 3-4=mostly)
+semantic_count (0-5): Correct instance count? (5=exact count)
 
-4. semantic_category (integer 0-5): Does the mask cover the correct object TYPE/CLASS?
-   - 5: Exactly the right object category (e.g., query asks for "dog", mask covers a dog)
-   - 3-4: Closely related category (e.g., query asks for "vehicle", mask covers a car)
-   - 1-2: Loosely related (e.g., query asks for "animal", mask covers part of an animal)
-   - 0: Wrong category entirely
+=== SCORING GUIDANCE ===
+- If the mask covers the RIGHT object type, semantic_category should be 4-5
+- Only use rating "WRONG" if the mask is on a completely unrelated object
+- Use the full 0-5 range for semantic scores based on specific issues
+- Most masks of the correct object are "GOOD" or "AVERAGE", not "PERFECT"
 
-5. semantic_attribute (integer 0-5): Do the object's visual attributes match the query description?
-   - 5: Color, shape, size, texture all match the query description perfectly
-   - 3-4: Most attributes match, minor discrepancies
-   - 1-2: Some attributes match but obvious mismatches exist
-   - 0: Attributes don't match at all (e.g., query says "red car" but mask is on blue car)
+=== EXAMPLES ===
+Good mask with minor boundary issues:
+{{"rating_class": "GOOD", "predicted_iou": 82, "boundary_score": 75, "semantic_category": 5, "semantic_attribute": 4, "semantic_context": 5, "semantic_count": 5}}
 
-6. semantic_context (integer 0-5): Does the mask match the ACTION or CONTEXT in the query?
-   - 5: Perfect contextual match (e.g., "person running" - mask is on a running person)
-   - 3-4: Context mostly matches
-   - 1-2: Weak contextual alignment
-   - 0: Context mismatch (e.g., "person sitting" but mask is on standing person)
+Average mask with some problems:
+{{"rating_class": "AVERAGE", "predicted_iou": 68, "boundary_score": 60, "semantic_category": 5, "semantic_attribute": 3, "semantic_context": 4, "semantic_count": 5}}
 
-7. semantic_count (integer 0-5): Is the correct NUMBER of instances masked?
-   - 5: Exactly the right number of instances (e.g., query asks for "a bird", mask covers exactly one bird)
-   - 3-4: Close but not exact (e.g., covers 2 when 1 was requested)
-   - 1-2: Significant count mismatch
-   - 0: Completely wrong count
+Wrong object entirely:
+{{"rating_class": "WRONG", "predicted_iou": 5, "boundary_score": 20, "semantic_category": 0, "semantic_attribute": 0, "semantic_context": 0, "semantic_count": 0}}
 
-=== EXAMPLE OUTPUT ===
-{{"rating_class": "GOOD", "predicted_iou": 78, "boundary_score": 72, "semantic_category": 5, "semantic_attribute": 4, "semantic_context": 5, "semantic_count": 5}}
-
-=== IMPORTANT ===
-Be CRITICAL and use the full range of scores. Most masks have flaws - look for them!
-Respond with ONLY the JSON object, no explanation."""
+Respond with ONLY the JSON, no explanation."""
 
             messages = create_vision_message(prompt, tmp_path)
             
@@ -323,8 +306,8 @@ Respond with ONLY the JSON object, no explanation."""
             completion = self.client.chat.completions.create(
                 model=self.model_path,
                 messages=messages,
-                temperature=0.3,  # Slight randomness for variation
-                max_tokens=2048,  # Increased for comprehensive output
+                temperature=0.1,  # Low temperature for consistent scoring
+                max_tokens=2048,
                 extra_body={
                     "chat_template_kwargs": {"enable_thinking": False},
                     "guided_json": scoring_schema,

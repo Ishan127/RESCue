@@ -1,8 +1,8 @@
 #!/bin/bash
 # Deploy Single SAM3 Server
 # GPU Assignment
-export CUDA_VISIBLE_DEVICES=3
-export HIP_VISIBLE_DEVICES=3
+export CUDA_VISIBLE_DEVICES=4
+export HIP_VISIBLE_DEVICES=4
 
 PORT=${SAM_PORT:-8001}
 HOST=${SAM_HOST:-0.0.0.0}

@@ -1,9 +1,9 @@
 #!/bin/bash
-# Deploy Qwen3-VL-8B-Instruct (PLANNER) on GPU 2
+# Deploy Qwen3-VL-8B-Instruct (PLANNER) on GPU 5
 # Fast hypothesis generation for bounding box proposals
 # Port: 8002
 
-export CUDA_VISIBLE_DEVICES=2
+export CUDA_VISIBLE_DEVICES=5
 
 python -m vllm.entrypoints.openai.api_server \
     --model Qwen/Qwen3-VL-8B-Instruct \

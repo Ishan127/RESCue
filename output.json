@@ -1,27 +1,27 @@
 {
     "metrics": {
         "1": {
-            "mean_iou": 0.4437135224747816,
-            "mean_oracle": 0.4437135224747816,
-            "mean_time": 52.95936042070389,
+            "mean_iou": 0.43649085022459455,
+            "mean_oracle": 0.43649085022459455,
+            "mean_time": 78.54368233680725,
             "num_samples": 4
         },
         "2": {
-            "mean_iou": 0.628498890266069,
-            "mean_oracle": 0.6287164410852489,
-            "mean_time": 52.95936042070389,
+            "mean_iou": 0.4384274397696514,
+            "mean_oracle": 0.4384274397696514,
+            "mean_time": 78.54368233680725,
             "num_samples": 4
         },
         "4": {
-            "mean_iou": 0.630031820141269,
-            "mean_oracle": 0.6301266012682263,
-            "mean_time": 52.95936042070389,
+            "mean_iou": 0.4380363055060518,
+            "mean_oracle": 0.5099924164602099,
+            "mean_time": 78.54368233680725,
             "num_samples": 4
         },
         "8": {
-            "mean_iou": 0.630031820141269,
-            "mean_oracle": 0.6301269701885952,
-            "mean_time": 52.95936042070389,
+            "mean_iou": 0.4153837082532917,
+            "mean_oracle": 0.5100775701581275,
+            "mean_time": 78.54368233680725,
             "num_samples": 4
         }
     },
@@ -31,54 +31,29 @@
             "query": "In a television studio, various equipment is used to capture and record video footage. What in the picture could be used to stabilize and hold the camera steady during filming?",
             "candidates": [
                 {
-                    "hypothesis": "hands gripping the camera mount on a tripod",
-                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. The most direct answer is the tripod the camera is mounted on. However, following the specified steps: Step 1 considers alternatives \u2014 the camera itself is being held steady by the tripod, and the operator\u2019s hands are also contributing to stability. Step 2 suggests an indirect or metaphorical match \u2014 the operator\u2019s hands are actively holding and adjusting the camera, thus stabilizing it. Step 3 requires outputting a bounding box for this alternative. The operator\u2019s hands are located around the camera mount and tripod head, which is the most relevant area for stabilization via human intervention. The bounding box should encompass the hands and the immediate mount area.",
+                    "hypothesis": "black tripod supporting the camera",
+                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. In the image, the camera is mounted on a black, three-legged stand with a head that allows for positioning and adjustment. This is a tripod, which is specifically designed to stabilize and hold cameras steady during filming. The visual attributes include its black color, metallic and plastic textures, and its three-legged structure. The tripod is located under the camera and extends to the ground, supporting the camera's weight and minimizing shake. The operator is holding the camera head, which is typical when using a tripod for precise framing and stability.",
                     "box": [
-                        1659,
-                        1026,
-                        2367,
-                        1505
-                    ],
-                    "iou": 0.011366439296512503,
-                    "verifier_rank": 7,
-                    "verifier_score": 5.05,
-                    "verifier_reasoning": "Pointwise score: 5.0/100",
-                    "pointwise_breakdown": {
-                        "geo": 0.05,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "predicted_iou": 0
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "black tripod supporting the camera in the center",
-                    "reasoning": "The scene is an indoor television studio or event space, as indicated by the professional camera setup and the person in uniform operating the equipment. In this context, the object used to stabilize and hold the camera steady is a tripod. The tripod is black, has three legs, and is positioned directly under the camera, which is mounted on its head. The operator is holding the camera's handle, but the tripod is the primary device for stabilization. The tripod is located in the lower central part of the image, supporting the camera.",
-                    "box": [
-                        1631,
-                        1096,
-                        2439,
+                        1627,
+                        1070,
+                        2436,
                         2573
                     ],
-                    "iou": 0.7513781136948184,
-                    "verifier_rank": 5,
-                    "verifier_score": 91.97,
-                    "verifier_reasoning": "Pointwise score: 92.0/100",
+                    "iou": 0.7557859470889098,
+                    "verifier_rank": 4,
+                    "verifier_score": 81.97,
+                    "verifier_reasoning": "Pointwise score: 82.0/100",
                     "pointwise_breakdown": {
                         "geo": 5.47,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 18.0,
+                        "rating": 15.0,
+                        "iou": 25.5,
+                        "boundary": 16.0,
                         "semantic": 20
                     },
                     "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95,
-                        "boundary_score": 90,
+                        "rating_class": "GOOD",
+                        "predicted_iou": 85,
+                        "boundary_score": 80,
                         "semantic_category": 5,
                         "semantic_attribute": 5,
                         "semantic_context": 5,
@@ -87,153 +62,60 @@
                     "pointwise_error": null
                 },
                 {
+                    "hypothesis": "woman's hands gripping the camera mount",
+                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. The most direct object fulfilling this is the tripod the camera is mounted on. However, following the instruction to consider alternative or less obvious interpretations, one could argue that the woman\u2019s hands are also directly involved in stabilizing the camera. Her hands are gripping the camera\u2019s support structure (the tripod head and handle), which is a direct method of stabilization. While the tripod is the primary stabilizing device, the hands provide active control and steadiness. Therefore, selecting the hands as the \"indirectly\" or \"metaphorically\" stabilizing element fits the step 2 instruction.",
+                    "box": [
+                        1688,
+                        1018,
+                        2374,
+                        1512
+                    ],
+                    "iou": 0.011372128285669103,
+                    "verifier_rank": 7,
+                    "verifier_score": 7.05,
+                    "verifier_reasoning": "Pointwise score: 7.0/100",
+                    "pointwise_breakdown": {
+                        "geo": 0.05,
+                        "rating": 0.0,
+                        "iou": 3.0,
+                        "boundary": 4.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {
+                        "rating_class": "WRONG",
+                        "predicted_iou": 10,
+                        "boundary_score": 20,
+                        "semantic_category": 0,
+                        "semantic_attribute": 0,
+                        "semantic_context": 0,
+                        "semantic_count": 0
+                    },
+                    "pointwise_error": null
+                },
+                {
                     "hypothesis": "black tripod holding the camera steady",
-                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. In the image, the camera is mounted on a tripod, which is specifically designed for this purpose. The tripod is black and positioned centrally under the camera, with its legs extending down to the floor. The operator is holding the camera mount, which is attached to the tripod head. This setup is the standard method for stabilizing a camera during filming.",
+                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. The most obvious and literal object for this purpose is the tripod the camera is mounted on. The tripod is black, has three legs, and is positioned directly under the camera, holding it steady. The camera is mounted on the tripod head, which allows for precise positioning and stability during filming. Other objects like the microphone or the woman\u2019s headphones are not used for stabilization.",
                     "box": [
                         1627,
                         1065,
                         2425,
                         2573
                     ],
-                    "iou": 0.7566362694010198,
+                    "iou": 0.7566282738647625,
                     "verifier_rank": 3,
-                    "verifier_score": 91.98,
-                    "verifier_reasoning": "Pointwise score: 92.0/100",
+                    "verifier_score": 81.98,
+                    "verifier_reasoning": "Pointwise score: 82.0/100",
                     "pointwise_breakdown": {
                         "geo": 5.48,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 18.0,
+                        "rating": 15.0,
+                        "iou": 25.5,
+                        "boundary": 16.0,
                         "semantic": 20
                     },
                     "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95,
-                        "boundary_score": 90,
-                        "semantic_category": 5,
-                        "semantic_attribute": 5,
-                        "semantic_context": 5,
-                        "semantic_count": 5
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "black tripod supporting the camera",
-                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. The most literal and obvious object in the image serving this purpose is the tripod. The camera is mounted on a black tripod, which is designed to hold the camera steady during filming. The tripod is located under the camera, supporting its weight and providing stability.",
-                    "box": [
-                        1627,
-                        1060,
-                        2432,
-                        2573
-                    ],
-                    "iou": 0.7562571451545801,
-                    "verifier_rank": 0,
-                    "verifier_score": 91.98,
-                    "verifier_reasoning": "Pointwise score: 92.0/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.48,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 18.0,
-                        "semantic": 20
-                    },
-                    "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95,
-                        "boundary_score": 90,
-                        "semantic_category": 5,
-                        "semantic_attribute": 5,
-                        "semantic_context": 5,
-                        "semantic_count": 5
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "black tripod supporting the camera in the center",
-                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. The object directly matching this description is the tripod on which the camera is mounted. The tripod is black, has three legs, and is positioned to support the camera, allowing for stable filming. The operator is holding the camera mount, which is attached to the tripod head, confirming its use for stabilization. This is the most relevant match as it is specifically designed for this purpose.",
-                    "box": [
-                        1624,
-                        1083,
-                        2428,
-                        2573
-                    ],
-                    "iou": 0.7556463415918209,
-                    "verifier_rank": 4,
-                    "verifier_score": 91.97,
-                    "verifier_reasoning": "Pointwise score: 92.0/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.47,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 18.0,
-                        "semantic": 20
-                    },
-                    "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95,
-                        "boundary_score": 90,
-                        "semantic_category": 5,
-                        "semantic_attribute": 5,
-                        "semantic_context": 5,
-                        "semantic_count": 5
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "black tripod supporting the camera",
-                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. The object serving this purpose is the tripod, which is black, has three legs, and supports the camera. The operator is holding the camera mount on top of it, indicating its function is to keep the camera steady during filming.",
-                    "box": [
-                        1624,
-                        1060,
-                        2428,
-                        2573
-                    ],
-                    "iou": 0.7565119784035556,
-                    "verifier_rank": 1,
-                    "verifier_score": 91.98,
-                    "verifier_reasoning": "Pointwise score: 92.0/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.48,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 18.0,
-                        "semantic": 20
-                    },
-                    "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95,
-                        "boundary_score": 90,
-                        "semantic_category": 5,
-                        "semantic_attribute": 5,
-                        "semantic_context": 5,
-                        "semantic_count": 5
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "black tripod supporting the camera in the center-left",
-                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. The image shows a professional video camera mounted on a three-legged stand, which is a tripod. The tripod is positioned directly beneath the camera and is being used to support it, allowing for stable filming. The operator is holding the camera's handle, but the tripod is the primary device for stabilization. The tripod is black and located in the center-left of the image, supporting the camera.",
-                    "box": [
-                        1631,
-                        1060,
-                        2432,
-                        2573
-                    ],
-                    "iou": 0.7561914917793492,
-                    "verifier_rank": 2,
-                    "verifier_score": 91.98,
-                    "verifier_reasoning": "Pointwise score: 92.0/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.48,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 18.0,
-                        "semantic": 20
-                    },
-                    "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95,
-                        "boundary_score": 90,
+                        "rating_class": "GOOD",
+                        "predicted_iou": 85,
+                        "boundary_score": 80,
                         "semantic_category": 5,
                         "semantic_attribute": 5,
                         "semantic_context": 5,
@@ -243,28 +125,152 @@
                 },
                 {
                     "hypothesis": "black tripod holding the camera steady",
-                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. In the image, the camera is mounted on a three-legged stand, which is a tripod. The tripod is black, has a sturdy metallic texture, and is positioned to support the camera. The operator is holding the camera mount, but the tripod is the primary device for stabilization. This matches the description of equipment used to stabilize and hold the camera steady.",
+                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. In the image, the camera is mounted on a tripod, which is specifically designed for this purpose. The tripod is black and positioned centrally under the camera. The camera itself is mounted on the tripod head, which allows for precise positioning and stabilization. The tripod is the whole object that serves the function described.",
                     "box": [
-                        1620,
-                        1103,
-                        2432,
+                        1624,
+                        1070,
+                        2439,
                         2573
                     ],
-                    "iou": 0.7476403247166107,
+                    "iou": 0.7555449404386959,
                     "verifier_rank": 6,
-                    "verifier_score": 91.97,
-                    "verifier_reasoning": "Pointwise score: 92.0/100",
+                    "verifier_score": 80.98,
+                    "verifier_reasoning": "Pointwise score: 81.0/100",
                     "pointwise_breakdown": {
-                        "geo": 5.47,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 18.0,
+                        "geo": 5.48,
+                        "rating": 15.0,
+                        "iou": 25.5,
+                        "boundary": 15.0,
                         "semantic": 20
                     },
                     "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95,
-                        "boundary_score": 90,
+                        "rating_class": "GOOD",
+                        "predicted_iou": 85,
+                        "boundary_score": 75,
+                        "semantic_category": 5,
+                        "semantic_attribute": 5,
+                        "semantic_context": 5,
+                        "semantic_count": 5
+                    },
+                    "pointwise_error": null
+                },
+                {
+                    "hypothesis": "black tripod supporting a professional video camera",
+                    "reasoning": "The scene is an indoor television studio or event setting, indicated by the professional camera setup and the person in uniform operating the equipment. In this context, the object used to stabilize and hold the camera steady is a tripod. The tripod is black, has three legs, and is positioned directly beneath the camera. The camera is mounted on top of it, and the operator is adjusting the camera's position on the tripod head. This is the standard equipment for stabilizing a camera during filming.",
+                    "box": [
+                        1627,
+                        1083,
+                        2436,
+                        2573
+                    ],
+                    "iou": 0.7548735772065464,
+                    "verifier_rank": 5,
+                    "verifier_score": 81.57,
+                    "verifier_reasoning": "Pointwise score: 81.6/100",
+                    "pointwise_breakdown": {
+                        "geo": 5.47,
+                        "rating": 15.0,
+                        "iou": 25.5,
+                        "boundary": 15.6,
+                        "semantic": 20
+                    },
+                    "pointwise_raw": {
+                        "rating_class": "GOOD",
+                        "predicted_iou": 85,
+                        "boundary_score": 78,
+                        "semantic_category": 5,
+                        "semantic_attribute": 5,
+                        "semantic_context": 5,
+                        "semantic_count": 5
+                    },
+                    "pointwise_error": null
+                },
+                {
+                    "hypothesis": "black tripod supporting the camera",
+                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. The object serving this purpose is the tripod, which is black and supports the camera. The operator is holding the camera mount on top of the tripod, indicating it is being used for stabilization. The tripod is located below the camera and extends to the floor.",
+                    "box": [
+                        1627,
+                        1124,
+                        2436,
+                        2573
+                    ],
+                    "iou": 0.6660178845836014,
+                    "verifier_rank": 0,
+                    "verifier_score": 82.91,
+                    "verifier_reasoning": "Pointwise score: 82.9/100",
+                    "pointwise_breakdown": {
+                        "geo": 5.41,
+                        "rating": 15.0,
+                        "iou": 25.5,
+                        "boundary": 17.0,
+                        "semantic": 20
+                    },
+                    "pointwise_raw": {
+                        "rating_class": "GOOD",
+                        "predicted_iou": 85,
+                        "boundary_score": 85,
+                        "semantic_category": 5,
+                        "semantic_attribute": 5,
+                        "semantic_context": 5,
+                        "semantic_count": 5
+                    },
+                    "pointwise_error": null
+                },
+                {
+                    "hypothesis": "black tripod supporting the camera",
+                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. The image shows a professional video camera mounted on a three-legged stand, which is a tripod. The tripod is directly under the camera and is used to stabilize it during filming. The operator is holding the camera mount, but the tripod is the primary device for holding and stabilizing the camera. This is the most relevant object for the query.",
+                    "box": [
+                        1631,
+                        1065,
+                        2436,
+                        2573
+                    ],
+                    "iou": 0.755691159289497,
+                    "verifier_rank": 2,
+                    "verifier_score": 81.98,
+                    "verifier_reasoning": "Pointwise score: 82.0/100",
+                    "pointwise_breakdown": {
+                        "geo": 5.48,
+                        "rating": 15.0,
+                        "iou": 25.5,
+                        "boundary": 16.0,
+                        "semantic": 20
+                    },
+                    "pointwise_raw": {
+                        "rating_class": "GOOD",
+                        "predicted_iou": 85,
+                        "boundary_score": 80,
+                        "semantic_category": 5,
+                        "semantic_attribute": 5,
+                        "semantic_context": 5,
+                        "semantic_count": 5
+                    },
+                    "pointwise_error": null
+                },
+                {
+                    "hypothesis": "black tripod holding the camera in the center foreground",
+                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. In the image, the camera is mounted on a black tripod, which is positioned in the foreground and center. The tripod has three legs and a head that holds the camera, and the operator is using it to support the camera. This is the standard equipment used for stabilization in filming. The tripod is clearly visible and is the object that fulfills the description.",
+                    "box": [
+                        1634,
+                        1039,
+                        2432,
+                        2573
+                    ],
+                    "iou": 0.7569688886564327,
+                    "verifier_rank": 1,
+                    "verifier_score": 81.98,
+                    "verifier_reasoning": "Pointwise score: 82.0/100",
+                    "pointwise_breakdown": {
+                        "geo": 5.48,
+                        "rating": 15.0,
+                        "iou": 25.5,
+                        "boundary": 16.0,
+                        "semantic": 20
+                    },
+                    "pointwise_raw": {
+                        "rating_class": "GOOD",
+                        "predicted_iou": 85,
+                        "boundary_score": 80,
                         "semantic_category": 5,
                         "semantic_attribute": 5,
                         "semantic_context": 5,
@@ -279,41 +285,15 @@
             "query": "When the wind blows, small white objects are blown away and scattered in the air. What in the picture is responsible for this phenomenon?",
             "candidates": [
                 {
-                    "hypothesis": "white dandelion seed head in the center",
-                    "reasoning": "The query describes small white objects being blown away and scattered in the air, which is characteristic of dandelion seeds (also called pappus). The image shows a mature dandelion seed head, which is composed of many tiny white seeds attached to feathery parachutes. When the wind blows, these individual seeds detach and are carried away. The query is referring to the entire seed head as the source of this phenomenon, since it is the structure from which the seeds are dispersed. The seeds themselves are the parts, but the whole dandelion seed head is the responsible entity for the scattering event.",
-                    "box": [
-                        260,
-                        95,
-                        585,
-                        413
-                    ],
-                    "iou": 0.850906945878189,
-                    "verifier_rank": 0,
-                    "verifier_score": 55.26,
-                    "verifier_reasoning": "Pointwise score: 55.3/100",
-                    "pointwise_breakdown": {
-                        "geo": 6.76,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "white dandelion seed head in the center",
-                    "reasoning": "The query describes small white objects being blown away and scattered in the air by the wind. The image shows a dandelion seed head, which consists of many tiny white seeds attached to feathery parachutes. When the wind blows, these seeds detach and are carried away, perfectly matching the phenomenon described. The dandelion head is the source of these small white objects.",
+                    "hypothesis": "white spherical dandelion seed head in the center",
+                    "reasoning": "The query describes small white objects being blown away and scattered by the wind. This is a classic description of dandelion seeds (also called parachutes) detaching from the dandelion head and dispersing. While the dandelion head itself is the source, the phenomenon is caused by the seeds. The image shows a fully mature dandelion seed head, which is the structure from which these seeds are released. The seeds are the actual objects that are blown away. However, the query asks for the object in the picture responsible for the phenomenon, and the dandelion head is the source structure. The seeds are the effect, not the cause. The dandelion head is the object that, when disturbed by wind, releases the seeds. Therefore, the dandelion head is the correct target. The small white objects are the seeds, but the object responsible for their dispersal is the dandelion head. The query asks for \"what in the picture is responsible for this phenomenon,\" which is the dandelion head. Step 1: Alternative interpretations could be the grass or the insect, but they are not responsible for the dispersal. Step 2: The dandelion head is the direct source. Step 3: The bounding box should encompass the dandelion head. The object is the dandelion seed head, which is white and spherical, located centrally in the image.",
                     "box": [
                         262,
-                        108,
-                        592,
-                        386
+                        105,
+                        588,
+                        387
                     ],
-                    "iou": 0.07616940581542352,
+                    "iou": 0.07861912846632711,
                     "verifier_rank": 7,
                     "verifier_score": 10.17,
                     "verifier_reasoning": "Pointwise score: 10.2/100",
@@ -324,47 +304,20 @@
                         "boundary": 0.0,
                         "semantic": 0
                     },
-                    "pointwise_raw": {
-                        "predicted_iou": 0
-                    },
+                    "pointwise_raw": {},
                     "pointwise_error": null
                 },
                 {
                     "hypothesis": "white dandelion seed head with feathery parachutes",
-                    "reasoning": "The query describes small white objects being blown away and scattered in the air by the wind. In the image, the dandelion seed head (also known as a dandelion clock) is composed of many tiny white seeds attached to feathery parachutes. When the wind blows, these seeds detach and are carried away, perfectly matching the description. This is the most literal and obvious object responsible for the phenomenon shown.",
+                    "reasoning": "The query describes small white objects being blown away and scattered in the air by the wind. In the image, the dandelion seed head is composed of many tiny white seeds attached to feathery parachutes. When the wind blows, these seeds detach and are carried away, perfectly matching the description. This is the most literal and obvious object responsible for the phenomenon shown.",
                     "box": [
-                        261,
-                        88,
-                        585,
-                        388
+                        262,
+                        94,
+                        593,
+                        395
                     ],
-                    "iou": 0.09875442832321682,
-                    "verifier_rank": 2,
-                    "verifier_score": 10.22,
-                    "verifier_reasoning": "Pointwise score: 10.2/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.22,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "predicted_iou": 0
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "white fluffy dandelion seed head in the center",
-                    "reasoning": "The scene is an outdoor natural setting, specifically a close-up of a plant in a grassy area. The query describes small white objects being blown away and scattered in the air, which is characteristic of a dandelion seed head (also known as a dandelion clock) when disturbed by wind. The image clearly shows a spherical, white, fluffy structure composed of many tiny seeds attached to feathery parachutes. When the wind blows, these seeds detach and are carried away. The object in the center of the image perfectly matches this description.",
-                    "box": [
-                        260,
-                        93,
-                        596,
-                        397
-                    ],
-                    "iou": 0.08542023241149446,
-                    "verifier_rank": 4,
+                    "iou": 0.08446174678402167,
+                    "verifier_rank": 6,
                     "verifier_score": 10.19,
                     "verifier_reasoning": "Pointwise score: 10.2/100",
                     "pointwise_breakdown": {
@@ -381,69 +334,50 @@
                 },
                 {
                     "hypothesis": "white fluffy dandelion seed head in the center",
-                    "reasoning": "The query describes small white objects blown away by the wind. In the image, the dandelion seed head consists of many tiny, white, feathery seeds attached to a central structure. These seeds are designed to be lightweight and easily carried by the wind, matching the description perfectly. The visual attributes are white color, small size, and a fluffy, airy texture. The dandelion is the source of these objects.",
+                    "reasoning": "The scene is an outdoor natural setting, specifically a close-up of a plant in a grassy area. The query describes small white objects being blown away and scattered in the air by the wind. This is characteristic of a dandelion seed head, which consists of many tiny white seeds attached to feathery parachutes that are easily dispersed by wind. The image clearly shows a spherical, fluffy white structure with individual seeds visible, which matches the description perfectly. The phenomenon described is the natural dispersal of dandelion seeds.",
                     "box": [
                         256,
                         93,
-                        580,
-                        386
-                    ],
-                    "iou": 0.09886296848862969,
-                    "verifier_rank": 3,
-                    "verifier_score": 10.21,
-                    "verifier_reasoning": "Pointwise score: 10.2/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.21,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "predicted_iou": 0
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "white fluffy dandelion seed head in the center",
-                    "reasoning": "The query describes small white objects being blown away and scattered in the air by the wind. While the dandelion head itself is white and fluffy, the phenomenon described is the dispersal of its individual seeds (the white, parachute-like structures). The image shows some of these seeds already detached and floating away, which directly matches the description. Therefore, the dandelion head is the source of this phenomenon. No alternative interpretations are necessary as the dandelion head is the most direct and literal answer.",
-                    "box": [
-                        256,
-                        94,
                         596,
-                        386
+                        397
                     ],
-                    "iou": 0.09081998618876835,
-                    "verifier_rank": 1,
-                    "verifier_score": 10.23,
-                    "verifier_reasoning": "Pointwise score: 10.2/100",
+                    "iou": 0.08534226859764325,
+                    "verifier_rank": 0,
+                    "verifier_score": 25.2,
+                    "verifier_reasoning": "Pointwise score: 25.2/100",
                     "pointwise_breakdown": {
-                        "geo": 5.23,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
+                        "geo": 5.2,
+                        "rating": 0.0,
+                        "iou": 3.0,
+                        "boundary": 17.0,
                         "semantic": 0
                     },
                     "pointwise_raw": {
-                        "predicted_iou": 0
+                        "rating_class": "WRONG",
+                        "predicted_iou": 10,
+                        "boundary_score": 85,
+                        "semantic_category": 0,
+                        "semantic_attribute": 0,
+                        "semantic_context": 0,
+                        "semantic_count": 0
                     },
                     "pointwise_error": null
                 },
                 {
                     "hypothesis": "white dandelion seed head in the center",
-                    "reasoning": "The query describes small white objects being blown away and scattered in the air by the wind. This is the characteristic dispersal mechanism of a dandelion seed head. The dandelion's fluffy white seed head (often called a \"dandelion clock\") is designed to release its seeds via the wind. The image shows a mature dandelion seed head, and the small white objects mentioned are its seeds, each attached to a parachute-like structure for wind dispersal. The function implied is wind-assisted seed dispersal, which is served by the dandelion seed head.",
+                    "reasoning": "The query describes small white objects being blown away and scattered in the air, which is characteristic of the seed heads of a dandelion. The image shows a dandelion seed head (often called a \"dandelion clock\") that is composed of many tiny white seeds attached to feathery parachutes. When the wind blows, these individual seeds detach and are carried away. The query refers to the entire seed head as the source of this phenomenon, as it is the structure that releases the seeds. The bounding box encompasses the entire dandelion seed head.",
                     "box": [
                         260,
-                        96,
-                        588,
-                        388
+                        93,
+                        589,
+                        405
                     ],
-                    "iou": 0.08370213150289017,
+                    "iou": 0.3698793267704033,
                     "verifier_rank": 5,
-                    "verifier_score": 10.18,
-                    "verifier_reasoning": "Pointwise score: 10.2/100",
+                    "verifier_score": 10.77,
+                    "verifier_reasoning": "Pointwise score: 10.8/100",
                     "pointwise_breakdown": {
-                        "geo": 5.18,
+                        "geo": 5.77,
                         "rating": 5.0,
                         "iou": 0.0,
                         "boundary": 0.0,
@@ -453,26 +387,121 @@
                     "pointwise_error": null
                 },
                 {
-                    "hypothesis": "white spherical dandelion seed head with some seeds dispersed in the air",
-                    "reasoning": "The query describes small white objects being blown away and scattered in the air by the wind. The image shows a dandelion seed head, which consists of many tiny white seeds attached to feathery parachutes. These seeds are designed to be easily carried by the wind. The phenomenon described is the dispersal of these seeds. The main object in the image is the dandelion head, which is white, spherical, and located centrally. Some seeds are already detached and visible in the air around it, confirming the description.",
+                    "hypothesis": "white fluffy dandelion seed head in the center",
+                    "reasoning": "The query describes small white objects being blown away and scattered in the air by the wind. The image shows a dandelion seed head, which is composed of many tiny, white, fluffy seeds attached to feathery parachutes. These seeds are designed to be easily carried by the wind, matching the description perfectly. The visual attributes are: color (white), shape (fluffy, spherical cluster), texture (soft, feathery), and size (small individual units). The dandelion head is the source of these objects. The bounding box is centered on the dandelion head.",
+                    "box": [
+                        253,
+                        99,
+                        589,
+                        375
+                    ],
+                    "iou": 0.07964651329495306,
+                    "verifier_rank": 2,
+                    "verifier_score": 13.69,
+                    "verifier_reasoning": "Pointwise score: 13.7/100",
+                    "pointwise_breakdown": {
+                        "geo": 5.19,
+                        "rating": 0.0,
+                        "iou": 4.5,
+                        "boundary": 4.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {
+                        "rating_class": "WRONG",
+                        "predicted_iou": 15,
+                        "boundary_score": 20,
+                        "semantic_category": 0,
+                        "semantic_attribute": 0,
+                        "semantic_context": 0,
+                        "semantic_count": 0
+                    },
+                    "pointwise_error": null
+                },
+                {
+                    "hypothesis": "white dandelion seed head with some seeds detached and floating",
+                    "reasoning": "The query describes small white objects being blown away by the wind, which is characteristic of dandelion seeds (pappus). In the image, the central object is a mature dandelion seed head, composed of numerous tiny white seed units attached to feathery parachutes. The presence of a few seeds already detached and floating away (visible as small white wisps above the main head) confirms this is the source of the phenomenon. The object is located in the center of the image, surrounded by green grass.",
+                    "box": [
+                        248,
+                        91,
+                        590,
+                        393
+                    ],
+                    "iou": 0.08790629903609057,
+                    "verifier_rank": 4,
+                    "verifier_score": 12.21,
+                    "verifier_reasoning": "Pointwise score: 12.2/100",
+                    "pointwise_breakdown": {
+                        "geo": 5.21,
+                        "rating": 0.0,
+                        "iou": 3.0,
+                        "boundary": 4.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {
+                        "rating_class": "WRONG",
+                        "predicted_iou": 10,
+                        "boundary_score": 20,
+                        "semantic_category": 0,
+                        "semantic_attribute": 0,
+                        "semantic_context": 0,
+                        "semantic_count": 0
+                    },
+                    "pointwise_error": null
+                },
+                {
+                    "hypothesis": "white fluffy dandelion seed head in center",
+                    "reasoning": "The query describes small white objects being blown away and scattered in the air by the wind. This is the natural dispersal mechanism of a dandelion seed head. The dandelion, specifically its seed head (often called a \"dandelion clock\"), is designed to release tiny, white, parachute-like seeds that are easily carried by the wind. The image shows a fully mature dandelion seed head, which is the source of these dispersed seeds. The function implied is seed dispersal via wind, and the dandelion seed head serves this purpose perfectly.",
                     "box": [
                         256,
-                        97,
-                        593,
-                        395
+                        99,
+                        590,
+                        393
                     ],
-                    "iou": 0.08023856231256624,
-                    "verifier_rank": 6,
-                    "verifier_score": 10.18,
-                    "verifier_reasoning": "Pointwise score: 10.2/100",
+                    "iou": 0.0764409612431114,
+                    "verifier_rank": 1,
+                    "verifier_score": 25.17,
+                    "verifier_reasoning": "Pointwise score: 25.2/100",
                     "pointwise_breakdown": {
-                        "geo": 5.18,
+                        "geo": 5.17,
+                        "rating": 0.0,
+                        "iou": 3.0,
+                        "boundary": 17.0,
+                        "semantic": 0
+                    },
+                    "pointwise_raw": {
+                        "rating_class": "WRONG",
+                        "predicted_iou": 10,
+                        "boundary_score": 85,
+                        "semantic_category": 0,
+                        "semantic_attribute": 0,
+                        "semantic_context": 0,
+                        "semantic_count": 0
+                    },
+                    "pointwise_error": null
+                },
+                {
+                    "hypothesis": "white dandelion seed head in the center",
+                    "reasoning": "The query describes small white objects being blown away and scattered in the air by the wind. The image shows a dandelion seed head, which is composed of many tiny white seeds attached to feathery parachutes. When the wind blows, these seeds detach and are carried away, perfectly matching the description. The dandelion is the direct source of these scattered white objects.",
+                    "box": [
+                        260,
+                        100,
+                        588,
+                        388
+                    ],
+                    "iou": 0.07589643910542554,
+                    "verifier_rank": 3,
+                    "verifier_score": 13.17,
+                    "verifier_reasoning": "Pointwise score: 13.2/100",
+                    "pointwise_breakdown": {
+                        "geo": 5.17,
                         "rating": 5.0,
-                        "iou": 0.0,
+                        "iou": 3.0,
                         "boundary": 0.0,
                         "semantic": 0
                     },
-                    "pointwise_raw": {},
+                    "pointwise_raw": {
+                        "predicted_iou": 10
+                    },
                     "pointwise_error": null
                 }
             ]
@@ -483,89 +512,14 @@
             "candidates": [
                 {
                     "hypothesis": "red Ferrari sports car in the foreground",
-                    "reasoning": "The query asks for a car with a color closer to lipstick color. In the image, there are two cars visible: a prominent red Ferrari in the foreground and a white car in the background. Lipstick color is typically a vibrant, saturated red. The red Ferrari's color is a classic, glossy red that closely matches the hue and intensity often associated with lipstick. The white car is clearly not a match. Therefore, the red Ferrari is the most literal and obvious match for the query.",
+                    "reasoning": "The query asks for a car with a color closer to lipstick color. In the image, there are two cars: a prominent red Ferrari in the foreground and a white car in the background. Red is the color most commonly associated with lipstick, especially classic or bold shades. The red Ferrari's color is a vibrant, glossy red that closely matches the typical hue of lipstick. The white car is not a match. Therefore, the red Ferrari is the most literal and obvious match.",
                     "box": [
                         27,
-                        411,
-                        1289,
-                        1050
-                    ],
-                    "iou": 5.903422952213267e-06,
-                    "verifier_rank": 0,
-                    "verifier_score": 10.49,
-                    "verifier_reasoning": "Pointwise score: 10.5/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.49,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "predicted_iou": 0
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "shiny red Ferrari sports car in the foreground",
-                    "reasoning": "The query asks for a car with a color closer to lipstick color. Lipstick color is typically a vibrant, saturated red. The car in the foreground is a Ferrari painted in a glossy, bright red that strongly resembles classic lipstick shades. The white car in the background is not a close match. Therefore, the red Ferrari is the correct object.",
-                    "box": [
-                        27,
-                        411,
-                        1286,
-                        1047
-                    ],
-                    "iou": 5.903466515537924e-06,
-                    "verifier_rank": 1,
-                    "verifier_score": 10.49,
-                    "verifier_reasoning": "Pointwise score: 10.5/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.49,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "predicted_iou": 0
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "red Ferrari sports car in the foreground",
-                    "reasoning": "The query asks for a car with a color closer to lipstick color. Lipstick color is typically a vibrant, saturated red. The car in the foreground is a Ferrari with a glossy, deep red paint that strongly resembles classic lipstick red. The car in the background is white, which is not close to lipstick color. Therefore, the red Ferrari is the correct target. The bounding box encompasses the entire red Ferrari.",
-                    "box": [
-                        27,
-                        411,
-                        1286,
+                        409,
+                        1288,
                         1046
                     ],
-                    "iou": 5.903527505272588e-06,
-                    "verifier_rank": 4,
-                    "verifier_score": 10.49,
-                    "verifier_reasoning": "Pointwise score: 10.5/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.49,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "predicted_iou": 0
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "red Ferrari sports car in the foreground",
-                    "reasoning": "The query asks for a car with a color closer to lipstick color. The prominent red Ferrari in the foreground has a vibrant, glossy red finish that is widely recognized as being similar to classic lipstick shades. The white car in the background is not a close match for lipstick color. Therefore, the red Ferrari is the direct and most relevant match.",
-                    "box": [
-                        27,
-                        411,
-                        1289,
-                        1044
-                    ],
-                    "iou": 5.903684341805612e-06,
+                    "iou": 5.9036146356510434e-06,
                     "verifier_rank": 6,
                     "verifier_score": 10.49,
                     "verifier_reasoning": "Pointwise score: 10.5/100",
@@ -583,15 +537,75 @@
                 },
                 {
                     "hypothesis": "red Ferrari sports car in the foreground",
-                    "reasoning": "The scene is an indoor car exhibition, as indicated by the showroom setting, lighting, and crowd. The query asks for a car with a color closer to lipstick color. Lipstick colors are typically vibrant reds. The car in the foreground is a Ferrari with a glossy, deep red paint job that strongly resembles classic lipstick shades. The white car in the background is not a match for lipstick color. Therefore, the red Ferrari is the correct object.",
+                    "reasoning": "The query asks for a car with a color closer to lipstick color. Lipstick color is typically a vibrant, saturated red. The car in the foreground is a Ferrari with a glossy, deep red paint job that strongly resembles classic lipstick red. The car in the background is white, which is not close to lipstick color. Therefore, the red Ferrari is the object described.",
                     "box": [
                         25,
-                        411,
+                        410,
                         1286,
-                        1045
+                        1046
                     ],
-                    "iou": 7.3793658173016615e-06,
-                    "verifier_rank": 3,
+                    "iou": 7.37934403535001e-06,
+                    "verifier_rank": 4,
+                    "verifier_score": 27.49,
+                    "verifier_reasoning": "Pointwise score: 27.5/100",
+                    "pointwise_breakdown": {
+                        "geo": 5.49,
+                        "rating": 0.0,
+                        "iou": 0.0,
+                        "boundary": 17.0,
+                        "semantic": 5
+                    },
+                    "pointwise_raw": {
+                        "rating_class": "WRONG",
+                        "predicted_iou": 0,
+                        "boundary_score": 85,
+                        "semantic_category": 5,
+                        "semantic_attribute": 0
+                    },
+                    "pointwise_error": null
+                },
+                {
+                    "hypothesis": "red Ferrari sports car in the foreground",
+                    "reasoning": "The query asks for a car with a color closer to lipstick color. The prominent red Ferrari in the foreground has a vibrant, glossy red finish that is very similar to classic lipstick shades. The white car in the background is not a close match. Therefore, the red Ferrari is the direct and most relevant match.",
+                    "box": [
+                        27,
+                        409,
+                        1288,
+                        1046
+                    ],
+                    "iou": 5.9036146356510434e-06,
+                    "verifier_rank": 1,
+                    "verifier_score": 38.49,
+                    "verifier_reasoning": "Pointwise score: 38.5/100",
+                    "pointwise_breakdown": {
+                        "geo": 5.49,
+                        "rating": 0.0,
+                        "iou": 0.0,
+                        "boundary": 18.0,
+                        "semantic": 15
+                    },
+                    "pointwise_raw": {
+                        "rating_class": "WRONG",
+                        "predicted_iou": 0,
+                        "boundary_score": 90,
+                        "semantic_category": 5,
+                        "semantic_attribute": 0,
+                        "semantic_context": 5,
+                        "semantic_count": 5
+                    },
+                    "pointwise_error": null
+                },
+                {
+                    "hypothesis": "red Ferrari sports car in the foreground",
+                    "reasoning": "The query asks for a car with a color closer to lipstick color. Lipstick color is typically a vibrant, saturated red. The car in the foreground is a Ferrari painted in a bright, glossy red that closely matches the vivid hue of classic lipstick shades. The white car in the background does not match this description. Therefore, the red Ferrari is the correct object.",
+                    "box": [
+                        27,
+                        411,
+                        1291,
+                        1046
+                    ],
+                    "iou": 5.90366691511265e-06,
+                    "verifier_rank": 7,
                     "verifier_score": 10.49,
                     "verifier_reasoning": "Pointwise score: 10.5/100",
                     "pointwise_breakdown": {
@@ -608,68 +622,125 @@
                 },
                 {
                     "hypothesis": "shiny red Ferrari sports car in the foreground",
-                    "reasoning": "The query asks for a car with a color closer to lipstick color. While \"lipstick color\" is not a precise term, it typically evokes a vibrant, bold red. The Ferrari in the foreground is a striking, glossy red, which is widely recognized as a classic \"lipstick red\" shade. The white car in the background is not a close match. Therefore, the red Ferrari is the best fit for the query.",
-                    "box": [
-                        25,
-                        409,
-                        1288,
-                        1045
-                    ],
-                    "iou": 5.903605922497461e-06,
-                    "verifier_rank": 7,
-                    "verifier_score": 0,
-                    "verifier_reasoning": "Pointwise score: 0.0/100",
-                    "pointwise_breakdown": null,
-                    "pointwise_raw": null,
-                    "pointwise_error": "invalid literal for int() with base 10: ''"
-                },
-                {
-                    "hypothesis": "red Ferrari sports car in the foreground",
-                    "reasoning": "The query asks for a car with a color closer to lipstick color. Lipstick color is typically a vibrant, saturated red. The car in the foreground is a Ferrari with a glossy, bright red paint finish, which closely matches the hue and intensity associated with lipstick. The white car in the background is not a close match. The visual attributes of the red Ferrari (color, shape, glossy texture) align with the query.",
+                    "reasoning": "The scene is an indoor car exhibition, as indicated by the display setup, lighting, and presence of spectators. The query asks for a car with a color closer to lipstick color. Lipstick color is typically a vibrant, saturated red. The car in the foreground is a Ferrari with a glossy, deep red paint that closely matches the hue of classic lipstick red. The white car in the background does not match this description. Therefore, the red Ferrari is the correct target.",
                     "box": [
                         28,
-                        411,
-                        1288,
-                        1050
+                        409,
+                        1286,
+                        1044
                     ],
-                    "iou": 5.903466515537924e-06,
-                    "verifier_rank": 2,
-                    "verifier_score": 10.49,
-                    "verifier_reasoning": "Pointwise score: 10.5/100",
+                    "iou": 5.903719195500185e-06,
+                    "verifier_rank": 5,
+                    "verifier_score": 15.49,
+                    "verifier_reasoning": "Pointwise score: 15.5/100",
                     "pointwise_breakdown": {
                         "geo": 5.49,
-                        "rating": 5.0,
+                        "rating": 0.0,
                         "iou": 0.0,
                         "boundary": 0.0,
-                        "semantic": 0
+                        "semantic": 10
                     },
                     "pointwise_raw": {
-                        "predicted_iou": 0
+                        "rating_class": "WRONG",
+                        "predicted_iou": 0,
+                        "boundary_score": 0,
+                        "semantic_category": 5,
+                        "semantic_attribute": 0,
+                        "semantic_context": 0,
+                        "semantic_count": 5
                     },
                     "pointwise_error": null
                 },
                 {
                     "hypothesis": "red Ferrari sports car in the foreground",
-                    "reasoning": "The query asks for a car with a color closer to lipstick color. Lipstick colors are typically vibrant reds. The car in the foreground is a bright, glossy red Ferrari, which closely matches the vivid red hue often associated with lipstick. The white car in the background is not a match. The red car is fully visible and prominently positioned in the foreground. No other objects match the description. The bounding box is drawn around the red Ferrari.",
+                    "reasoning": "The query asks for a car with a color closer to lipstick color. Lipstick colors are typically vibrant reds. The car in the foreground is a Ferrari with a glossy, vibrant red paint job that strongly resembles classic lipstick shades. It is fully visible and prominently positioned in the foreground. The white car in the background is not a match for the lipstick color. Therefore, the red Ferrari is the correct target.",
                     "box": [
-                        25,
-                        412,
-                        1291,
-                        1046
+                        27,
+                        411,
+                        1289,
+                        1047
                     ],
-                    "iou": 5.903544931142528e-06,
-                    "verifier_rank": 5,
-                    "verifier_score": 10.49,
-                    "verifier_reasoning": "Pointwise score: 10.5/100",
+                    "iou": 5.903562357115342e-06,
+                    "verifier_rank": 3,
+                    "verifier_score": 32.49,
+                    "verifier_reasoning": "Pointwise score: 32.5/100",
                     "pointwise_breakdown": {
                         "geo": 5.49,
-                        "rating": 5.0,
+                        "rating": 0.0,
                         "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
+                        "boundary": 17.0,
+                        "semantic": 10
                     },
                     "pointwise_raw": {
-                        "predicted_iou": 0
+                        "rating_class": "WRONG",
+                        "predicted_iou": 0,
+                        "boundary_score": 85,
+                        "semantic_category": 5,
+                        "semantic_attribute": 0,
+                        "semantic_context": 0,
+                        "semantic_count": 5
+                    },
+                    "pointwise_error": null
+                },
+                {
+                    "hypothesis": "red Ferrari sports car in the foreground",
+                    "reasoning": "The query asks for a car with a color closer to lipstick color. Lipstick color is typically a vibrant, saturated red. The car in the foreground is a Ferrari with a glossy, deep red paint finish that strongly resembles classic red lipstick. The white car in the background is not a match. The red car matches the color attribute of the query.",
+                    "box": [
+                        27,
+                        409,
+                        1286,
+                        1039
+                    ],
+                    "iou": 5.90388475616956e-06,
+                    "verifier_rank": 0,
+                    "verifier_score": 81.99,
+                    "verifier_reasoning": "Pointwise score: 82.0/100",
+                    "pointwise_breakdown": {
+                        "geo": 5.49,
+                        "rating": 15.0,
+                        "iou": 25.5,
+                        "boundary": 16.0,
+                        "semantic": 20
+                    },
+                    "pointwise_raw": {
+                        "rating_class": "GOOD",
+                        "predicted_iou": 85,
+                        "boundary_score": 80,
+                        "semantic_category": 5,
+                        "semantic_attribute": 5,
+                        "semantic_context": 5,
+                        "semantic_count": 5
+                    },
+                    "pointwise_error": null
+                },
+                {
+                    "hypothesis": "shiny red Ferrari sports car in the foreground",
+                    "reasoning": "The query asks for a car with a color \"closer to lipstick color.\" While \"lipstick color\" is not a precise term, it typically refers to a bold, vibrant red, often associated with classic red lipsticks. The Ferrari in the foreground is a striking, glossy red, which is widely recognized as a color that closely matches the hue of classic lipstick shades. The white car in the background is a poor match. Therefore, the red Ferrari is the best fit for the query.",
+                    "box": [
+                        27,
+                        411,
+                        1288,
+                        1048
+                    ],
+                    "iou": 5.903466515537924e-06,
+                    "verifier_rank": 2,
+                    "verifier_score": 34.49,
+                    "verifier_reasoning": "Pointwise score: 34.5/100",
+                    "pointwise_breakdown": {
+                        "geo": 5.49,
+                        "rating": 0.0,
+                        "iou": 0.0,
+                        "boundary": 19.0,
+                        "semantic": 10
+                    },
+                    "pointwise_raw": {
+                        "rating_class": "WRONG",
+                        "predicted_iou": 0,
+                        "boundary_score": 95,
+                        "semantic_category": 5,
+                        "semantic_attribute": 0,
+                        "semantic_context": 0,
+                        "semantic_count": 5
                     },
                     "pointwise_error": null
                 }
@@ -681,28 +752,28 @@
             "candidates": [
                 {
                     "hypothesis": "large black hand-crank wheel in the center",
-                    "reasoning": "The query asks for something that can be used to rotate or spin other parts or objects. The object in the image is a large, black, hand-cranked wheel or handle. This type of wheel is typically attached to machinery and is designed to be turned by hand to rotate a shaft or other mechanical component, thus fulfilling the function described in the query. It is a part of a larger machine, but the wheel itself is the functional element for rotation. Step 1: The query refers to a part (the wheel) of a larger machine. Step 2: The query is not asking for the whole machine, but the specific part used for rotation. Step 3: The bounding box should encompass the wheel.",
+                    "reasoning": "The scene is an indoor mechanical workshop setting, as indicated by the industrial-style object and background machinery. The query asks for something that can rotate or spin other parts. The object in the image is a large, black, hand-cranked wheel or handle. This type of handle is commonly used in workshops to manually rotate or drive mechanical components, such as in presses, lathes, or other machinery. The object is centrally located and clearly designed for rotational input. The bounding box captures the entire wheel, which is the primary object of interest.",
                     "box": [
                         19,
-                        38,
-                        1601,
+                        40,
+                        1597,
                         1585
                     ],
-                    "iou": 0.9125748013014726,
-                    "verifier_rank": 3,
-                    "verifier_score": 91.56,
-                    "verifier_reasoning": "Pointwise score: 91.6/100",
+                    "iou": 0.9115524217285057,
+                    "verifier_rank": 6,
+                    "verifier_score": 78.87,
+                    "verifier_reasoning": "Pointwise score: 78.9/100",
                     "pointwise_breakdown": {
-                        "geo": 6.06,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 17.0,
+                        "geo": 6.07,
+                        "rating": 15.0,
+                        "iou": 23.4,
+                        "boundary": 14.4,
                         "semantic": 20
                     },
                     "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95,
-                        "boundary_score": 85,
+                        "rating_class": "GOOD",
+                        "predicted_iou": 78,
+                        "boundary_score": 72,
                         "semantic_category": 5,
                         "semantic_attribute": 5,
                         "semantic_context": 5,
@@ -712,28 +783,28 @@
                 },
                 {
                     "hypothesis": "large black hand crank in the center",
-                    "reasoning": "The query asks for an object used to rotate or spin other parts. The image shows a large, black, circular handle with three spokes, which is a classic design for a hand crank. Hand cranks are specifically designed to be turned by hand to rotate a shaft or mechanism, making them perfect for spinning other parts. The visual attributes \u2014 large, black, circular, with a textured grip \u2014 match the description of a hand crank. This object is located centrally in the image.",
+                    "reasoning": "The query asks for an object used to rotate or spin other parts. The image shows a large, black, wheel-like handle with a central hub and spokes, which is characteristic of a hand crank. Hand cranks are specifically designed to be turned by hand to rotate a shaft or mechanism, making it the most likely candidate for rotating or spinning other parts. Its shape and position suggest it is attached to a machine and intended for manual operation.",
                     "box": [
                         19,
-                        40,
+                        38,
                         1603,
-                        1581
+                        1585
                     ],
-                    "iou": 0.911704598068316,
-                    "verifier_rank": 2,
-                    "verifier_score": 91.56,
-                    "verifier_reasoning": "Pointwise score: 91.6/100",
+                    "iou": 0.9134546858616386,
+                    "verifier_rank": 4,
+                    "verifier_score": 80.05,
+                    "verifier_reasoning": "Pointwise score: 80.0/100",
                     "pointwise_breakdown": {
-                        "geo": 6.06,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 17.0,
+                        "geo": 6.05,
+                        "rating": 15.0,
+                        "iou": 24.0,
+                        "boundary": 15.0,
                         "semantic": 20
                     },
                     "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95,
-                        "boundary_score": 85,
+                        "rating_class": "GOOD",
+                        "predicted_iou": 80,
+                        "boundary_score": 75,
                         "semantic_category": 5,
                         "semantic_attribute": 5,
                         "semantic_context": 5,
@@ -742,29 +813,29 @@
                     "pointwise_error": null
                 },
                 {
-                    "hypothesis": "large black handwheel in the center",
-                    "reasoning": "The scene is an indoor mechanical workshop setting, as indicated by the presence of machinery and tools. The query asks for an object used to rotate or spin other parts. The object in the image is a large, black, circular handwheel with a central hub and three spokes, which is a common component in mechanical workshops used to manually rotate shafts, gears, or other mechanical parts. Its design suggests it is meant to be turned by hand to apply torque and cause rotation. This object fits the description perfectly.",
+                    "hypothesis": "large black handwheel with scalloped edge",
+                    "reasoning": "The object in the image is a large, black, circular handwheel with a scalloped edge and three spokes. Handwheels are commonly used in mechanical workshops to rotate or spin other parts or objects by turning the wheel, which is connected to a shaft or gear mechanism. This is the most direct match for the query.",
                     "box": [
-                        19,
-                        36,
-                        1603,
+                        22,
+                        40,
+                        1595,
                         1581
                     ],
-                    "iou": 0.9117863669839884,
-                    "verifier_rank": 4,
-                    "verifier_score": 90.56,
-                    "verifier_reasoning": "Pointwise score: 90.6/100",
+                    "iou": 0.9101687759471658,
+                    "verifier_rank": 0,
+                    "verifier_score": 84.47,
+                    "verifier_reasoning": "Pointwise score: 84.5/100",
                     "pointwise_breakdown": {
-                        "geo": 6.06,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 16.0,
+                        "geo": 6.07,
+                        "rating": 15.0,
+                        "iou": 26.4,
+                        "boundary": 17.0,
                         "semantic": 20
                     },
                     "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95,
-                        "boundary_score": 80,
+                        "rating_class": "GOOD",
+                        "predicted_iou": 88,
+                        "boundary_score": 85,
                         "semantic_category": 5,
                         "semantic_attribute": 5,
                         "semantic_context": 5,
@@ -774,89 +845,27 @@
                 },
                 {
                     "hypothesis": "large black handwheel with three spokes",
-                    "reasoning": "The image shows a large, black, wheel-like handle with a central hub and three spokes, which is clearly designed to be turned by hand. This type of handle is commonly used on machinery to rotate or spin other parts or objects, as turning it would transmit rotational motion via a shaft or gear system. While other objects might be present in the background, this handle is the most literal and obvious match for the query.",
+                    "reasoning": "The image shows a large, black, wheel-shaped handle with a central hub and three spokes, which is clearly designed to be turned by hand. This type of handle is commonly used on machinery to rotate or spin other parts or objects. While there are other mechanical components in the background, this handle is the most literal and obvious object for the purpose described in the query. It is centrally located and dominates the frame.",
                     "box": [
                         19,
-                        38,
-                        1601,
-                        1586
-                    ],
-                    "iou": 0.9129572861093547,
-                    "verifier_rank": 0,
-                    "verifier_score": 92.56,
-                    "verifier_reasoning": "Pointwise score: 92.6/100",
-                    "pointwise_breakdown": {
-                        "geo": 6.06,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 18.0,
-                        "semantic": 20
-                    },
-                    "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95,
-                        "boundary_score": 90,
-                        "semantic_category": 5,
-                        "semantic_attribute": 5,
-                        "semantic_context": 5,
-                        "semantic_count": 5
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "large black hand-crank wheel with three spokes",
-                    "reasoning": "The object in the image is a large, black, hand-cranked wheel with a central hub and three spokes. This type of wheel is commonly used in mechanical workshops to manually rotate or spin other parts or objects connected to it, such as gears, shafts, or presses. The design is ergonomic for gripping and turning, and its placement suggests it is an input mechanism for a machine. No other object in the image appears to be designed for rotation.",
-                    "box": [
-                        22,
                         40,
                         1597,
-                        1583
-                    ],
-                    "iou": 0.9108721451581754,
-                    "verifier_rank": 6,
-                    "verifier_score": 89.57,
-                    "verifier_reasoning": "Pointwise score: 89.6/100",
-                    "pointwise_breakdown": {
-                        "geo": 6.07,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 15.0,
-                        "semantic": 20
-                    },
-                    "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95,
-                        "boundary_score": 75,
-                        "semantic_category": 5,
-                        "semantic_attribute": 5,
-                        "semantic_context": 5,
-                        "semantic_count": 5
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "large black handwheel with three spokes in the center",
-                    "reasoning": "The query asks for an object used to rotate or spin other parts. The object in the image is a large, black handwheel with a central hub and three spokes. Handwheels are commonly used in mechanical workshops to manually rotate shafts, gears, or other components. Although it is a hand-operated device, its function is to impart rotational motion to connected machinery. The object is centrally located and dominates the image, making it the clear target for the query.",
-                    "box": [
-                        19,
-                        43,
-                        1603,
                         1581
                     ],
-                    "iou": 0.9115331384631288,
+                    "iou": 0.9104671249222799,
                     "verifier_rank": 1,
-                    "verifier_score": 91.56,
-                    "verifier_reasoning": "Pointwise score: 91.6/100",
+                    "verifier_score": 83.57,
+                    "verifier_reasoning": "Pointwise score: 83.6/100",
                     "pointwise_breakdown": {
-                        "geo": 6.06,
-                        "rating": 20.0,
-                        "iou": 28.5,
+                        "geo": 6.07,
+                        "rating": 15.0,
+                        "iou": 25.5,
                         "boundary": 17.0,
                         "semantic": 20
                     },
                     "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95,
+                        "rating_class": "GOOD",
+                        "predicted_iou": 85,
                         "boundary_score": 85,
                         "semantic_category": 5,
                         "semantic_attribute": 5,
@@ -866,28 +875,59 @@
                     "pointwise_error": null
                 },
                 {
-                    "hypothesis": "large black handwheel in the center",
-                    "reasoning": "The image shows a large, black, circular handwheel with a textured grip, which is a common mechanical component used to rotate or spin other parts or objects. It is centrally located in the foreground and appears to be attached to a machine. The design suggests it is meant to be turned by hand to operate a mechanism. This object matches the description of something used to rotate or spin other parts.",
+                    "hypothesis": "large black handwheel with scalloped edge",
+                    "reasoning": "The query asks for something used to rotate or spin other parts or objects. The object in the image is a large, black handwheel with a scalloped edge and three spokes, which is typically attached to machinery to manually rotate shafts, gears, or other components. It is clearly a part of a larger machine, but the wheel itself is the functional element for rotation. The bounding box encompasses the entire wheel.",
                     "box": [
                         19,
-                        41,
+                        40,
                         1597,
-                        1581
+                        1586
                     ],
-                    "iou": 0.9104009534715914,
-                    "verifier_rank": 5,
-                    "verifier_score": 89.57,
-                    "verifier_reasoning": "Pointwise score: 89.6/100",
+                    "iou": 0.9117943497730807,
+                    "verifier_rank": 7,
+                    "verifier_score": 78.06,
+                    "verifier_reasoning": "Pointwise score: 78.1/100",
                     "pointwise_breakdown": {
-                        "geo": 6.07,
-                        "rating": 20.0,
-                        "iou": 28.5,
+                        "geo": 6.06,
+                        "rating": 15.0,
+                        "iou": 24.0,
+                        "boundary": 13.0,
+                        "semantic": 20
+                    },
+                    "pointwise_raw": {
+                        "rating_class": "GOOD",
+                        "predicted_iou": 80,
+                        "boundary_score": 65,
+                        "semantic_category": 5,
+                        "semantic_attribute": 5,
+                        "semantic_context": 5,
+                        "semantic_count": 5
+                    },
+                    "pointwise_error": null
+                },
+                {
+                    "hypothesis": "large black handwheel with three spokes",
+                    "reasoning": "The query asks for an object used to rotate or spin other parts or objects. The object in the image is a large, black handwheel with a central hub and three spokes. This type of wheel is commonly used in machinery to manually rotate shafts, gears, or other components. The handwheel's design allows for applying torque to turn a connected mechanism, fulfilling the function of rotation or spinning. Although it is a hand-operated device, its purpose is to impart rotational motion to other parts of the machine.",
+                    "box": [
+                        19,
+                        38,
+                        1601,
+                        1583
+                    ],
+                    "iou": 0.9118758214646423,
+                    "verifier_rank": 3,
+                    "verifier_score": 80.66,
+                    "verifier_reasoning": "Pointwise score: 80.7/100",
+                    "pointwise_breakdown": {
+                        "geo": 6.06,
+                        "rating": 15.0,
+                        "iou": 24.6,
                         "boundary": 15.0,
                         "semantic": 20
                     },
                     "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95,
+                        "rating_class": "GOOD",
+                        "predicted_iou": 82,
                         "boundary_score": 75,
                         "semantic_category": 5,
                         "semantic_attribute": 5,
@@ -897,29 +937,60 @@
                     "pointwise_error": null
                 },
                 {
-                    "hypothesis": "large black handwheel with three spokes, centered in the image",
-                    "reasoning": "The object in the image is a large, black, three-spoke handwheel or crank. While its primary function is to manually rotate a shaft or mechanism, it is a direct tool for imparting rotational motion. The query asks for something that can \"rotate or spin other parts or objects,\" and this handwheel is explicitly designed for that purpose. Although the question prompts for alternative or metaphorical interpretations, the handwheel is the most literal and direct answer. There is no need to select an indirect or metaphorical object as the handwheel perfectly matches the description. The bounding box is therefore the full extent of the handwheel.",
+                    "hypothesis": "large black handwheel in the foreground",
+                    "reasoning": "The image shows a large, black, circular handwheel with a scalloped edge and three spokes. This type of wheel is commonly used in mechanical workshops to manually rotate or spin other parts or objects, such as gears, shafts, or presses, by turning the wheel. It is prominently featured in the foreground and is the most relevant object for the query. The object is partially visible, with the chain hanging from its bottom, suggesting it's part of a larger machine.",
                     "box": [
-                        19,
+                        20,
                         43,
-                        1597,
-                        1585
+                        1603,
+                        1583
                     ],
-                    "iou": 0.9113397710034912,
-                    "verifier_rank": 7,
-                    "verifier_score": 89.57,
-                    "verifier_reasoning": "Pointwise score: 89.6/100",
+                    "iou": 0.9123001070211164,
+                    "verifier_rank": 2,
+                    "verifier_score": 81.56,
+                    "verifier_reasoning": "Pointwise score: 81.6/100",
                     "pointwise_breakdown": {
-                        "geo": 6.07,
-                        "rating": 20.0,
-                        "iou": 28.5,
+                        "geo": 6.06,
+                        "rating": 15.0,
+                        "iou": 25.5,
                         "boundary": 15.0,
                         "semantic": 20
                     },
                     "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95,
+                        "rating_class": "GOOD",
+                        "predicted_iou": 85,
                         "boundary_score": 75,
+                        "semantic_category": 5,
+                        "semantic_attribute": 5,
+                        "semantic_context": 5,
+                        "semantic_count": 5
+                    },
+                    "pointwise_error": null
+                },
+                {
+                    "hypothesis": "large black handwheel in the center",
+                    "reasoning": "The object in the image is a large, black, three-spoke handwheel. While its primary function is to manually rotate a shaft or mechanism (e.g., to adjust a press or machine), it can be interpreted metaphorically or indirectly as a tool to \"rotate or spin other parts or objects\" by providing the mechanical input for rotation. This is a direct functional match to the query, as turning the wheel directly causes rotational motion in connected components. The wheel is centrally located and dominates the image, making it the most obvious and accurate choice.",
+                    "box": [
+                        19,
+                        36,
+                        1603,
+                        1580
+                    ],
+                    "iou": 0.9114127953552877,
+                    "verifier_rank": 5,
+                    "verifier_score": 79.47,
+                    "verifier_reasoning": "Pointwise score: 79.5/100",
+                    "pointwise_breakdown": {
+                        "geo": 6.07,
+                        "rating": 15.0,
+                        "iou": 24.0,
+                        "boundary": 14.4,
+                        "semantic": 20
+                    },
+                    "pointwise_raw": {
+                        "rating_class": "GOOD",
+                        "predicted_iou": 80,
+                        "boundary_score": 72,
                         "semantic_category": 5,
                         "semantic_attribute": 5,
                         "semantic_context": 5,
