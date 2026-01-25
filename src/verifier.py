@@ -142,15 +142,33 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
         final_results = []
         heuristics = {}
         
+        # MinMax Scale CLIP scores to 0-40 range per batch
+        if clip_scores:
+            c_min = min(clip_scores)
+            c_max = max(clip_scores)
+            if c_max > c_min:
+                scaled_clip = [((s - c_min) / (c_max - c_min)) * 40.0 for s in clip_scores]
+            else:
+                # If all scores are same (e.g. 0 or 100), give middle score or raw scaled?
+                # If all same, ranking doesn't matter from CLIP. Give 20.
+                scaled_clip = [20.0] * n 
+        else:
+            scaled_clip = [0.0] * n
+
         for i, res in enumerate(vlm_results):
             vlm_score = res.get('total_score', 0)
-            clip_score = clip_scores[i]
             
-            # Hybrid Score
-            hybrid_score = (vlm_score * 0.6) + (clip_score * 0.4)
+            # Use scaled CLIP score (0-40)
+            # VLM score is 0-100. We want 60/40 mix.
+            # Normalized Total = (VLM * 0.6) + Scaled_CLIP 
+            # (Note: Scaled_CLIP is already 0-40, so it represents the full 40% weight)
+            
+            clip_val = scaled_clip[i]
+            hybrid_score = (vlm_score * 0.6) + clip_val
             
             res['vlm_score'] = vlm_score
-            res['clip_score'] = round(clip_score, 2)
+            res['clip_score'] = round(clip_val, 2) 
+            res['raw_clip'] = round(clip_scores[i], 2)
             res['total_score'] = round(hybrid_score, 2)
             
             final_results.append(res)
