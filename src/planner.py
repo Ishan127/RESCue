@@ -91,11 +91,9 @@ class Planner:
         
         if self.config.api_base:
             logger.info(f"Initializing Planner with API: {self.config.api_base}")
-            try:
-                self.client = get_planner_client()
-            except Exception as e:
-                logger.error(f"Failed to initialize OpenAI client: {e}")
-                raise e
+            from .api_utils import get_openai_client
+            # Create client explicitly with the configured API base
+            self.client = get_openai_client(base_url=self.config.api_base)
         else:
              logger.error("API base URL not provided. Local inference is removed in this refactor.")
              raise ValueError("API base URL is required.")
@@ -274,48 +272,51 @@ class Planner:
         if len(all_variations) < num_variations:
             all_variations.extend(self._generate_synthetic_variations(
                 original_query, num_variations - len(all_variations)
-            ))
-        
         return all_variations[:num_variations]
     
     def _generate_variation_batch(self, original_query: str, count: int, existing: List[str]) -> List[str]:
-        """Generate a batch of query variations."""
+        """Generate a batch of query variations using guided JSON."""
         existing_note = ""
         if existing:
             existing_note = f"\n\nAlready generated (DO NOT repeat): {existing[:5]}..."
         
-        prompt = f"""Given this image segmentation query: "{original_query}"
+        prompt = f"""Given query: "{original_query}"
+Generate {count} distinct rephrasings or interpretations for object localization.
+Focus on: literal, functional, visual, spatial, and contextual aspects.
+{existing_note}"""
 
-Generate {count} DIFFERENT ways to interpret or rephrase this query for object localization.
-Each variation should focus on a different aspect: literal, functional, visual, spatial, or contextual.
-{existing_note}
-Output ONLY a JSON array of strings:
-["variation 1", "variation 2", ...]"""
+        # JSON schema for a list of strings
+        schema = {
+            "type": "object",
+            "properties": {
+                "variations": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "minItems": count,
+                    "maxItems": count + 2
+                }
+            },
+            "required": ["variations"]
+        }
 
         try:
             completion = self.client.chat.completions.create(
                 model=self.config.model_path,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.8,
-                max_tokens=2048
+                max_tokens=2048,
+                extra_body={
+                    "guided_json": schema,
+                    "guided_decoding_backend": "outlines"
+                }
             )
             
-            text = completion.choices[0].message.content
-            
             import json
-            # Try to find JSON array
-            array_match = re.search(r'\[([^\[\]]*)\]', text, re.DOTALL)
-            if array_match:
-                try:
-                    variations = json.loads(array_match.group())
-                    if isinstance(variations, list):
-                        return [v for v in variations if isinstance(v, str) and v not in existing]
-                except:
-                    pass
+            text = completion.choices[0].message.content
+            data = json.loads(text)
             
-            # Fallback: extract quoted strings
-            quoted = re.findall(r'"([^"]{5,100})"', text)
-            return [q for q in quoted if q not in existing][:count]
+            variations = data.get("variations", [])
+            return [v for v in variations if isinstance(v, str) and v not in existing]
                 
         except Exception as e:
             logger.warning(f"Failed to generate variation batch: {e}")
