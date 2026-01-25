@@ -24,13 +24,15 @@ class ClipVerifier:
         crops_b64 = []
         valid_indices = []
         
-        # Ensure image is PIL
-        if not isinstance(image_input, Image.Image):
-            image_input = Image.fromarray(image_input)
+        # Work with numpy for efficient masking
+        if isinstance(image_input, Image.Image):
+            image_np = np.array(image_input)
+        else:
+            image_np = np.array(image_input)
 
         try:
             for i, mask in enumerate(masks):
-                # Get bbox from mask
+                # Ensure mask is boolean numpy
                 mask_np = np.array(mask) > 0
                 if mask_np.ndim == 3: mask_np = mask_np[:, :, 0]
                 
@@ -51,11 +53,30 @@ class ClipVerifier:
                 xmin = max(0, xmin - pad)
                 xmax = min(w, xmax + pad)
                 
-                crop = image_input.crop((xmin, ymin, xmax, ymax))
+                # Get crops
+                img_crop = image_np[ymin:ymax, xmin:xmax]
+                mask_crop = mask_np[ymin:ymax, xmin:xmax]
+                
+                # Apply mask to image (Black out background)
+                # Create a black background canvas
+                masked_crop = np.zeros_like(img_crop)
+                
+                # Copy pixels where mask is strictly True
+                # Note: mask_crop shape matches img_crop shape (H,W) vs (H,W,3)?
+                # We need broadcasting
+                if mask_crop.shape != img_crop.shape[:2]:
+                    # This implies padding issues if mask wasn't cropped identically
+                    # But index slicing [ymin:ymax] guarantees same shape
+                    pass
+                
+                masked_crop[mask_crop] = img_crop[mask_crop]
+                
+                # Convert to PIL
+                crop_pil = Image.fromarray(masked_crop)
                 
                 # In-memory save to base64
                 buf = io.BytesIO()
-                crop.convert("RGB").save(buf, format="JPEG", quality=90)
+                crop_pil.convert("RGB").save(buf, format="JPEG", quality=90)
                 b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
                 
                 crops_b64.append(b64)
