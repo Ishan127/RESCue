@@ -356,7 +356,7 @@ Focus on: literal, functional, visual, spatial, and contextual aspects.
                  data = {}
 
             if not data and "variations" not in data:
-                 logger.warning(f"Failed to parse JSON from Planner. Raw text: {text[:100]}...")
+                 logger.warning(f"Failed to parse JSON from Planner.\nRaw text:\n{text}\n{'='*20}")
             
             variations = data.get("variations", [])
             return [v for v in variations if isinstance(v, str) and v not in existing]
