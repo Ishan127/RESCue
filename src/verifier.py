@@ -124,22 +124,45 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
         if self.verbose:
             print(f"[Pointwise] Scoring {n} masks independently...")
         
-        # Score all masks in parallel
-        pointwise_results = self._pointwise_score_batch(image_input, masks, query)
+        # 1. Run VLM Scoring (Parallel)
+        vlm_results = self._pointwise_score_batch(image_input, masks, query)
         
-        # Also compute geometric heuristic for tie-breaking
+        # 2. Run CLIP Scoring (Batch)
+        try:
+            if not hasattr(self, 'clip_verifier'):
+                from .clip_verifier import ClipVerifier
+                self.clip_verifier = ClipVerifier()
+            
+            clip_scores = self.clip_verifier.verify_batch(image_input, masks, query)
+        except Exception as e:
+            if self.verbose: print(f"CLIP Error: {e}")
+            clip_scores = [0.0] * n
+
+        # 3. Combine Scores (60% VLM + 40% CLIP)
+        final_results = []
         heuristics = {}
-        for r in pointwise_results:
-            idx = r['mask_idx']
-            heuristics[idx] = self._compute_mask_heuristic(masks[idx])
         
-        # Sort by: (total_score DESC, heuristic DESC, index ASC for stability)
+        for i, res in enumerate(vlm_results):
+            vlm_score = res.get('total_score', 0)
+            clip_score = clip_scores[i]
+            
+            # Hybrid Score
+            hybrid_score = (vlm_score * 0.6) + (clip_score * 0.4)
+            
+            res['vlm_score'] = vlm_score
+            res['clip_score'] = round(clip_score, 2)
+            res['total_score'] = round(hybrid_score, 2)
+            
+            final_results.append(res)
+            heuristics[res['mask_idx']] = self._compute_mask_heuristic(masks[res['mask_idx']])
+        
+        # Sort by: (hybrid_score DESC, heuristic DESC, index ASC)
         sorted_results = sorted(
-            pointwise_results,
+            final_results,
             key=lambda r: (
                 r.get('total_score', 0),
                 heuristics.get(r['mask_idx'], 0),
-                -r['mask_idx']  # Lower index wins ties
+                -r['mask_idx']
             ),
             reverse=True
         )
@@ -151,13 +174,13 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
                 "mask_idx": res['mask_idx'],
                 "rank": rank + 1,
                 "score": res.get('total_score', 0),
-                "reasoning": f"Pointwise score: {res.get('total_score', 0):.1f}/100",
+                "reasoning": f"Hybrid: {res['total_score']} (VLM:{res['vlm_score']} CLIP:{res['clip_score']})",
                 "pointwise_details": res
             })
         
         if self.verbose:
             top3 = [(r['mask_idx'], r['score']) for r in final_ranking[:3]]
-            print(f"[Pointwise] Top 3: {top3}")
+            print(f"[Hybrid] Top 3: {top3}")
         
         return final_ranking
 

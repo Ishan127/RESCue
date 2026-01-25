@@ -31,5 +31,13 @@ def download_models():
     except Exception as e:
         print(f"Error downloading SAM 3: {e}")
 
+    # SigLIP for CLIP verification
+    print("Downloading SigLIP-So400M (CLIP Verifier)...")
+    try:
+        snapshot_download(repo_id="google/siglip-so400m-patch14-384", token=token)
+        print("SigLIP downloaded successfully.")
+    except Exception as e:
+        print(f"Error downloading SigLIP: {e}")
+
 if __name__ == "__main__":
     download_models()
