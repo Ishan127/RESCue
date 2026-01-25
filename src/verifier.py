@@ -316,9 +316,10 @@ Image 1: Candidate A
 Image 2: Candidate B
 
 Which mask is better?
-- Check object identity (is it the right object?)
-- Check boundaries (is it tight?)
-- Check attributes/color
+Think step-by-step:
+1. Analyze Candidate A: Does it cover the object fully? Is it too tight/loose?
+2. Analyze Candidate B: Compare coverage and boundary precision.
+3. Decision: Which one is closer to the ground truth intent?
 
 Output JSON: {{ "winner": "A" or "B", "reason": "short explanation" }}"""
 
@@ -354,9 +355,9 @@ Output JSON: {{ "winner": "A" or "B", "reason": "short explanation" }}"""
                 model=self.model_path,
                 messages=messages,
                 temperature=0.0,
-                max_tokens=256,
+                max_tokens=1024, # Increased for Thinking
                 extra_body={
-                    "chat_template_kwargs": {"enable_thinking": False},
+                    "chat_template_kwargs": {"enable_thinking": True}, # ENABLE SYSTEM 2 THINKING
                     "guided_json": schema,
                     "guided_decoding_backend": "outlines"
                 }
@@ -497,34 +498,30 @@ semantic_attribute (0-5): Attributes match? (color/size/shape - 5=perfect, 3-4=m
 semantic_context (0-5): Context/action matches query? (5=perfect, 3-4=mostly)
 semantic_count (0-5): Correct instance count? (5=exact count)
 
+
 === SCORING GUIDANCE ===
 - If the mask covers the RIGHT object type, semantic_category should be 4-5
 - Only use rating "WRONG" if the mask is on a completely unrelated object
 - Use the full 0-5 range for semantic scores based on specific issues
 - Most masks of the correct object are "GOOD" or "AVERAGE", not "PERFECT"
 
-=== EXAMPLES ===
-Good mask with minor boundary issues:
-{{"rating_class": "GOOD", "predicted_iou": 82, "boundary_score": 75, "semantic_category": 5, "semantic_attribute": 4, "semantic_context": 5, "semantic_count": 5}}
-
-Average mask with some problems:
-{{"rating_class": "AVERAGE", "predicted_iou": 68, "boundary_score": 60, "semantic_category": 5, "semantic_attribute": 3, "semantic_context": 4, "semantic_count": 5}}
-
-Wrong object entirely:
-{{"rating_class": "WRONG", "predicted_iou": 5, "boundary_score": 20, "semantic_category": 0, "semantic_attribute": 0, "semantic_context": 0, "semantic_count": 0}}
-
-Respond with ONLY the JSON, no explanation."""
+Task:
+1. Reason step-by-step about the mask's alignment with the query.
+2. Check for over-segmentation (too large?) or under-segmentation (missing parts?).
+3. Evaluate if it captures the *intended* object versus a distraction.
+4. Output the detailed metrics JSON.
+"""
 
             messages = create_vision_message(prompt, base64_image=b64_img)
             
-            # For vLLM with Qwen3: disable thinking via chat_template_kwargs
+            # For vLLM with Qwen3: Enable thinking for detailed reasoning
             completion = self.client.chat.completions.create(
                 model=self.model_path,
                 messages=messages,
-                temperature=0.1,  # Low temperature for consistent scoring
-                max_tokens=16192,
+                temperature=0.2,  # Slightly higher than 0.0 to allow reasoning flow
+                max_tokens=4096,  # Increased for thinking block
                 extra_body={
-                    "chat_template_kwargs": {"enable_thinking": False},
+                    "chat_template_kwargs": {"enable_thinking": True},
                     "guided_json": scoring_schema,
                     "guided_decoding_backend": "outlines"
                 }
