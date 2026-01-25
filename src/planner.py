@@ -272,6 +272,8 @@ class Planner:
         if len(all_variations) < num_variations:
             all_variations.extend(self._generate_synthetic_variations(
                 original_query, num_variations - len(all_variations)
+            ))
+        
         return all_variations[:num_variations]
     
     def _generate_variation_batch(self, original_query: str, count: int, existing: List[str]) -> List[str]:

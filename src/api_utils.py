@@ -11,7 +11,7 @@ VERIFIER_API_BASE = os.environ.get("VERIFIER_API_BASE", "http://localhost:8000/v
 PLANNER_API_BASE = os.environ.get("PLANNER_API_BASE", "http://localhost:8002/v1")
 
 # Default model paths
-VERIFIER_MODEL = os.environ.get("VERIFIER_MODEL", "Qwen/Qwen3-VL-30B-A3B-Instruct")
+VERIFIER_MODEL = os.environ.get("VERIFIER_MODEL", "Qwen/Qwen3-VL-32B-Thinking")
 PLANNER_MODEL = os.environ.get("PLANNER_MODEL", "Qwen/Qwen3-VL-8B-Instruct")
 
 def encode_image(image_path):
