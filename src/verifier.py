@@ -284,18 +284,21 @@ Rate the mask quality on these 7 metrics:
 6. semantic_context: Does the action/context match the query? (0-5)
 7. semantic_count: Is the instance count correct? (0-5)
 
-Respond with ONLY the JSON object, no other text."""
+Respond with ONLY the JSON object, no other text. Do not explain your reasoning."""
 
             messages = create_vision_message(prompt, tmp_path)
             
-            # Use guided decoding via extra_body for vLLM OpenAI-compatible API
+            # For vLLM with Qwen3, use response_format for structured output
+            # Also add /no_think to disable chain-of-thought reasoning
             completion = self.client.chat.completions.create(
                 model=self.model_path,
                 messages=messages,
                 temperature=0.0,  # Deterministic for consistency
-                max_tokens=200,
+                max_tokens=1024,
                 extra_body={
-                    "guided_json": scoring_schema
+                    "chat_template_kwargs": {"enable_thinking": False},
+                    "guided_json": scoring_schema,
+                    "guided_decoding_backend": "outlines"
                 }
             )
             text = completion.choices[0].message.content.strip()
