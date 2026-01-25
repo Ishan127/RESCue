@@ -17,7 +17,7 @@ app = FastAPI(title="SigLIP Verifier Server")
 MODEL = None
 PROCESSOR = None
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-MODEL_NAME = "google/siglip-so400m-patch14-384"
+MODEL_NAME = "google/siglip2-giant-opt-patch16-384"
 
 class VerifyRequest(BaseModel):
     crops: List[str]  # Base64 encoded images
