@@ -1,40 +1,35 @@
 
-import torch
-from PIL import Image
-from transformers import AutoProcessor, AutoModel
+import io
+import base64
+import requests
 import numpy as np
+import os
+from PIL import Image
 
 class ClipVerifier:
-    def __init__(self, model_name="google/siglip-so400m-patch14-384", device="cuda"):
-        self.device = device if torch.cuda.is_available() else "cpu"
-        print(f"[ClipVerifier] Loading {model_name} on {self.device}...")
-        
-        try:
-            self.model = AutoModel.from_pretrained(model_name).to(self.device).eval()
-            self.processor = AutoProcessor.from_pretrained(model_name)
-            print("[ClipVerifier] Model loaded successfully.")
-        except Exception as e:
-            print(f"[ClipVerifier] Error loading model: {e}")
-            self.model = None
+    def __init__(self, server_url=None):
+        # Default to localhost:8003 if not set
+        self.server_url = server_url or os.environ.get("CLIP_SERVER_URL", "http://localhost:8003/verify")
+        print(f"[ClipVerifier] Initialized Client pointing to {self.server_url}")
 
     def verify_batch(self, image_input, masks, query):
         """
-        Verify a batch of masks against a query using CLIP/SigLIP.
+        Verify a batch of masks against a query using remote CLIP/SigLIP Server.
         Returns a list of scores (0-100).
         """
-        if self.model is None or not masks:
-            return [0.0] * len(masks)
+        if not masks:
+            return []
 
-        # Prepare crops
-        crops = []
+        # Prepare crops locally to minimize data transfer
+        crops_b64 = []
         valid_indices = []
         
         # Ensure image is PIL
         if not isinstance(image_input, Image.Image):
             image_input = Image.fromarray(image_input)
 
-        for i, mask in enumerate(masks):
-            try:
+        try:
+            for i, mask in enumerate(masks):
                 # Get bbox from mask
                 mask_np = np.array(mask) > 0
                 if mask_np.ndim == 3: mask_np = mask_np[:, :, 0]
@@ -57,33 +52,37 @@ class ClipVerifier:
                 xmax = min(w, xmax + pad)
                 
                 crop = image_input.crop((xmin, ymin, xmax, ymax))
-                crops.append(crop)
+                
+                # In-memory save to base64
+                buf = io.BytesIO()
+                crop.convert("RGB").save(buf, format="JPEG", quality=90)
+                b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+                
+                crops_b64.append(b64)
                 valid_indices.append(i)
-            except Exception:
-                continue
-
-        if not crops:
+                
+            if not crops_b64:
+                return [0.0] * len(masks)
+                
+            # Send to Server
+            payload = {
+                "crops": crops_b64,
+                "query": query
+            }
+            
+            response = requests.post(self.server_url, json=payload, timeout=30)
+            if response.status_code == 200:
+                server_scores = response.json()['scores']
+                
+                # Map back to original indices
+                final_scores = [0.0] * len(masks)
+                for valid_idx, score in zip(valid_indices, server_scores):
+                    final_scores[valid_idx] = score
+                return final_scores
+            else:
+                print(f"[ClipVerifier] Server Error: {response.text}")
+                return [0.0] * len(masks)
+                
+        except Exception as e:
+            print(f"[ClipVerifier] Client Error: {e}")
             return [0.0] * len(masks)
-
-        # Encode text
-        # SigLIP expects specific prompt template usually, but raw text works for simple grounding
-        texts = [query] 
-        
-        with torch.no_grad():
-            inputs = self.processor(text=texts, images=crops, padding="max_length", return_tensors="pt").to(self.device)
-            
-            # Get logits
-            outputs = self.model(**inputs)
-            logits_per_image = outputs.logits_per_image # [N_crops, 1_text]
-            probs = torch.sigmoid(logits_per_image).cpu().numpy() # SigLIP uses sigmoid, CLIP uses softmax
-            
-            # If standard CLIP, might need softmax. SigLIP is trained with Sigmoid Loss.
-            # But logits_per_image in Hugging Face implementation might be raw. 
-            # SigLIP logits are bias + scale * dot_product. 
-            # Sigmoid is appropriate.
-            
-        scores = [0.0] * len(masks)
-        for idx, prob in zip(valid_indices, probs):
-            scores[idx] = float(prob[0]) * 100.0
-            
-        return scores
