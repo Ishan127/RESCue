@@ -318,20 +318,43 @@ Focus on: literal, functional, visual, spatial, and contextual aspects.
             import json
             data = {}
             try:
-                data = json.loads(text)
+                # 1. Try standard JSON
+                parsed = json.loads(text)
+                if isinstance(parsed, dict):
+                    data = parsed
             except:
                 try:
+                    # 2. Try json_repair
                     import json_repair
-                    data = json_repair.loads(text)
+                    parsed = json_repair.loads(text)
+                    if isinstance(parsed, dict):
+                        data = parsed
+                    elif isinstance(parsed, list): # Model might just return the list array directly
+                         data = {"variations": parsed}
                 except:
-                    # Fallback regex
-                    match = re.search(r'\{.*\}', text, re.DOTALL)
+                    # 3. Fallback regex for {"variations": [...]}
+                    match = re.search(r'\{.*"variations".*\}', text, re.DOTALL)
                     if match:
                         try:
-                            data = json.loads(match.group())
+                            parsed = json.loads(match.group())
+                            if isinstance(parsed, dict):
+                                data = parsed
                         except:
                             pass
+                    else:
+                        # 4. Fallback regex for just the list [...]
+                        match_list = re.search(r'\[.*\]', text, re.DOTALL)
+                        if match_list:
+                            try:
+                                parsed = json.loads(match_list.group())
+                                if isinstance(parsed, list):
+                                    data = {"variations": parsed}
+                            except:
+                                pass
             
+            if not isinstance(data, dict):
+                 data = {}
+
             if not data and "variations" not in data:
                  logger.warning(f"Failed to parse JSON from Planner. Raw text: {text[:100]}...")
             
