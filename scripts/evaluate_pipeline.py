@@ -46,6 +46,14 @@ from tqdm import tqdm
 from PIL import Image
 import json
 
+import resource
+try:
+    soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+    resource.setrlimit(resource.RLIMIT_NOFILE, (hard, hard))
+    print(f"Increased open file limit from {soft} to {hard}")
+except Exception as e:
+    print(f"Failed to increase file limit: {e}")
+
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from src.planner import Planner
