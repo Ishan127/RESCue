@@ -31,6 +31,9 @@ parser.add_argument("--parallel_requests", type=int, default=8,
                     help="Number of parallel requests to SAM cluster")
 parser.add_argument("--pipeline_depth", type=int, default=3, help="Number of samples to process concurrently")
 parser.add_argument("--mode", choices=["comparative", "heuristic"], default="comparative")
+parser.add_argument("--workers_planner", type=int, default=2)
+parser.add_argument("--workers_executor", type=int, default=4)
+parser.add_argument("--workers_verifier", type=int, default=4)
 args = parser.parse_args()
 
 print(f"Using SAM cluster at {args.executor_url} with {args.parallel_requests} parallel requests")
@@ -93,7 +96,7 @@ class PipelineStage:
             try:
                 task = self.input_queue.get(timeout=1.0)
                 if task is None:  # Poison pill
-                    self.output_queue.put(None)
+                    # Do NOT propagate None here. Coordination is handled by monitor.
                     break
                 
                 task = self.process(task)
@@ -112,6 +115,7 @@ class PlannerStage(PipelineStage):
     
     def __init__(self, input_queue, output_queue, planner_url, max_n):
         super().__init__("Planner", input_queue, output_queue)
+        # Each worker needs its own planner instance for thread safety if not handled internally
         self.planner = Planner(api_base=planner_url)
         self.max_n = max_n
     
@@ -131,20 +135,13 @@ class PlannerStage(PipelineStage):
 
 
 class ExecutorStage(PipelineStage):
-    """Stage 2: Generate masks using SAM cluster (load-balanced).
-    
-    Now uses a single load-balanced endpoint that internally routes to
-    multiple SAM backend instances. This simplifies the interface while
-    allowing high throughput through parallel backends.
-    """
+    """Stage 2: Generate masks using SAM cluster (load-balanced)."""
     
     def __init__(self, input_queue, output_queue, executor_url, parallel_requests=16):
         super().__init__("Executor", input_queue, output_queue)
-        # Single executor pointing to load balancer
+        # Single executor per worker (requests Session is thread-safe, but safer to have separate instances)
         self.executor = Executor(remote_url=executor_url, timeout=300)
-        self.parallel_requests = parallel_requests  # Max concurrent requests to LB
-        print(f"[Executor] Initialized with load balancer at {executor_url}")
-        print(f"[Executor] Will send up to {parallel_requests} parallel requests")
+        self.parallel_requests = parallel_requests
     
     def process(self, task: SampleTask) -> SampleTask:
         if not task.hypotheses:
@@ -152,19 +149,12 @@ class ExecutorStage(PipelineStage):
             task.t_exec_done = time.time()
             return task
         
-        n_hyps = len(task.hypotheses)
-        # print(f"[Executor] Sample {task.sample_idx}: Processing {n_hyps} hypotheses")
-        
         # Load fresh image copy
         image = Image.open(task.temp_img_path).copy()
         
         prompts_list = []
         for hyp in task.hypotheses:
             box = hyp.get("box") or hyp.get("bbox")
-            # Ensure box is [0,1]
-            if box and any(x > 1 for x in box): 
-                 pass 
-
             prompts_list.append({
                 "type": "box",
                 "box": box,
@@ -172,10 +162,8 @@ class ExecutorStage(PipelineStage):
             })
 
         try:
-             # Batch call
              masks = self.executor.segment(image, prompts_list=prompts_list)
              
-             # Map back
              results = []
              for i, (hyp, mask) in enumerate(zip(task.hypotheses, masks)):
                  res = {"hypothesis": hyp, "mask": mask}
@@ -191,30 +179,6 @@ class ExecutorStage(PipelineStage):
 
         task.t_exec_done = time.time()
         return task
-    
-    def _execute_one(self, task, hyp, idx):
-        """Execute single hypothesis through load balancer."""
-        try:
-            # Load fresh image copy
-            image = Image.open(task.temp_img_path).copy()
-            
-            # Extract box and query
-            box = hyp.get("box") or hyp.get("bbox")
-            query = hyp.get("noun_phrase") or hyp.get("query") or task.query
-            
-            # Call executor (routed to any SAM backend)
-            masks = self.executor.execute(image, box, query)
-            
-            if masks and len(masks) > 0:
-                mask = masks[0]
-                result = {"hypothesis": hyp, "mask": mask}
-                if task.gt_mask is not None:
-                    result["iou"] = calculate_iou(mask, task.gt_mask)
-                return result
-        except Exception as e:
-            if idx < 3:
-                print(f"[Executor] Hypothesis {idx} error: {e}")
-        return None
 
 
 class VerifierStage(PipelineStage):
@@ -235,24 +199,17 @@ class VerifierStage(PipelineStage):
         
         try:
             if self.mode == "heuristic":
-                # Quick heuristic ranking
                 scores = [self._heuristic_score(m) for m in masks]
                 task.ranking = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
             else:
-                # Pointwise-only scoring: no tournament, pure score-based ranking
-                # Each mask scored independently on 5 metrics: geo, rating, iou, boundary, semantic
                 results = self.verifier.verify_batch_pointwise(task.image, masks, task.query)
                 
-                # Sort by rank (1 is best)
                 sorted_results = sorted(results, key=lambda r: r['rank'])
                 task.ranking = [r['mask_idx'] for r in sorted_results]
                 
-                # Store full detailed results back into candidates if possible
-                # This allows saving the rich pointwise breakdown into the JSON
                 for res in sorted_results:
                      idx = res['mask_idx']
                      if idx < len(task.candidates):
-                         # Inject the rich reasoning/score back into candidate
                          task.candidates[idx]['verifier_score'] = res['score']
                          task.candidates[idx]['verifier_reasoning'] = res.get('reasoning')
                          if 'pointwise_details' in res:
@@ -290,32 +247,39 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
     
     ds = ds.shuffle(seed=42).select(range(num_samples))
     
-    # Create queues
-    q_input = queue.Queue(maxsize=pipeline_depth * 2)
-    q_planned = queue.Queue(maxsize=pipeline_depth * 2)
-    q_executed = queue.Queue(maxsize=pipeline_depth * 2)
+    # Larger queues for higher throughput
+    queue_size = pipeline_depth * 4
+    q_input = queue.Queue(maxsize=queue_size)
+    q_planned = queue.Queue(maxsize=queue_size)
+    q_executed = queue.Queue(maxsize=queue_size)
     q_output = queue.Queue()
     
-    # Create stages
-    planner_stage = PlannerStage(q_input, q_planned, planner_url, max_n)
-    executor_stage = ExecutorStage(q_planned, q_executed, executor_url, parallel_requests)
-    verifier_stage = VerifierStage(q_executed, q_output, verifier_url, mode)
+    # Init workers
+    planner_workers = []
+    for i in range(args.workers_planner):
+        w = PlannerStage(q_input, q_planned, planner_url, max_n)
+        planner_workers.append(threading.Thread(target=w.run, name=f"Planner-{i}"))
+
+    executor_workers = []
+    for i in range(args.workers_executor):
+        w = ExecutorStage(q_planned, q_executed, executor_url, parallel_requests)
+        executor_workers.append(threading.Thread(target=w.run, name=f"Executor-{i}"))
+
+    verifier_workers = []
+    for i in range(args.workers_verifier):
+        w = VerifierStage(q_executed, q_output, verifier_url, mode)
+        verifier_workers.append(threading.Thread(target=w.run, name=f"Verifier-{i}"))
     
-    # Start stage threads
-    threads = [
-        threading.Thread(target=planner_stage.run, name="Planner"),
-        threading.Thread(target=executor_stage.run, name="Executor"),
-        threading.Thread(target=verifier_stage.run, name="Verifier"),
-    ]
-    
-    for t in threads:
+    all_workers = planner_workers + executor_workers + verifier_workers
+    for t in all_workers:
         t.start()
     
     print(f"\n{'='*70}")
-    print(f"Pipeline Evaluation | Depth={pipeline_depth} | Mode={mode} | Parallel SAM requests={parallel_requests}")
+    print(f"Pipeline Evaluation | Samples={num_samples}")
+    print(f"Workers: Planner={args.workers_planner}, Exec={args.workers_executor}, Verify={args.workers_verifier}")
     print(f"{'='*70}\n")
     
-    # Feed samples into pipeline
+    # Feed samples
     temp_files = []
     
     def feed_samples():
@@ -330,6 +294,7 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
             if gt_mask is not None:
                 gt_mask = np.array(gt_mask) > 0
             
+            # Unique temp file for each sample
             temp_img_path = f"temp_pipeline_{sample_idx}.jpg"
             image.save(temp_img_path)
             temp_files.append(temp_img_path)
@@ -343,13 +308,41 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
             )
             
             q_input.put(task)
-        
-        # Send poison pills
-        q_input.put(None)
     
-    # Start feeder thread
-    feeder = threading.Thread(target=feed_samples, name="Feeder")
-    feeder.start()
+    def monitor_and_shutdown():
+        # 1. Feed inputs
+        feed_samples()
+        
+        # 2. Shutdown Planner (send N pills)
+        for _ in range(args.workers_planner):
+            q_input.put(None)
+        
+        # 3. Wait for planners
+        for t in planner_workers:
+            t.join()
+            
+        # 4. Shutdown Executor
+        for _ in range(args.workers_executor):
+            q_planned.put(None)
+            
+        # 5. Wait for executors
+        for t in executor_workers:
+            t.join()
+            
+        # 6. Shutdown Verifier
+        for _ in range(args.workers_verifier):
+            q_executed.put(None)
+            
+        # 7. Wait for verifiers
+        for t in verifier_workers:
+            t.join()
+            
+        # 8. Signal output loop
+        q_output.put(None)
+
+    # Start monitor thread
+    monitor_thread = threading.Thread(target=monitor_and_shutdown, name="Monitor")
+    monitor_thread.start()
     
     # Collect results
     N_VALUES = [1, 2, 4, 8, 16, 32, 64]
@@ -361,7 +354,7 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
     
     while completed < num_samples:
         try:
-            task = q_output.get(timeout=1200)  # 20 min timeout for high N
+            task = q_output.get(timeout=1200)
             if task is None:
                 break
             
@@ -398,10 +391,8 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
             
             for i, cand in enumerate(task.candidates):
                 hyp = cand.get('hypothesis', {})
-                # Convert numpy types to python native for JSON serialization
                 iou_score = float(cand.get('iou', 0))
                 
-                # Check if box is numpy/tensor
                 box = hyp.get('box')
                 if hasattr(box, 'tolist'):
                     box = box.tolist()
@@ -412,12 +403,9 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
                     'box': box,
                     'iou': iou_score,
                     'verifier_rank': rank_map.get(i, -1),
-                    # NEW: Enrich with hybrid verificaton details
                     'verifier_score': cand.get('verifier_score'),
                     'verifier_reasoning': cand.get('verifier_reasoning'),
-                    'pointwise_breakdown': cand.get('pointwise_details', {}).get('breakdown'),
-                    'pointwise_raw': cand.get('pointwise_details', {}).get('raw_response'),
-                    'pointwise_error': cand.get('pointwise_details', {}).get('error')
+                    # 'pointwise_breakdown': cand.get('pointwise_details', {}).get('breakdown'), # Save space
                 }
                 sample_info['candidates'].append(cand_info)
             
@@ -428,14 +416,9 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
                 if n > len(task.candidates):
                     continue
                 
-                # For N=1: Always use the original query candidate (index 0)
-                # For N>1: Find the best-ranked candidate among the first N candidates
                 if n == 1:
-                    # Original query is always the first hypothesis (index 0)
                     best_idx = 0
                 elif task.ranking:
-                    # Get the best-ranked candidate whose index is in [0, n-1]
-                    # task.ranking is ordered best-first, so first match wins
                     best_idx = next((i for i in task.ranking if i < n), 0)
                 else:
                     best_idx = 0
@@ -453,16 +436,15 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
             break
     
     pbar.close()
-    
-    # Wait for threads
-    feeder.join()
-    for t in threads:
-        t.join(timeout=5)
+    monitor_thread.join()
     
     # Cleanup temp files
     for f in temp_files:
         if os.path.exists(f):
-            os.remove(f)
+            try:
+                os.remove(f)
+            except: 
+                pass
     
     # Print results
     print_results(results_by_n, mode)
