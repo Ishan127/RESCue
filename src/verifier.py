@@ -311,7 +311,7 @@ Respond with ONLY the JSON, no explanation."""
                 model=self.model_path,
                 messages=messages,
                 temperature=0.1,  # Low temperature for consistent scoring
-                max_tokens=2048,
+                max_tokens=16192,
                 extra_body={
                     "chat_template_kwargs": {"enable_thinking": False},
                     "guided_json": scoring_schema,
