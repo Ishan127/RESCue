@@ -380,6 +380,12 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
             sample_info = {
                 'sample_idx': task.sample_idx,
                 'query': task.query,
+                'timings': {
+                    'plan': round(plan_time, 2),
+                    'exec': round(exec_time, 2),
+                    'verify': round(verify_time, 2),
+                    'total': round(total_time, 2)
+                },
                 'candidates': []
             }
             
