@@ -300,6 +300,15 @@ Respond with ONLY the JSON object, no other text."""
             )
             text = completion.choices[0].message.content.strip()
             
+            # Log raw VLM response for debugging
+            import datetime
+            log_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "verifier_vlm_log.txt")
+            with open(log_path, "a", encoding="utf-8") as log_f:
+                log_f.write(f"\n{'='*60}\n")
+                log_f.write(f"Timestamp: {datetime.datetime.now().isoformat()}\n")
+                log_f.write(f"Query: {query}\n")
+                log_f.write(f"Raw VLM Response:\n{text}\n")
+            
             # --- Parse JSON ---
             data = {}
             try:
