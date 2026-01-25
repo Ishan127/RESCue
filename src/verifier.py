@@ -5,7 +5,7 @@ import numpy as np
 import os
 import tempfile
 from PIL import Image, ImageDraw, ImageFont
-from .utils import apply_red_alpha_overlay
+from .utils import apply_red_alpha_overlay, calculate_iou
 from .api_utils import create_vision_message, get_verifier_client, VERIFIER_MODEL, VERIFIER_API_BASE
 
 VERIFIER_VERBOSE = os.environ.get('VERIFIER_VERBOSE', '0') == '1'
@@ -138,37 +138,59 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
             if self.verbose: print(f"CLIP Error: {e}")
             clip_scores = [0.0] * n
 
-        # 3. Combine Scores (60% VLM + 40% CLIP)
+
+        # 3. Compute Consistency Scores (15%)
+        # "Cross-Reasoning Path Agreement": Mean IoU with all other masks
+        consistency_scores = []
+        if n > 1:
+            # We can use a simpler loop for N=64 (4096 checks is instant)
+            for i in range(n):
+                total_iou = 0
+                count = 0
+                for j in range(n):
+                    if i == j: continue
+                    total_iou += calculate_iou(masks[i], masks[j])
+                    count += 1
+                avg_iou = total_iou / count if count > 0 else 0
+                consistency_scores.append(avg_iou)
+        else:
+            consistency_scores = [1.0] * n # Single mask is consistent with itself
+
+        # 4. Combine Scores (50% VLM + 35% CLIP + 15% Consistency)
         final_results = []
         heuristics = {}
         
-        # MinMax Scale CLIP scores to 0-40 range per batch
+        # MinMax Scale CLIP scores to 0-35 range per batch (Was 40, now 35)
         if clip_scores:
             c_min = min(clip_scores)
             c_max = max(clip_scores)
             if c_max > c_min:
-                scaled_clip = [((s - c_min) / (c_max - c_min)) * 40.0 for s in clip_scores]
+                scaled_clip = [((s - c_min) / (c_max - c_min)) * 35.0 for s in clip_scores]
             else:
-                # If all scores are same (e.g. 0 or 100), give middle score or raw scaled?
-                # If all same, ranking doesn't matter from CLIP. Give 20.
-                scaled_clip = [20.0] * n 
+                scaled_clip = [17.5] * n 
         else:
             scaled_clip = [0.0] * n
 
         for i, res in enumerate(vlm_results):
             vlm_score = res.get('total_score', 0)
             
-            # Use scaled CLIP score (0-40)
-            # VLM score is 0-100. We want 60/40 mix.
-            # Normalized Total = (VLM * 0.6) + Scaled_CLIP 
-            # (Note: Scaled_CLIP is already 0-40, so it represents the full 40% weight)
+            # VLM: 50% weight (Scale 0-100 -> 0-50)
+            vlm_val = vlm_score * 0.5
             
+            # CLIP: 35% weight (Already scaled to 0-35)
             clip_val = scaled_clip[i]
-            hybrid_score = (vlm_score * 0.6) + clip_val
+            
+            # Consistency: 15% weight (Scale 0-1 -> 0-15)
+            cons_val = consistency_scores[i] * 15.0
+            
+            hybrid_score = vlm_val + clip_val + cons_val
             
             res['vlm_score'] = vlm_score
-            res['clip_score'] = round(clip_val, 2) 
-            res['raw_clip'] = round(clip_scores[i], 2)
+            res['vlm_contrib'] = round(vlm_val, 2)
+            res['clip_score'] = round(clip_scores[i], 2)
+            res['clip_contrib'] = round(clip_val, 2)
+            res['cons_score'] = round(consistency_scores[i], 2)
+            res['cons_contrib'] = round(cons_val, 2)
             res['total_score'] = round(hybrid_score, 2)
             
             final_results.append(res)
@@ -192,15 +214,163 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
                 "mask_idx": res['mask_idx'],
                 "rank": rank + 1,
                 "score": res.get('total_score', 0),
-                "reasoning": f"Hybrid: {res['total_score']} (VLM:{res['vlm_score']} CLIP:{res['clip_score']})",
+                "reasoning": f"Hybrid: {res['total_score']} (VLM:{res['vlm_score']} CLIP:{res['clip_score']} Cons:{res['cons_score']})",
                 "pointwise_details": res
             })
-        
+            
+        # --- Pyramid Tournament Refinement ---
+        # "N=1 we have direct pick. N=2 we ask LLM... N=4 we compare winner with top scorer of remaining 2..."
+        # Strategy: Compare Current Winner vs Ranked Candidate at indices 1, 2, 4, 8, 16, 32...
+        if n > 1:
+            try:
+                final_ranking = self._pyramid_tournament(image_input, masks, query, final_ranking)
+            except Exception as e:
+                print(f"Tournament failed: {e}")
+
         if self.verbose:
             top3 = [(r['mask_idx'], r['score']) for r in final_ranking[:3]]
-            print(f"[Hybrid] Top 3: {top3}")
+            print(f"[Tournament] Final Top 3: {top3}")
         
         return final_ranking
+
+    def _pyramid_tournament(self, image, masks, query, ranking):
+        """
+        Iteratively challenge the top candidate against the leader of the next block.
+        Indices to challenge: 1, 2, 4, 8, 16...
+        """
+        current_winner_idx = 0  # Index in the 'ranking' list
+        winner_res = ranking[0]
+        
+        challenges = []
+        step = 1
+        while step < len(ranking):
+            challenges.append(step)
+            step *= 2
+            
+        if self.verbose:
+            print(f"[Tournament] Challenges at indices: {challenges}")
+
+        for challenger_rank_idx in challenges:
+            if challenger_rank_idx >= len(ranking):
+                break
+                
+            challenger_res = ranking[challenger_rank_idx]
+            
+            # Perform Duel: Winner vs Challenger
+            # Mask indices are in res['mask_idx']
+            wa_idx = winner_res['mask_idx']
+            wb_idx = challenger_res['mask_idx']
+            
+            if self.verbose:
+                print(f"[Duel] {wa_idx} (Score {winner_res['score']}) vs {wb_idx} (Score {challenger_res['score']})")
+
+            winner_is_a = self._compare_pair(image, masks[wa_idx], masks[wb_idx], query)
+            
+            if winner_is_a:
+                # Winner stays, challenger loses
+                pass
+            else:
+                # Challenger becomes new winner
+                if self.verbose:
+                    print(f"-> Challenger {wb_idx} WON!")
+                winner_res = challenger_res
+                current_winner_idx = challenger_rank_idx
+        
+        # Move the final winner to the top of the list
+        if current_winner_idx != 0:
+            ranking.pop(current_winner_idx)
+            ranking.insert(0, winner_res)
+            # Re-assign ranks
+            for i, r in enumerate(ranking):
+                r['rank'] = i + 1
+                
+        return ranking
+
+    def _compare_pair(self, image, mask_a, mask_b, query):
+        """
+        Pairwise VLM comparison. Returns True if A is better, False if B is better.
+        """
+        try:
+            # Prepare composite images
+            # Red overlay for both? Or maybe Red vs Blue?
+            # User said "put them in a single prompt". 
+            # Safest is showing two separate images to VLM.
+            
+            img_a = apply_red_alpha_overlay(image, mask_a, alpha=0.5, black_background=True)
+            img_b = apply_red_alpha_overlay(image, mask_b, alpha=0.5, black_background=True)
+            
+            import io
+            import base64
+            
+            def to_b64(img):
+                buf = io.BytesIO()
+                img.convert('RGB').save(buf, format="JPEG", quality=85)
+                return base64.b64encode(buf.getvalue()).decode('utf-8')
+
+            b64_a = to_b64(img_a)
+            b64_b = to_b64(img_b)
+            
+            prompt = f"""Compare these two segmentation masks for the query: "{query}"
+
+Image 1: Candidate A
+Image 2: Candidate B
+
+Which mask is better?
+- Check object identity (is it the right object?)
+- Check boundaries (is it tight?)
+- Check attributes/color
+
+Output JSON: {{ "winner": "A" or "B", "reason": "short explanation" }}"""
+
+            # Construct message with 2 images
+            messages = [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:image/jpeg;base64,{b64_a}"}
+                        },
+                        {
+                            "type": "image_url", 
+                            "image_url": {"url": f"data:image/jpeg;base64,{b64_b}"}
+                        }
+                    ]
+                }
+            ]
+            
+            # Schema
+            schema = {
+                "type": "object",
+                "properties": {
+                    "winner": {"type": "string", "enum": ["A", "B"]},
+                    "reason": {"type": "string"}
+                },
+                "required": ["winner"]
+            }
+            
+            completion = self.client.chat.completions.create(
+                model=self.model_path,
+                messages=messages,
+                temperature=0.0,
+                max_tokens=256,
+                extra_body={
+                    "chat_template_kwargs": {"enable_thinking": False},
+                    "guided_json": schema,
+                    "guided_decoding_backend": "outlines"
+                }
+            )
+            
+            text = completion.choices[0].message.content.strip()
+            if '"winner": "B"' in text or "'winner': 'B'" in text:
+                return False
+            return True # Default to A (current winner) if unclear
+            
+        except Exception as e:
+            if self.verbose:
+                print(f"Duel Error: {e}")
+            return True # Conservative: keep current winner
 
     def _pointwise_score_batch(self, image, masks, query):
         """
@@ -249,7 +419,7 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
         # Prepare VLM Input
         import io
         import base64
-        overlay = apply_red_alpha_overlay(image, mask, alpha=0.5)
+        overlay = apply_red_alpha_overlay(image, mask, alpha=0.5, black_background=True)
         
         # Optimize: Save to memory instead of disk
         buffer = io.BytesIO()

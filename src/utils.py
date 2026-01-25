@@ -28,7 +28,7 @@ def load_image(image_path):
             raise
     return Image.open(image_path).convert("RGB")
 
-def apply_red_alpha_overlay(image, mask, alpha=0.5):
+def apply_red_alpha_overlay(image, mask, alpha=0.5, black_background=False):
     if isinstance(image, Image.Image):
         image = np.array(image)
         
@@ -58,6 +58,7 @@ def apply_red_alpha_overlay(image, mask, alpha=0.5):
 
     overlay = image.copy()
     
+    # Apply Red Overlay
     overlay[:, :, 0] = np.where(mask, 
                                (1 - alpha) * image[:, :, 0] + alpha * 255, 
                                image[:, :, 0]).astype(np.uint8)
@@ -69,6 +70,12 @@ def apply_red_alpha_overlay(image, mask, alpha=0.5):
     overlay[:, :, 2] = np.where(mask, 
                                (1 - alpha) * image[:, :, 2], 
                                image[:, :, 2]).astype(np.uint8)
+    
+    # Mask out background if requested
+    if black_background:
+        # Broadcasting mask (H,W) to (H,W,3)
+        # Or easier: just zero out
+        overlay[~mask] = 0
                                
     return Image.fromarray(overlay)
 
