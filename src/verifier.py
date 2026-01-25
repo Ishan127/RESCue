@@ -257,44 +257,74 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
         }
             
         try:
-            prompt = f"""You are evaluating a segmentation mask for the query: "{query}"
+            # Comprehensive prompt with JSON example and detailed scoring rubrics
+            prompt = f"""/no_think
+You are a segmentation quality evaluator. The RED highlighted region in the image is a proposed segmentation mask for the query: "{query}"
 
-The RED highlighted region in this image is the proposed segmentation mask.
+Your task: Evaluate how well this RED mask matches the query requirements. Output ONLY a JSON object.
 
-Rate the mask quality on these 7 metrics:
+=== SCORING METRICS ===
 
-1. rating_class: How well does the mask match the query?
-   - PERFECT: Exactly correct object with tight boundaries
-   - GOOD: Correct object with minor boundary issues
-   - AVERAGE: Mostly correct but noticeable problems
-   - BAD: Significant issues, wrong parts included
-   - WRONG: Completely incorrect object
+1. rating_class (string): Overall quality assessment
+   - "PERFECT": Mask covers exactly the correct object with pixel-accurate boundaries. Very rare - only for exceptional masks.
+   - "GOOD": Correct object selected, boundaries are mostly accurate with minor imperfections. Most good masks fall here.
+   - "AVERAGE": Right general area/object but noticeable issues (boundary bleeds, includes wrong parts, slightly off).
+   - "BAD": Significant problems - wrong parts included, major boundary errors, or partially incorrect object.
+   - "WRONG": Completely incorrect object selected, does not match the query at all.
 
-2. predicted_iou: Estimated overlap with ground truth (0-100%)
+2. predicted_iou (integer 0-100): Estimated Intersection-over-Union with the ideal ground truth mask
+   - 90-100: Near-perfect overlap (extremely rare)
+   - 75-89: Good overlap with minor differences
+   - 50-74: Moderate overlap, noticeable discrepancies
+   - 25-49: Poor overlap, significant mismatch
+   - 0-24: Very poor or no meaningful overlap
 
-3. boundary_score: Edge quality (0-100%)
-   - 100: Pixel-perfect boundaries
-   - 75: Minor imperfections
-   - 50: Noticeable boundary issues
-   - 25: Poor boundaries
-   - 0: Very bad boundaries
+3. boundary_score (integer 0-100): How well the mask edges follow the object contours
+   - 90-100: Pixel-perfect edges following exact object boundaries (rare)
+   - 70-89: Clean edges with minor imperfections
+   - 50-69: Visible boundary issues - jagged edges, bleeding into background
+   - 25-49: Poor boundaries - significant edge errors
+   - 0-24: Very poor boundaries - mask edges don't follow object at all
 
-4. semantic_category: Is this the correct object class? (0-5)
-5. semantic_attribute: Do color/shape/size match? (0-5)
-6. semantic_context: Does the action/context match the query? (0-5)
-7. semantic_count: Is the instance count correct? (0-5)
+4. semantic_category (integer 0-5): Does the mask cover the correct object TYPE/CLASS?
+   - 5: Exactly the right object category (e.g., query asks for "dog", mask covers a dog)
+   - 3-4: Closely related category (e.g., query asks for "vehicle", mask covers a car)
+   - 1-2: Loosely related (e.g., query asks for "animal", mask covers part of an animal)
+   - 0: Wrong category entirely
 
-Respond with ONLY the JSON object, no other text. Do not explain your reasoning."""
+5. semantic_attribute (integer 0-5): Do the object's visual attributes match the query description?
+   - 5: Color, shape, size, texture all match the query description perfectly
+   - 3-4: Most attributes match, minor discrepancies
+   - 1-2: Some attributes match but obvious mismatches exist
+   - 0: Attributes don't match at all (e.g., query says "red car" but mask is on blue car)
+
+6. semantic_context (integer 0-5): Does the mask match the ACTION or CONTEXT in the query?
+   - 5: Perfect contextual match (e.g., "person running" - mask is on a running person)
+   - 3-4: Context mostly matches
+   - 1-2: Weak contextual alignment
+   - 0: Context mismatch (e.g., "person sitting" but mask is on standing person)
+
+7. semantic_count (integer 0-5): Is the correct NUMBER of instances masked?
+   - 5: Exactly the right number of instances (e.g., query asks for "a bird", mask covers exactly one bird)
+   - 3-4: Close but not exact (e.g., covers 2 when 1 was requested)
+   - 1-2: Significant count mismatch
+   - 0: Completely wrong count
+
+=== EXAMPLE OUTPUT ===
+{{"rating_class": "GOOD", "predicted_iou": 78, "boundary_score": 72, "semantic_category": 5, "semantic_attribute": 4, "semantic_context": 5, "semantic_count": 5}}
+
+=== IMPORTANT ===
+Be CRITICAL and use the full range of scores. Most masks have flaws - look for them!
+Respond with ONLY the JSON object, no explanation."""
 
             messages = create_vision_message(prompt, tmp_path)
             
-            # For vLLM with Qwen3, use response_format for structured output
-            # Also add /no_think to disable chain-of-thought reasoning
+            # For vLLM with Qwen3: disable thinking via chat_template_kwargs
             completion = self.client.chat.completions.create(
                 model=self.model_path,
                 messages=messages,
-                temperature=0.0,  # Deterministic for consistency
-                max_tokens=1024,
+                temperature=0.3,  # Slight randomness for variation
+                max_tokens=2048,  # Increased for comprehensive output
                 extra_body={
                     "chat_template_kwargs": {"enable_thinking": False},
                     "guided_json": scoring_schema,
