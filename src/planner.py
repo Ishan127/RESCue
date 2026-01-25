@@ -282,10 +282,22 @@ class Planner:
         if existing:
             existing_note = f"\n\nAlready generated (DO NOT repeat): {existing[:5]}..."
         
-        prompt = f"""Given query: "{original_query}"
-Generate {count} distinct rephrasings or interpretations for object localization.
-Focus on: literal, functional, visual, spatial, and contextual aspects.
-{existing_note}"""
+        prompt = f"""You are a query variation generator.
+Original Query: "{original_query}"
+
+Task: Generate {count} distinct rephrasings for object localization.
+- Variations must be short phrases, not questions.
+- Types: Literal, Functional ("object used for..."), Visual ("red object..."), Spatial ("object in corner...").
+{existing_note}
+
+Output ONLY a JSON object with this exact format:
+{{
+  "variations": [
+    "variation 1",
+    "variation 2",
+    ...
+  ]
+}}"""
 
         # JSON schema for a list of strings
         schema = {
