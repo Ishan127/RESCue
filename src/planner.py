@@ -104,7 +104,11 @@ class Planner:
         
         base_temp = temperature if temperature is not None else self.config.base_temperature
         
-        query_configs = self._generate_query_configs(query, N, base_temp)
+        # Over-generate by 25% to allow for selection filtering
+        target_count = int(N * 1.25)
+        if target_count < N + 2: target_count = N + 2 # Ensure at least some selection buffer
+        
+        query_configs = self._generate_query_configs(query, target_count, base_temp)
         
         candidates: List[Hypothesis] = []
         
@@ -180,8 +184,8 @@ class Planner:
         from concurrent.futures import ThreadPoolExecutor, as_completed
         
         candidates = []
-        # Use more workers since planner has max-num-seqs=64 now
-        max_workers = min(32, len(query_configs))
+        # Use more workers since planner has max-num-seqs=512 now
+        max_workers = min(128, len(query_configs))
         
         def generate_one(config):
             try:
@@ -259,7 +263,7 @@ class Planner:
     def _generate_query_variations(self, original_query: str, num_variations: int) -> List[str]:
         """Generate query variations in batches for reliability."""
         all_variations = []
-        batch_size = 10  # Generate 10 at a time
+        batch_size = 50  # Increased from 10 to 50 for N=256 scaling
         
         while len(all_variations) < num_variations:
             needed = min(batch_size, num_variations - len(all_variations))
@@ -318,7 +322,7 @@ Output ONLY a JSON object with this exact format:
                 model=self.config.model_path,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.8,
-                max_tokens=2048,
+                max_tokens=2048*16,
                 extra_body={
                     "guided_json": schema,
                     "guided_decoding_backend": "outlines"
@@ -438,7 +442,34 @@ Output ONLY a JSON object with this exact format:
             f"side of {target}",
             f"edge of {target}",
             f"corner of {target}",
-        ]
+            f"a red {target}", f"a blue {target}", f"a green {target}", f"a black {target}", f"a white {target}",
+            f"a large {target}", f"a small {target}", f"a medium {target}", f"a tiny {target}", f"a huge {target}",
+            f"the {target} on top", f"the {target} below", f"the {target} next to something",
+            f"a distinct {target}", f"a clear {target}", f"a blurry {target}",
+            f"the {target} in focus", f"the {target} out of focus",
+            f"a horizontal {target}", f"a vertical {target}",
+            f"the {target} facing left", f"the {target} facing right",
+            f"the {target} facing forward", f"the {target} facing back",
+            f"a {target} near the edge", f"a {target} in the middle",
+            f"a {target} filling the frame", f"a {target} partially hidden",
+            f"the best view of {target}", f"the worst view of {target}",
+            f"a candidate {target}", f"a hypothesis for {target}",
+            f"region likely containing {target}", f"area with {target}",
+            f"bounding box for {target}", f"location of {target}",
+            f"position of {target}", f"coordinates of {target}",
+            f"the {target} you are looking for", f"the asked {target}",
+            f"target: {target}", f"query match: {target}",
+            f"visual match for {target}", f"semantic match for {target}",
+            f"spatial match for {target}", f"contextual match for {target}",
+            f"the primary {target}", f"the secondary {target}",
+            f"another {target}", f"different {target}",
+            f"similar to {target}", f"related to {target}",
+            f"associated with {target}", f"connected to {target}",
+            f"the {target} itself", f"just the {target}",
+            f"only the {target}", f"all of the {target}",
+             ] + [f"variant {i} of {target}" for i in range(50)] + [
+             f"hypothesis {i} for {original_query}" for i in range(50)
+             ]
         
         import random
         random.shuffle(templates)

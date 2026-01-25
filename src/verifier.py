@@ -394,7 +394,7 @@ Output JSON: {{ "winner": "A" or "B", "reason": "short explanation" }}"""
         from concurrent.futures import ThreadPoolExecutor, as_completed
         
         results = []
-        with ThreadPoolExecutor(max_workers=32) as executor:
+        with ThreadPoolExecutor(max_workers=128) as executor:
             future_to_idx = {
                 executor.submit(self._score_single_composite, image, mask, query): i 
                 for i, mask in enumerate(masks)
