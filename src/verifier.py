@@ -313,22 +313,29 @@ Respond with ONLY the JSON object, no other text. Do not explain your reasoning.
                 log_f.write(f"Raw VLM Response:\n{text}\n")
             
             # --- Parse JSON ---
+            # Strip Qwen3's <think>...</think> block if present
+            json_text = text
+            if '</think>' in text:
+                json_text = text.split('</think>')[-1].strip()
+            elif '</reasoning>' in text.lower():
+                json_text = text.split('</reasoning>')[-1].strip()
+            
             data = {}
             try:
                 try:
-                    parsed = json_repair.loads(text)
+                    parsed = json_repair.loads(json_text)
                     if isinstance(parsed, dict):
                         data = parsed
                     elif isinstance(parsed, str):
                         if self.verbose:
                             print(f"json_repair returned string, using regex fallback")
-                        json_match = re.search(r'\{[\s\S]*\}', parsed)
+                        json_match = re.search(r'\{[^{}]*\}', parsed)
                         if json_match:
                             data = json.loads(json_match.group(0))
                 except ImportError:
                     if self.verbose:
                         print("json_repair not found, using regex fallback")
-                    json_match = re.search(r'\{[\s\S]*\}', text)
+                    json_match = re.search(r'\{[^{}]*\}', json_text)
                     if json_match:
                         data = json.loads(json_match.group(0))
             except Exception as e:

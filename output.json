@@ -1,1248 +1,1238 @@
 {
-    "metrics": {
-        "1": {
-            "mean_iou": 0.3286350601628654,
-            "mean_oracle": 0.3286350601628654,
-            "mean_time": 30.579526662826538,
-            "num_samples": 6
-        },
-        "2": {
-            "mean_iou": 0.33086856809820536,
-            "mean_oracle": 0.33096608211052964,
-            "mean_time": 30.579526662826538,
-            "num_samples": 6
-        },
-        "4": {
-            "mean_iou": 0.330591495243184,
-            "mean_oracle": 0.3312411522507141,
-            "mean_time": 30.579526662826538,
-            "num_samples": 6
-        },
-        "8": {
-            "mean_iou": 0.29281684848172934,
-            "mean_oracle": 0.3316134509496372,
-            "mean_time": 30.579526662826538,
-            "num_samples": 6
-        }
+  "metrics": {
+    "1": {
+      "mean_iou": 0.32705611920725747,
+      "mean_oracle": 0.32705611920725747,
+      "mean_time": 30.988826990127563,
+      "num_samples": 6
     },
-    "samples": [
+    "2": {
+      "mean_iou": 0.32705591885536794,
+      "mean_oracle": 0.3271404547229202,
+      "mean_time": 30.988826990127563,
+      "num_samples": 6
+    },
+    "4": {
+      "mean_iou": 0.29350103263193794,
+      "mean_oracle": 0.3276897220348783,
+      "mean_time": 30.988826990127563,
+      "num_samples": 6
+    },
+    "8": {
+      "mean_iou": 0.2950477507896752,
+      "mean_oracle": 0.33195639882445954,
+      "mean_time": 30.988826990127563,
+      "num_samples": 6
+    }
+  },
+  "samples": [
+    {
+      "sample_idx": 0,
+      "query": "In a television studio, various equipment is used to capture and record video footage. What in the picture could be used to stabilize and hold the camera steady during filming?",
+      "candidates": [
         {
-            "sample_idx": 0,
-            "query": "In a television studio, various equipment is used to capture and record video footage. What in the picture could be used to stabilize and hold the camera steady during filming?",
-            "candidates": [
-                {
-                    "hypothesis": "black tripod supporting the camera",
-                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. The most direct answer is the tripod the camera is mounted on. However, following the instruction to consider indirect or metaphorical interpretations, one could argue that the woman's hands gripping the camera's handles and the camera's mounting plate also contribute to stabilization. But the tripod is the primary and most literal stabilizing device. Since the instruction requires an alternative interpretation, I interpret \"hold the camera steady\" as the entire support structure, which is the tripod. The tripod is black, has three legs, and is positioned centrally under the camera. The bounding box should encompass the entire tripod structure.",
-                    "box": [
-                        1624,
-                        1078,
-                        2436,
-                        2573
-                    ],
-                    "iou": 0.755584644068747,
-                    "verifier_rank": 5,
-                    "verifier_score": 53.97,
-                    "verifier_reasoning": "Pointwise score: 54.0/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.47,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "black tripod holding a camera",
-                    "reasoning": "The scene is an indoor television studio or event space, as indicated by the professional camera setup and the presence of a camera operator. In this context, the object used to stabilize and hold the camera steady is a tripod. The tripod is black, has three legs, and is positioned directly under the camera. The camera is mounted on the tripod head, and the operator is adjusting it. This matches the query perfectly.",
-                    "box": [
-                        1631,
-                        1065,
-                        2425,
-                        2573
-                    ],
-                    "iou": 0.756669246691206,
-                    "verifier_rank": 3,
-                    "verifier_score": 53.98,
-                    "verifier_reasoning": "Pointwise score: 54.0/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.48,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "black tripod holding the camera steady",
-                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. The object directly matching this is the tripod on which the camera is mounted. The tripod is black, has three legs, and is positioned under the camera to provide stability. The operator is holding the camera mount, which is attached to the tripod head, confirming its use for stabilization. This is the most relevant match as no other object in the image serves this purpose.",
-                    "box": [
-                        1627,
-                        1062,
-                        2439,
-                        2573
-                    ],
-                    "iou": 0.7557645249248409,
-                    "verifier_rank": 1,
-                    "verifier_score": 53.98,
-                    "verifier_reasoning": "Pointwise score: 54.0/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.48,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "black tripod holding the camera steady",
-                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. In the image, the camera is mounted on a three-legged stand, which is a tripod. The tripod is black and positioned under the camera, providing stability. The operator is holding the camera's handle, but the tripod is the primary device for stabilization. The tripod is a whole object, not a part of something larger in this context.",
-                    "box": [
-                        1620,
-                        1072,
-                        2425,
-                        2573
-                    ],
-                    "iou": 0.7569242206142511,
-                    "verifier_rank": 4,
-                    "verifier_score": 53.97,
-                    "verifier_reasoning": "Pointwise score: 54.0/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.47,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "black tripod supporting the camera in the foreground",
-                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. In the image, the camera is mounted on a black tripod, which is positioned in the foreground and center. The tripod's legs are visible supporting the camera rig, and the camera is attached to the tripod head. This is the standard equipment used to stabilize a camera during filming. The tripod is partially obscured by the operator's body but is clearly identifiable.",
-                    "box": [
-                        1624,
-                        1060,
-                        2439,
-                        2573
-                    ],
-                    "iou": 0.7559498952510916,
-                    "verifier_rank": 0,
-                    "verifier_score": 53.98,
-                    "verifier_reasoning": "Pointwise score: 54.0/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.48,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "black tripod supporting the camera",
-                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. The object serving this purpose is the tripod, which is black, has three legs, and is positioned under the camera. The camera is mounted on the tripod head, which allows for stable positioning and adjustment.",
-                    "box": [
-                        1634,
-                        1096,
-                        2425,
-                        2573
-                    ],
-                    "iou": 0.7529862139603197,
-                    "verifier_rank": 7,
-                    "verifier_score": 53.97,
-                    "verifier_reasoning": "Pointwise score: 54.0/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.47,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "black tripod supporting the camera",
-                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. The most literal and obvious object in the image serving this purpose is the tripod, which is directly supporting the camera. The tripod is black, has three legs, and is positioned under the camera mount. The operator is holding the camera mount, but the tripod is the device designed to stabilize and hold the camera steady. Other objects like the microphone or the woman's headphones are not used for stabilization.",
-                    "box": [
-                        1627,
-                        1080,
-                        2428,
-                        2573
-                    ],
-                    "iou": 0.7561916625728121,
-                    "verifier_rank": 6,
-                    "verifier_score": 53.97,
-                    "verifier_reasoning": "Pointwise score: 54.0/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.47,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "black tripod supporting the camera",
-                    "reasoning": "The query asks for equipment to stabilize and hold the camera steady. The visual attributes of such equipment are typically a tall, three-legged stand (tripod) with a mounting head. In the image, there is a black tripod positioned under the camera, with its legs spread out for stability and a mounting plate holding the camera. The operator is holding the camera mount, which is attached to the tripod, indicating its function in stabilizing the camera. This matches the description perfectly.",
-                    "box": [
-                        1627,
-                        1065,
-                        2425,
-                        2573
-                    ],
-                    "iou": 0.7566357967946462,
-                    "verifier_rank": 2,
-                    "verifier_score": 53.98,
-                    "verifier_reasoning": "Pointwise score: 54.0/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.48,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95
-                    },
-                    "pointwise_error": null
-                }
-            ]
+          "hypothesis": "black tripod supporting the camera",
+          "reasoning": "The query asks for equipment to stabilize and hold the camera steady. In the image, the camera is mounted on a three-legged stand, which is a tripod. The tripod is black and positioned directly under the camera, providing a stable base. The operator is holding the camera's handle, but the tripod is the primary equipment for stabilization. Step 1: The query refers to a part of a larger system (the camera setup), but the tripod is the key stabilizing component. Step 2: The tripod is a whole object, not a container. Step 3: The bounding box should encompass the entire tripod structure.",
+          "box": [
+            1631,
+            1029,
+            2428,
+            2573
+          ],
+          "iou": 0.7576720553307377,
+          "verifier_rank": 0,
+          "verifier_score": 53.98,
+          "verifier_reasoning": "Pointwise score: 54.0/100",
+          "pointwise_breakdown": {
+            "geo": 5.48,
+            "rating": 20.0,
+            "iou": 28.5,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "rating_class": "PERFECT",
+            "predicted_iou": 95
+          },
+          "pointwise_error": null
         },
         {
-            "sample_idx": 1,
-            "query": "When the wind blows, small white objects are blown away and scattered in the air. What in the picture is responsible for this phenomenon?",
-            "candidates": [
-                {
-                    "hypothesis": "white fluffy dandelion head in the center",
-                    "reasoning": "The query describes small white objects being blown away and scattered in the air by the wind. While the dandelion head itself is white and fluffy, the phenomenon described is the dispersal of its seeds. The seeds are the actual small white objects that detach and are carried by the wind. The dandelion head is the structure from which these seeds are released. The most direct object responsible for the phenomenon is the dandelion head, as it contains and releases the seeds. However, the query asks for the object responsible for the phenomenon, which is the dandelion head, since it's the source of the seeds. There is no need for an indirect or metaphorical interpretation here; the dandelion head is the literal cause. The small white objects are the seeds, which are part of the dandelion head structure. The bounding box should encompass the entire dandelion head, as it is the source of the dispersal.",
-                    "box": [
-                        257,
-                        102,
-                        595,
-                        382
-                    ],
-                    "iou": 0.07724947100905723,
-                    "verifier_rank": 4,
-                    "verifier_score": 10.19,
-                    "verifier_reasoning": "Pointwise score: 10.2/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.19,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {},
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "white spherical dandelion seed head with feathery seeds",
-                    "reasoning": "The scene is an outdoor natural setting, specifically a close-up of a plant in a grassy field. The query describes small white objects being blown away and scattered in the air, which is characteristic of a dandelion seed head (also known as a dandelion clock). The image shows a fully mature dandelion seed head, which consists of many tiny white seeds attached to feathery parachutes. When the wind blows, these seeds detach and are carried away, matching the description perfectly. The object is centrally located in the image.",
-                    "box": [
-                        256,
-                        88,
-                        590,
-                        393
-                    ],
-                    "iou": 0.08954670144354004,
-                    "verifier_rank": 0,
-                    "verifier_score": 10.21,
-                    "verifier_reasoning": "Pointwise score: 10.2/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.21,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {},
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "white dandelion seed head in the center",
-                    "reasoning": "The query describes small white objects being blown away and scattered in the air by the wind. The image shows a dandelion seed head, which consists of many tiny white seeds attached to feathery parachutes. When the wind blows, these seeds detach and are carried away, perfectly matching the description. The dandelion is the source of these scattered white objects.",
-                    "box": [
-                        256,
-                        92,
-                        590,
-                        393
-                    ],
-                    "iou": 0.08725134605420262,
-                    "verifier_rank": 2,
-                    "verifier_score": 10.2,
-                    "verifier_reasoning": "Pointwise score: 10.2/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.2,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "predicted_iou": 0
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "white dandelion seed head in the center",
-                    "reasoning": "The query describes small white objects being blown away and scattered in the air by the wind. The image shows a dandelion seed head, which consists of many tiny white seeds attached to feathery parachutes. These seeds are easily dispersed by the wind, matching the description perfectly. The main dandelion head is located in the center of the image, surrounded by green grass. The phenomenon described is caused by the dandelion's seeds.",
-                    "box": [
-                        260,
-                        93,
-                        591,
-                        398
-                    ],
-                    "iou": 0.0833389903378363,
-                    "verifier_rank": 6,
-                    "verifier_score": 10.18,
-                    "verifier_reasoning": "Pointwise score: 10.2/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.18,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "predicted_iou": 0
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "white spherical dandelion seed head in the center",
-                    "reasoning": "The query describes small white objects being blown away and scattered in the air by the wind. This is a characteristic feature of the dandelion seed head (also called a dandelion clock). The fluffy white structures are actually seeds with parachute-like structures (pappus) designed for wind dispersal. The image shows a mature dandelion seed head, which is the source of these seeds. The phenomenon described is directly caused by this plant structure.",
-                    "box": [
-                        262,
-                        94,
-                        588,
-                        392
-                    ],
-                    "iou": 0.08369999208243319,
-                    "verifier_rank": 5,
-                    "verifier_score": 10.18,
-                    "verifier_reasoning": "Pointwise score: 10.2/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.18,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {},
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "white fluffy dandelion seed head",
-                    "reasoning": "The query describes small white objects being blown away and scattered in the air when the wind blows. This is characteristic of a dandelion seed head, where each seed is attached to a feathery parachute that allows it to be carried by the wind. The image shows a mature dandelion seed head, which is the source of these small white objects. The query does not refer to a part of something larger, nor is it a container; it describes the whole object responsible for the phenomenon. The object is the white, fluffy seed head.",
-                    "box": [
-                        256,
-                        97,
-                        588,
-                        395
-                    ],
-                    "iou": 0.07899824749844536,
-                    "verifier_rank": 7,
-                    "verifier_score": 10.17,
-                    "verifier_reasoning": "Pointwise score: 10.2/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.17,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {},
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "white dandelion seed head in the center",
-                    "reasoning": "The query describes small white objects being blown away and scattered in the air by the wind. In the image, the dandelion seed head (often called a dandelion clock) is composed of many tiny white seeds attached to feathery parachutes. When the wind blows, these seeds detach and are carried away, perfectly matching the description. While the dandelion head itself is the source, the phenomenon is caused by its seeds. The most literal and obvious object responsible for this is the dandelion seed head, which is the structure from which the seeds are dispersed. The bounding box should encompass the entire seed head.",
-                    "box": [
-                        260,
-                        102,
-                        590,
-                        380
-                    ],
-                    "iou": 0.08393301575503677,
-                    "verifier_rank": 3,
-                    "verifier_score": 10.19,
-                    "verifier_reasoning": "Pointwise score: 10.2/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.19,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {},
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "white fluffy dandelion seed head in the center",
-                    "reasoning": "The query describes small white objects being blown away and scattered in the air by the wind. In the image, the dandelion seed head (also known as a dandelion clock) is composed of many tiny white, feathery seeds attached to a central core. These seeds are perfectly suited to be carried away by the wind. The visual attributes match: white color, small size, and a fluffy, airy texture. When the wind blows, these individual seeds detach and scatter, which is the phenomenon described. The object responsible is the dandelion seed head.",
-                    "box": [
-                        260,
-                        103,
-                        588,
-                        377
-                    ],
-                    "iou": 0.09068986500191567,
-                    "verifier_rank": 1,
-                    "verifier_score": 10.2,
-                    "verifier_reasoning": "Pointwise score: 10.2/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.2,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {},
-                    "pointwise_error": null
-                }
-            ]
+          "hypothesis": "black tripod supporting the camera",
+          "reasoning": "The query asks for equipment to stabilize and hold the camera steady. In the image, the camera is mounted on a black tripod, which is a standard piece of equipment used for this exact purpose. The tripod is located under the camera, with its legs extending down to the floor, and the camera is attached to the head of the tripod. The operator is holding the camera head, but the tripod provides the primary stabilization. The tripod is positioned in the center-right of the image, supporting the camera.",
+          "box": [
+            1634,
+            1242,
+            2432,
+            2573
+          ],
+          "iou": 0.6476874842666545,
+          "verifier_rank": 7,
+          "verifier_score": 53.9,
+          "verifier_reasoning": "Pointwise score: 53.9/100",
+          "pointwise_breakdown": {
+            "geo": 5.4,
+            "rating": 20.0,
+            "iou": 28.5,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "rating_class": "PERFECT",
+            "predicted_iou": 95
+          },
+          "pointwise_error": null
         },
         {
-            "sample_idx": 2,
-            "query": "a car with a color that is closer to lipstick color",
-            "candidates": [
-                {
-                    "hypothesis": "red Ferrari sports car in the foreground",
-                    "reasoning": "The query asks for a car with a color closer to lipstick color. In the image, there are two cars: a prominent red Ferrari in the foreground and a white car behind it. Red is the color most commonly associated with lipstick, especially classic or bold shades. The red Ferrari's color is a vibrant, glossy red that strongly matches the typical hue of lipstick. The white car is clearly not a match. Therefore, the red Ferrari is the most literal and obvious match for the query.",
-                    "box": [
-                        27,
-                        411,
-                        1288,
-                        1046
-                    ],
-                    "iou": 5.903562357115342e-06,
-                    "verifier_rank": 5,
-                    "verifier_score": 10.49,
-                    "verifier_reasoning": "Pointwise score: 10.5/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.49,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {},
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "red Ferrari sports car in the foreground",
-                    "reasoning": "The query asks for a car with a color closer to lipstick color. Lipstick color is typically a vibrant, saturated red. The car in the foreground is a Ferrari painted in a glossy, bright red that strongly resembles classic lipstick red. The car in the background is white, which is not close to lipstick color. Therefore, the red Ferrari is the correct match.",
-                    "box": [
-                        27,
-                        412,
-                        1288,
-                        1048
-                    ],
-                    "iou": 5.9034839410478095e-06,
-                    "verifier_rank": 1,
-                    "verifier_score": 10.49,
-                    "verifier_reasoning": "Pointwise score: 10.5/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.49,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "predicted_iou": 0
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "red Ferrari sports car in the foreground",
-                    "reasoning": "The query asks for a car with a color closer to lipstick color. Lipstick color is typically a vibrant, saturated red. The car in the foreground is a Ferrari painted in a bright, glossy red that strongly resembles classic lipstick shades. The white car in the background is not a close match. Therefore, the red Ferrari is the correct object.",
-                    "box": [
-                        25,
-                        410,
-                        1289,
-                        1046
-                    ],
-                    "iou": 5.903544931142528e-06,
-                    "verifier_rank": 4,
-                    "verifier_score": 10.49,
-                    "verifier_reasoning": "Pointwise score: 10.5/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.49,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {},
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "shiny red Ferrari sports car in the foreground",
-                    "reasoning": "The query asks for a car with a color closer to lipstick color. The prominent red Ferrari in the foreground has a vibrant, glossy red finish that is commonly associated with classic lipstick shades. While the white car in the background is also present, its color is not closer to lipstick. The red Ferrari is the most direct and relevant match.",
-                    "box": [
-                        27,
-                        410,
-                        1284,
-                        1046
-                    ],
-                    "iou": 7.379420272743373e-06,
-                    "verifier_rank": 2,
-                    "verifier_score": 10.49,
-                    "verifier_reasoning": "Pointwise score: 10.5/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.49,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {},
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "red Ferrari sports car in the foreground",
-                    "reasoning": "The scene is an indoor car exhibition, as indicated by the display setup, lighting, and crowd in the background. The query asks for a car with a color closer to lipstick color. Lipstick colors are typically vibrant reds or pinks. The prominent car in the foreground is a Ferrari with a glossy, vibrant red paint job, which closely matches the hue of classic lipstick shades. The white car in the background does not match this description. Therefore, the red Ferrari is the correct target.",
-                    "box": [
-                        25,
-                        410,
-                        1288,
-                        1044
-                    ],
-                    "iou": 5.903571070140328e-06,
-                    "verifier_rank": 6,
-                    "verifier_score": 10.49,
-                    "verifier_reasoning": "Pointwise score: 10.5/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.49,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {},
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "red Ferrari sports car in the foreground",
-                    "reasoning": "The query asks for a car with a color closer to lipstick color. Lipstick color is typically a vibrant, saturated red. The car in the foreground is a Ferrari painted in a glossy, deep red that strongly resembles classic Ferrari red, which is often associated with lipstick red. The white car in the background is not a matching color. Therefore, the red Ferrari is the correct object. The bounding box encompasses the entire red Ferrari.",
-                    "box": [
-                        25,
-                        410,
-                        1291,
-                        1050
-                    ],
-                    "iou": 5.903466515537924e-06,
-                    "verifier_rank": 0,
-                    "verifier_score": 10.49,
-                    "verifier_reasoning": "Pointwise score: 10.5/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.49,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "predicted_iou": 0
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "vibrant red Ferrari sports car in the foreground",
-                    "reasoning": "The query asks for a car with a color closer to lipstick color. Lipstick colors are typically vibrant reds. The car in the foreground is a Ferrari with a glossy, vibrant red paint job that closely matches the shade of classic red lipstick. It is fully visible and occupies the central-left portion of the image. The white car in the background is not a match for lipstick color. Therefore, the red Ferrari is the correct object.",
-                    "box": [
-                        27,
-                        411,
-                        1291,
-                        1050
-                    ],
-                    "iou": 5.903527505272588e-06,
-                    "verifier_rank": 3,
-                    "verifier_score": 10.49,
-                    "verifier_reasoning": "Pointwise score: 10.5/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.49,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "predicted_iou": 0
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "red Ferrari sports car in the foreground",
-                    "reasoning": "The query asks for a car with a color \"closer to lipstick color.\" While \"lipstick color\" can vary, it is most commonly associated with a vibrant, bold red. The Ferrari in the foreground is a classic, glossy red, which is widely recognized as being very close to the color of traditional lipstick. The white car in the background is a stark contrast and does not match. Therefore, the red Ferrari is the direct and most appropriate match for the query.",
-                    "box": [
-                        27,
-                        412,
-                        1291,
-                        1048
-                    ],
-                    "iou": 5.903640775266106e-06,
-                    "verifier_rank": 7,
-                    "verifier_score": 10.49,
-                    "verifier_reasoning": "Pointwise score: 10.5/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.49,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "predicted_iou": 0
-                    },
-                    "pointwise_error": null
-                }
-            ]
+          "hypothesis": "black tripod supporting the camera",
+          "reasoning": "The query asks for equipment to stabilize and hold the camera steady. While the camera is mounted on a tripod, the most direct and obvious object fulfilling this function is the tripod itself. The tripod is black, has three legs, and is positioned directly under the camera. The operator is holding the camera mount, but the tripod is the primary stabilizing device. There are no less obvious or metaphorical interpretations that fit better. Therefore, the correct object is the tripod.",
+          "box": [
+            1631,
+            1157,
+            2439,
+            2573
+          ],
+          "iou": 0.6676839404894813,
+          "verifier_rank": 6,
+          "verifier_score": 53.92,
+          "verifier_reasoning": "Pointwise score: 53.9/100",
+          "pointwise_breakdown": {
+            "geo": 5.42,
+            "rating": 20.0,
+            "iou": 28.5,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "rating_class": "PERFECT",
+            "predicted_iou": 95
+          },
+          "pointwise_error": null
         },
         {
-            "sample_idx": 3,
-            "query": "In a mechanical workshop, there are various machines and tools used for different purposes. What in the picture could be used to rotate or spin other parts or objects?",
-            "candidates": [
-                {
-                    "hypothesis": "large black handwheel with three spokes in the center",
-                    "reasoning": "The object in the image is a large, black, three-spoke handwheel or crank. While it is primarily designed for manual rotation to operate machinery (e.g., a press or lathe), its function is to impart rotational motion to connected parts. The query asks for something that \"could be used to rotate or spin other parts or objects,\" which directly matches the purpose of this handwheel. Although it's not a motor or spindle, it is a direct mechanical interface for rotation. There are no less obvious or metaphorical interpretations in this context; the handwheel is the most literal and direct answer. Step 1 (Brainstorm) considers alternatives, but none are more plausible. Step 2 (Select) is not needed as the object is direct. Step 3 (Propose) outputs the bounding box.",
-                    "box": [
-                        22,
-                        41,
-                        1601,
-                        1581
-                    ],
-                    "iou": 0.9109731443405545,
-                    "verifier_rank": 2,
-                    "verifier_score": 54.57,
-                    "verifier_reasoning": "Pointwise score: 54.6/100",
-                    "pointwise_breakdown": {
-                        "geo": 6.07,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "large black handwheel with scalloped edge and three spokes",
-                    "reasoning": "The image shows a large, black, circular handwheel with a scalloped edge and three spokes. This type of wheel is commonly used in mechanical workshops to manually rotate or spin other parts or objects connected to it, such as gears, shafts, or presses. It is the most literal and obvious object in the picture that fulfills the query's description. Other objects in the background are out of focus and not clearly identifiable as rotational mechanisms.",
-                    "box": [
-                        19,
-                        40,
-                        1597,
-                        1585
-                    ],
-                    "iou": 0.911558228336084,
-                    "verifier_rank": 4,
-                    "verifier_score": 54.57,
-                    "verifier_reasoning": "Pointwise score: 54.6/100",
-                    "pointwise_breakdown": {
-                        "geo": 6.07,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "large black hand crank in the center",
-                    "reasoning": "The scene is an indoor mechanical workshop context, as indicated by the presence of machinery and tools. The query asks for an object used to rotate or spin other parts. The object in the image is a large, black, wheel-shaped hand crank with three spokes, which is a common mechanical component designed to be turned by hand to rotate a shaft or mechanism. This matches the description perfectly. The bounding box is centered on this crank.",
-                    "box": [
-                        19,
-                        38,
-                        1601,
-                        1586
-                    ],
-                    "iou": 0.9129521993962301,
-                    "verifier_rank": 5,
-                    "verifier_score": 54.56,
-                    "verifier_reasoning": "Pointwise score: 54.6/100",
-                    "pointwise_breakdown": {
-                        "geo": 6.06,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "large black hand crank in the center",
-                    "reasoning": "The query asks for something that can be used to rotate or spin other parts or objects. The object in the image is a large, black, wheel-like handle with a central hub and three spokes. This is a classic hand crank, which is designed to be turned by hand to impart rotational motion to a connected mechanism. It is a part of a larger machine, but the crank itself is the functional component for rotation. The bounding box covers the entire visible crank.",
-                    "box": [
-                        22,
-                        38,
-                        1597,
-                        1580
-                    ],
-                    "iou": 0.9102154289767913,
-                    "verifier_rank": 0,
-                    "verifier_score": 54.57,
-                    "verifier_reasoning": "Pointwise score: 54.6/100",
-                    "pointwise_breakdown": {
-                        "geo": 6.07,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "large black hand crank in the center",
-                    "reasoning": "The query asks for an object used to rotate or spin other parts or objects. The object in the image is a large, black, wheel-like handle with three spokes, which is a common design for a hand crank. Hand cranks are specifically designed to be turned by hand to rotate a shaft or mechanism, thereby spinning other parts. The chain attached to it further suggests it is part of a mechanical system where turning the crank rotates another component. This object perfectly serves the function of rotating or spinning other parts.",
-                    "box": [
-                        19,
-                        38,
-                        1603,
-                        1586
-                    ],
-                    "iou": 0.9139831478535079,
-                    "verifier_rank": 7,
-                    "verifier_score": 54.55,
-                    "verifier_reasoning": "Pointwise score: 54.5/100",
-                    "pointwise_breakdown": {
-                        "geo": 6.05,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "large black hand crank in the center",
-                    "reasoning": "The query asks for an object used to rotate or spin other parts. The image shows a large, black, wheel-shaped handle with three spokes, which is characteristic of a hand crank. Hand cranks are designed to be turned by hand to rotate a shaft or mechanism, making them ideal for spinning other parts. Its circular shape and central hub are typical for rotational mechanisms. The visual attributes match a tool designed for manual rotation.",
-                    "box": [
-                        19,
-                        38,
-                        1603,
-                        1585
-                    ],
-                    "iou": 0.9134531883589909,
-                    "verifier_rank": 6,
-                    "verifier_score": 54.55,
-                    "verifier_reasoning": "Pointwise score: 54.5/100",
-                    "pointwise_breakdown": {
-                        "geo": 6.05,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "large black hand crank in the center",
-                    "reasoning": "The object in the image is a large, black, wheel-like handle with three spokes, which is a common design for a hand crank. Hand cranks are specifically used to manually rotate or spin other parts or objects connected to them, often via a shaft or gear mechanism. This matches the query perfectly. No other object in the image serves this purpose.",
-                    "box": [
-                        19,
-                        40,
-                        1597,
-                        1585
-                    ],
-                    "iou": 0.9115566655730808,
-                    "verifier_rank": 3,
-                    "verifier_score": 54.57,
-                    "verifier_reasoning": "Pointwise score: 54.6/100",
-                    "pointwise_breakdown": {
-                        "geo": 6.07,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "large black handwheel in the foreground",
-                    "reasoning": "The image displays a large, black, circular handwheel with a scalloped edge and three spokes, which is a common mechanical component used to rotate or spin other parts or objects when turned by hand. It is prominently featured in the foreground, occupying most of the frame. This object is designed for manual operation to drive machinery, fitting the query perfectly. It is fully visible and central to the image.",
-                    "box": [
-                        19,
-                        40,
-                        1597,
-                        1581
-                    ],
-                    "iou": 0.9104670606404144,
-                    "verifier_rank": 1,
-                    "verifier_score": 54.57,
-                    "verifier_reasoning": "Pointwise score: 54.6/100",
-                    "pointwise_breakdown": {
-                        "geo": 6.07,
-                        "rating": 20.0,
-                        "iou": 28.5,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "rating_class": "PERFECT",
-                        "predicted_iou": 95
-                    },
-                    "pointwise_error": null
-                }
-            ]
+          "hypothesis": "black tripod holding the camera steady",
+          "reasoning": "The query asks for equipment to stabilize and hold the camera steady. The object directly matching this is the tripod on which the camera is mounted. The tripod is black, has three legs, and is positioned under the camera to provide stability. The operator is holding the camera mount, but the tripod is the device that holds and stabilizes it. No other object in the image serves this purpose.",
+          "box": [
+            1620,
+            1090,
+            2425,
+            2573
+          ],
+          "iou": 0.7543095575942342,
+          "verifier_rank": 5,
+          "verifier_score": 53.97,
+          "verifier_reasoning": "Pointwise score: 54.0/100",
+          "pointwise_breakdown": {
+            "geo": 5.47,
+            "rating": 20.0,
+            "iou": 28.5,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "rating_class": "PERFECT",
+            "predicted_iou": 95
+          },
+          "pointwise_error": null
         },
         {
-            "sample_idx": 4,
-            "query": "the area where people can stand without getting wet",
-            "candidates": [
-                {
-                    "hypothesis": "dry riverbank in the background",
-                    "reasoning": "The query asks for \"the area where people can stand without getting wet.\" In the image, the person is water skiing on the water, which means they are standing on a water-skiing board and are surrounded by water. The only area where a person could stand without getting wet would be on the dry land visible in the background, specifically the riverbank. However, the image does not show any clearly defined, dry, standable area on the riverbank \u2014 it's mostly sand and sparse vegetation. The water itself is not dry, and the person is standing on a board in the water. Therefore, there is no visible \"area\" in the image that matches the query perfectly. The most logical interpretation is that the query refers to the land area on the riverbank, which is the only dry area shown. The bounding box is placed over the riverbank in the background.",
-                    "box": [
-                        0,
-                        120,
-                        800,
-                        180
-                    ],
-                    "iou": 0.2268901380264281,
-                    "verifier_rank": 2,
-                    "verifier_score": 10.33,
-                    "verifier_reasoning": "Pointwise score: 10.3/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.33,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {},
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "dry land shoreline in the background",
-                    "reasoning": "The query asks for \"the area where people can stand without getting wet.\" In the image, the person is water skiing on the water, which means they are actively getting wet. The only area where someone could stand without getting wet would be on the dry land visible in the background, specifically the sandy or dirt shoreline. However, there is no clear, distinct \"area\" marked or highlighted in the image for standing dry. The most logical interpretation is the dry land area, which is visible as a strip along the top edge of the water. Since the image does not show a specific object or designated area, and the query is ambiguous, I must infer the best possible match. The dry land is the only area where one could stand without getting wet. It is located in the background, above the waterline, and spans the entire width of the image. I will select the region corresponding to this dry land.",
-                    "box": [
-                        0,
-                        120,
-                        800,
-                        156
-                    ],
-                    "iou": 0.0645495902671784,
-                    "verifier_rank": 7,
-                    "verifier_score": 5.05,
-                    "verifier_reasoning": "Pointwise score: 5.0/100",
-                    "pointwise_breakdown": {
-                        "geo": 0.05,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {},
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "None",
-                    "reasoning": "The query asks for \"the area where people can stand without getting wet.\" In the image, the person is water skiing on a body of water, which means they are standing on a board in the water and are therefore getting wet. There is no visible dry land or platform in the image where people could stand without getting wet. The surrounding area is a river or lake with water, and the background shows a distant, dry, hilly shore, but no accessible dry area is visible. Therefore, no object matching the query can be located.",
-                    "box": [
-                        0,
-                        0,
-                        800,
-                        600
-                    ],
-                    "iou": 0.0017713023258809813,
-                    "verifier_rank": 6,
-                    "verifier_score": 9.69,
-                    "verifier_reasoning": "Pointwise score: 9.7/100",
-                    "pointwise_breakdown": {
-                        "geo": 4.69,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {},
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "dry brownish shore in the background",
-                    "reasoning": "The query asks for \"the area where people can stand without getting wet.\" In the context of water sports like water skiing, the area where a person can stand without getting wet is typically the dry land or the shore, not the water itself. The image shows a person water skiing on the water, which is clearly wet. The shore, visible in the background, is the area where people can stand without getting wet. The shore is a long, dry landmass extending along the water's edge, appearing as a brownish, arid landscape with sparse vegetation. This is the functional area that serves the purpose described in the query.",
-                    "box": [
-                        0,
-                        105,
-                        800,
-                        174
-                    ],
-                    "iou": 0.1967288404272656,
-                    "verifier_rank": 5,
-                    "verifier_score": 10.28,
-                    "verifier_reasoning": "Pointwise score: 10.3/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.28,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {},
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "dry sandy riverbank with sparse vegetation in the background",
-                    "reasoning": "The query \"the area where people can stand without getting wet\" is metaphorical in this context. The person is water skiing, so the only place where one could stand without getting wet is on land, not in the water. The background shows a dry, sandy riverbank with sparse vegetation, which is the only area in the image where people could stand without getting wet. This area is located behind the water and extends across the top portion of the image.",
-                    "box": [
-                        0,
-                        128,
-                        800,
-                        175
-                    ],
-                    "iou": 0.20721784970688562,
-                    "verifier_rank": 4,
-                    "verifier_score": 10.3,
-                    "verifier_reasoning": "Pointwise score: 10.3/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.3,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {},
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "dry land shoreline in the background",
-                    "reasoning": "The query asks for \"the area where people can stand without getting wet.\" In the image, the person is water skiing on a watercraft, which is moving through water, creating splashes. The only area where someone could stand without getting wet would be on the dry land visible in the background, specifically the sandy or dirt shoreline. The water itself is wet, and the splashes are wet. The land area is the only dry surface visible.",
-                    "box": [
-                        0,
-                        120,
-                        800,
-                        180
-                    ],
-                    "iou": 0.22686070808440506,
-                    "verifier_rank": 3,
-                    "verifier_score": 10.33,
-                    "verifier_reasoning": "Pointwise score: 10.3/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.33,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {},
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "random fill",
-                    "reasoning": "Random fill to meet N requirement",
-                    "box": [
-                        468,
-                        291,
-                        643,
-                        510
-                    ],
-                    "iou": 0.0,
-                    "verifier_rank": 0,
-                    "verifier_score": 10.44,
-                    "verifier_reasoning": "Pointwise score: 10.4/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.44,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "predicted_iou": 0
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "random fill",
-                    "reasoning": "Random fill to meet N requirement",
-                    "box": [
-                        561,
-                        286,
-                        667,
-                        553
-                    ],
-                    "iou": 0.0,
-                    "verifier_rank": 1,
-                    "verifier_score": 10.44,
-                    "verifier_reasoning": "Pointwise score: 10.4/100",
-                    "pointwise_breakdown": {
-                        "geo": 5.44,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {},
-                    "pointwise_error": null
-                }
-            ]
+          "hypothesis": "black tripod holding the camera steady",
+          "reasoning": "The scene is an indoor television studio or event setting, as indicated by the professional camera, the operator's uniform, and the controlled lighting. In such a context, equipment to stabilize and hold the camera steady is typically a tripod. The image clearly shows a black tripod supporting the professional video camera, with the operator adjusting it. This tripod is the object that fulfills the query's requirement.",
+          "box": [
+            1627,
+            1078,
+            2436,
+            2573
+          ],
+          "iou": 0.7555708597944792,
+          "verifier_rank": 3,
+          "verifier_score": 53.97,
+          "verifier_reasoning": "Pointwise score: 54.0/100",
+          "pointwise_breakdown": {
+            "geo": 5.47,
+            "rating": 20.0,
+            "iou": 28.5,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "rating_class": "PERFECT",
+            "predicted_iou": 95
+          },
+          "pointwise_error": null
         },
         {
-            "sample_idx": 5,
-            "query": "the person who appears to have already won in the battle",
-            "candidates": [
-                {
-                    "hypothesis": "boy in black singlet pinning opponent",
-                    "reasoning": "The query asks for \"the person who appears to have already won in the battle.\" In wrestling, a wrestler who has an opponent pinned or is in a dominant position is typically considered to have won. In the image, the boy in the black singlet is on top of the boy in the blue singlet, applying a pinning position. This is a clear indication of dominance and likely victory. The boy in the blue singlet is on his back, unable to escape, which is a classic sign of being pinned. Therefore, the boy in the black singlet is the one who appears to have already won.",
-                    "box": [
-                        0,
-                        169,
-                        2003,
-                        1499
-                    ],
-                    "iou": 0.0011070599700483987,
-                    "verifier_rank": 7,
-                    "verifier_score": 12.01,
-                    "verifier_reasoning": "Pointwise score: 12.0/100",
-                    "pointwise_breakdown": {
-                        "geo": 7.01,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "predicted_iou": 0
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "the boy in the black singlet on top of the other wrestler",
-                    "reasoning": "The query asks for \"the person who appears to have already won in the battle.\" In wrestling, a wrestler who is on top and controlling their opponent is typically in a winning position. The boy in the black singlet is on top, pinning the boy in the blue singlet to the mat. This dominant position strongly suggests he has already won or is about to win. The boy in the blue singlet is clearly in a losing position. Therefore, the boy in the black singlet is the one who appears to have already won.",
-                    "box": [
-                        0,
-                        168,
-                        2012,
-                        1496
-                    ],
-                    "iou": 0.0011262746035624735,
-                    "verifier_rank": 3,
-                    "verifier_score": 12.01,
-                    "verifier_reasoning": "Pointwise score: 12.0/100",
-                    "pointwise_breakdown": {
-                        "geo": 7.01,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "predicted_iou": 0
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "the wrestler in black singlet and black headgear on top",
-                    "reasoning": "The query \"the person who appears to have already won in the battle\" refers to the wrestler on top, who is in a dominant position controlling the other wrestler. This person is wearing a black singlet and a black headgear. The analysis confirms this individual is the one who appears to have already won, as they are pinning their opponent.",
-                    "box": [
-                        0,
-                        169,
-                        2012,
-                        1499
-                    ],
-                    "iou": 0.001110542353939347,
-                    "verifier_rank": 5,
-                    "verifier_score": 12.01,
-                    "verifier_reasoning": "Pointwise score: 12.0/100",
-                    "pointwise_breakdown": {
-                        "geo": 7.01,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "predicted_iou": 0
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "the boy in the black singlet and black headgear, positioned on top of his opponent",
-                    "reasoning": "The scene is an indoor wrestling match, as indicated by the mat and the athletes' gear. The query asks for \"the person who appears to have already won in the battle.\" In wrestling, a wrestler who has control and is pinning their opponent to the mat is typically considered to have won. The boy in the black singlet is on top, pinning the boy in the blue singlet, who is on his back. This dominant position strongly suggests the boy in black has already won or is about to win.",
-                    "box": [
-                        0,
-                        171,
-                        2003,
-                        1497
-                    ],
-                    "iou": 0.0011237733459955681,
-                    "verifier_rank": 4,
-                    "verifier_score": 12.01,
-                    "verifier_reasoning": "Pointwise score: 12.0/100",
-                    "pointwise_breakdown": {
-                        "geo": 7.01,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "predicted_iou": 0
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "the wrestler in black on top, wearing a black singlet and black headgear",
-                    "reasoning": "The query asks for \"the person who appears to have already won in the battle.\" In the image, one wrestler (in black) is on top of the other (in blue), pinning them to the mat. This dominant position strongly suggests the wrestler in black has already won. The visual attributes of this person include a black singlet and a black headgear, and they are positioned above the opponent. The other wrestler is on their back, indicating they are in a losing position. Therefore, the wrestler in black is the one who appears to have already won.",
-                    "box": [
-                        0,
-                        169,
-                        1998,
-                        1491
-                    ],
-                    "iou": 0.0011859547814475676,
-                    "verifier_rank": 2,
-                    "verifier_score": 12.01,
-                    "verifier_reasoning": "Pointwise score: 12.0/100",
-                    "pointwise_breakdown": {
-                        "geo": 7.01,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "predicted_iou": 0
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "the boy in the black singlet pinning the opponent",
-                    "reasoning": "The query refers to \"the person who appears to have already won in the battle.\" In wrestling, a wrestler who has their opponent pinned or is in a dominant position is typically the one who has won or is likely to win. In the image, the boy in the black singlet is on top, pinning the boy in the blue singlet to the mat. His dominant position and the fact that the opponent is pinned suggest he has already won or is in the process of winning. This matches the description. The boy in black is the target.",
-                    "box": [
-                        0,
-                        169,
-                        2010,
-                        1491
-                    ],
-                    "iou": 0.0011831617524376001,
-                    "verifier_rank": 0,
-                    "verifier_score": 12.02,
-                    "verifier_reasoning": "Pointwise score: 12.0/100",
-                    "pointwise_breakdown": {
-                        "geo": 7.02,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "predicted_iou": 0
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "the wrestler in the black singlet on top",
-                    "reasoning": "The query \"the person who appears to have already won in the battle\" refers to the wrestler in the black singlet who is on top, controlling the opponent. In wrestling, having an opponent pinned or subdued on the mat typically indicates victory. The wrestler in black is clearly dominating the position, suggesting they have already won or are about to win. The other wrestler is on their back, indicating they are in a losing position.",
-                    "box": [
-                        0,
-                        171,
-                        2007,
-                        1491
-                    ],
-                    "iou": 0.0011780735452811772,
-                    "verifier_rank": 1,
-                    "verifier_score": 12.01,
-                    "verifier_reasoning": "Pointwise score: 12.0/100",
-                    "pointwise_breakdown": {
-                        "geo": 7.01,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "predicted_iou": 0
-                    },
-                    "pointwise_error": null
-                },
-                {
-                    "hypothesis": "boy in black singlet on top",
-                    "reasoning": "The query \"the person who appears to have already won in the battle\" is metaphorical. In wrestling, a dominant position like the one shown \u2014 where one wrestler is on top with control over the opponent \u2014 often indicates victory is imminent or already achieved. The boy in the black singlet is clearly in a dominant position, pinning the other wrestler. This is the most direct interpretation of \"already won in the battle\". Therefore, the target concept is the wrestler in black.",
-                    "box": [
-                        0,
-                        169,
-                        2003,
-                        1499
-                    ],
-                    "iou": 0.0011082223058763929,
-                    "verifier_rank": 6,
-                    "verifier_score": 12.01,
-                    "verifier_reasoning": "Pointwise score: 12.0/100",
-                    "pointwise_breakdown": {
-                        "geo": 7.01,
-                        "rating": 5.0,
-                        "iou": 0.0,
-                        "boundary": 0.0,
-                        "semantic": 0
-                    },
-                    "pointwise_raw": {
-                        "predicted_iou": 0
-                    },
-                    "pointwise_error": null
-                }
-            ]
+          "hypothesis": "black tripod holding the camera steady",
+          "reasoning": "The query asks for equipment to stabilize and hold the camera steady. The object in the image that serves this purpose is the tripod, which is a three-legged stand designed to hold and stabilize cameras. The camera is mounted on this tripod, and the operator is adjusting it, confirming its role in stabilization. The tripod is black and located centrally under the camera.",
+          "box": [
+            1627,
+            1060,
+            2425,
+            2573
+          ],
+          "iou": 0.756632827050707,
+          "verifier_rank": 1,
+          "verifier_score": 53.98,
+          "verifier_reasoning": "Pointwise score: 54.0/100",
+          "pointwise_breakdown": {
+            "geo": 5.48,
+            "rating": 20.0,
+            "iou": 28.5,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "rating_class": "PERFECT",
+            "predicted_iou": 95
+          },
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "black tripod supporting the camera",
+          "reasoning": "The query asks for equipment to stabilize and hold the camera steady. The most literal and obvious object for this purpose is the tripod, which is directly supporting the camera. The tripod is black, has three legs, and is positioned under the camera mount. The operator is holding the camera mount, but the tripod is the device that provides the stabilization. Other objects like the microphone or headphones are not for stabilization.",
+          "box": [
+            1631,
+            1060,
+            2425,
+            2573
+          ],
+          "iou": 0.7565832850929276,
+          "verifier_rank": 2,
+          "verifier_score": 53.98,
+          "verifier_reasoning": "Pointwise score: 54.0/100",
+          "pointwise_breakdown": {
+            "geo": 5.48,
+            "rating": 20.0,
+            "iou": 28.5,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "rating_class": "PERFECT",
+            "predicted_iou": 95
+          },
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "black tripod supporting the camera",
+          "reasoning": "The query asks for equipment to stabilize and hold the camera steady. The visual attributes of such equipment are typically a tall, three-legged stand (tripod) with a mounting head. In the image, there is a black tripod directly beneath the camera, with its legs spread out for stability. The camera is mounted on the tripod head, which allows for precise positioning and stabilization. The tripod's structure and function match the description perfectly.",
+          "box": [
+            1627,
+            1075,
+            2425,
+            2573
+          ],
+          "iou": 0.7567119184450832,
+          "verifier_rank": 4,
+          "verifier_score": 53.97,
+          "verifier_reasoning": "Pointwise score: 54.0/100",
+          "pointwise_breakdown": {
+            "geo": 5.47,
+            "rating": 20.0,
+            "iou": 28.5,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "rating_class": "PERFECT",
+            "predicted_iou": 95
+          },
+          "pointwise_error": null
         }
-    ]
+      ]
+    },
+    {
+      "sample_idx": 1,
+      "query": "When the wind blows, small white objects are blown away and scattered in the air. What in the picture is responsible for this phenomenon?",
+      "candidates": [
+        {
+          "hypothesis": "object",
+          "reasoning": "The query describes small white objects being blown away and scattered in the air, which is characteristic of the seed heads of a dandelion. The image shows a mature dandelion seed head (also called a dandelion clock) composed of many tiny white seeds attached to feathery parachutes. When the wind blows, these seeds detach and are carried away. The entire seed head is the source of this phenomenon. Step 1: The query refers to the seeds (parts) being dispersed, but the object responsible for the phenomenon is the whole seed head. Step 2: The seed head is a whole, containing many small parts (seeds). Step 3: The bounding box should encompass the entire dandelion seed head.\nBox: [328, 198, 742, 728]",
+          "box": [
+            262,
+            105,
+            593,
+            388
+          ],
+          "iou": 0.07868083282578782,
+          "verifier_rank": 4,
+          "verifier_score": 10.18,
+          "verifier_reasoning": "Pointwise score: 10.2/100",
+          "pointwise_breakdown": {
+            "geo": 5.18,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {},
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "white dandelion seed head in the center",
+          "reasoning": "The query describes small white objects being blown away and scattered in the air by the wind. The image shows a dandelion seed head, which consists of many tiny white seeds attached to feathery parachutes. When the wind blows, these seeds detach and are carried away, perfectly matching the description. The dandelion is the source of these small white objects. The most direct match is the dandelion head itself, as it is the structure from which the seeds are dispersed.",
+          "box": [
+            256,
+            97,
+            584,
+            389
+          ],
+          "iou": 0.07650495530618932,
+          "verifier_rank": 6,
+          "verifier_score": 10.17,
+          "verifier_reasoning": "Pointwise score: 10.2/100",
+          "pointwise_breakdown": {
+            "geo": 5.17,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {},
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "white fluffy dandelion seed head in the center",
+          "reasoning": "The scene is outdoors in a grassy area, consistent with a natural environment where dandelions grow. The query describes small white objects being blown away and scattered in the air, which is a well-known characteristic of the seed head of a dandelion (also called a dandelion clock). The image shows a fully formed dandelion seed head, which is white and fluffy, and some seeds are already detached and airborne, indicating the phenomenon described. Therefore, the dandelion seed head is the object responsible for this phenomenon.",
+          "box": [
+            256,
+            98,
+            593,
+            395
+          ],
+          "iou": 0.07889779943378562,
+          "verifier_rank": 3,
+          "verifier_score": 10.18,
+          "verifier_reasoning": "Pointwise score: 10.2/100",
+          "pointwise_breakdown": {
+            "geo": 5.18,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {},
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "white fluffy dandelion seed head in the center",
+          "reasoning": "The query describes small white objects being blown away and scattered by the wind. This is the characteristic dispersal mechanism of a dandelion seed head, where each seed is attached to a feathery parachute that allows it to be carried by the wind. The image shows a dandelion seed head, which is the structure responsible for this phenomenon. The small white objects are the individual seeds with their parachute-like structures.",
+          "box": [
+            256,
+            99,
+            591,
+            388
+          ],
+          "iou": 0.08197643669753676,
+          "verifier_rank": 2,
+          "verifier_score": 10.19,
+          "verifier_reasoning": "Pointwise score: 10.2/100",
+          "pointwise_breakdown": {
+            "geo": 5.19,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {},
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "white dandelion seed head in the center",
+          "reasoning": "The query describes small white objects being blown away by the wind, which is a characteristic behavior of the seed heads of dandelions. The image shows a dandelion seed head (also known as a dandelion clock), which consists of many tiny white seeds attached to feathery parachutes. When the wind blows, these seeds detach and are carried away, matching the description perfectly. Other objects in the image, like the green grass, are not responsible for this phenomenon.",
+          "box": [
+            260,
+            105,
+            590,
+            387
+          ],
+          "iou": 0.07743917590981995,
+          "verifier_rank": 5,
+          "verifier_score": 10.17,
+          "verifier_reasoning": "Pointwise score: 10.2/100",
+          "pointwise_breakdown": {
+            "geo": 5.17,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {},
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "white dandelion seed head in the center",
+          "reasoning": "The query describes small white objects being blown away and scattered in the air by the wind. In the image, the dandelion seed head (the white, fluffy sphere) is composed of many tiny seeds attached to feathery parachutes. When the wind blows, these seeds detach and are carried away, matching the description perfectly. The object is located in the center of the image, surrounded by green grass. The small white objects are not separate entities but are parts of this single dandelion seed head.",
+          "box": [
+            262,
+            94,
+            593,
+            386
+          ],
+          "iou": 0.09258097052560799,
+          "verifier_rank": 0,
+          "verifier_score": 10.22,
+          "verifier_reasoning": "Pointwise score: 10.2/100",
+          "pointwise_breakdown": {
+            "geo": 5.22,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {},
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "white fluffy dandelion seed head in the center",
+          "reasoning": "The query describes small white objects blown away by the wind, which is characteristic of dandelion seeds (also known as pappus). In the image, the central object is a white, fluffy, spherical structure composed of many fine, hair-like filaments attached to tiny seeds. This structure is perfectly aligned with the description of \"small white objects\" that are easily dispersed by wind. The visual attributes match: color (white), shape (spherical, feathery), texture (fluffy, delicate), and size (small, individual filaments). The dandelion seed head is the source of these airborne particles.",
+          "box": [
+            260,
+            105,
+            590,
+            393
+          ],
+          "iou": 0.07715560184765873,
+          "verifier_rank": 7,
+          "verifier_score": 10.16,
+          "verifier_reasoning": "Pointwise score: 10.2/100",
+          "pointwise_breakdown": {
+            "geo": 5.16,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {},
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "white fluffy dandelion seed head in the center",
+          "reasoning": "The query describes small white objects being blown away and scattered by the wind. While the dandelion seed head itself is white and fluffy, the phenomenon described is the dispersal of its individual seeds (achenes), each attached to a parachute-like structure (pappus). The image shows the dandelion head with some seeds already detached and floating away, perfectly matching the description. This is the most direct and literal interpretation. There are no alternative or metaphorical interpretations needed here, as the dandelion is the clear source of the phenomenon. The bounding box should encompass the entire dandelion head, which is the source of the seeds.",
+          "box": [
+            260,
+            105,
+            596,
+            386
+          ],
+          "iou": 0.0798118904115739,
+          "verifier_rank": 1,
+          "verifier_score": 10.19,
+          "verifier_reasoning": "Pointwise score: 10.2/100",
+          "pointwise_breakdown": {
+            "geo": 5.19,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {},
+          "pointwise_error": null
+        }
+      ]
+    },
+    {
+      "sample_idx": 2,
+      "query": "a car with a color that is closer to lipstick color",
+      "candidates": [
+        {
+          "hypothesis": "shiny red Ferrari sports car in the foreground",
+          "reasoning": "The scene is an indoor car exhibition, as indicated by the display setup, lighting, and presence of spectators. The query asks for a car with a color closer to lipstick color. Lipstick color is typically a vibrant, saturated red. The car in the foreground is a Ferrari painted in a glossy, deep red that strongly resembles classic lipstick red. The white car in the background is not a match for lipstick color. Therefore, the red Ferrari is the correct object.",
+          "box": [
+            27,
+            410,
+            1291,
+            1044
+          ],
+          "iou": 5.903710482037961e-06,
+          "verifier_rank": 5,
+          "verifier_score": 10.49,
+          "verifier_reasoning": "Pointwise score: 10.5/100",
+          "pointwise_breakdown": {
+            "geo": 5.49,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {},
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "red Ferrari sports car in the foreground",
+          "reasoning": "The query asks for a car with a color closer to lipstick color. In the image, there are two cars visible: a prominent red Ferrari in the foreground and a white car behind it. Red is the color most commonly associated with lipstick, and the Ferrari's vibrant red paint is a direct and literal match for the query. The white car is not a match. Therefore, the red Ferrari is the most literal and obvious choice.",
+          "box": [
+            27,
+            410,
+            1288,
+            1047
+          ],
+          "iou": 5.903536218194698e-06,
+          "verifier_rank": 0,
+          "verifier_score": 10.49,
+          "verifier_reasoning": "Pointwise score: 10.5/100",
+          "pointwise_breakdown": {
+            "geo": 5.49,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {},
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "red Ferrari sports car in the foreground",
+          "reasoning": "The query asks for a car with a color closer to lipstick color. Lipstick colors are typically vibrant reds or pinks. The car in the foreground is a bright, glossy red, which is a classic Ferrari color and closely matches the vivid, saturated red often associated with lipstick. The car in the background is white, which is not a lipstick color. Therefore, the red Ferrari is the correct match.",
+          "box": [
+            27,
+            409,
+            1288,
+            1046
+          ],
+          "iou": 5.903605922497461e-06,
+          "verifier_rank": 4,
+          "verifier_score": 10.49,
+          "verifier_reasoning": "Pointwise score: 10.5/100",
+          "pointwise_breakdown": {
+            "geo": 5.49,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {},
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "red Ferrari sports car in the foreground",
+          "reasoning": "The query asks for a car with a color closer to lipstick color. The prominent red Ferrari in the foreground has a vibrant, glossy red finish that is very similar to the color of classic lipstick. The white car in the background is not a close match. Therefore, the red Ferrari is the direct and most relevant match.",
+          "box": [
+            27,
+            409,
+            1286,
+            1048
+          ],
+          "iou": 5.903544931142528e-06,
+          "verifier_rank": 1,
+          "verifier_score": 10.49,
+          "verifier_reasoning": "Pointwise score: 10.5/100",
+          "pointwise_breakdown": {
+            "geo": 5.49,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {},
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "red Ferrari sports car in the foreground",
+          "reasoning": "The query asks for a car with a color closer to lipstick color. Lipstick colors are typically vibrant reds or pinks. The car in the foreground is a Ferrari with a glossy, deep red paint job that strongly resembles classic red lipstick shades. The white car in the background is not a close match. Therefore, the red Ferrari is the correct object.",
+          "box": [
+            25,
+            410,
+            1289,
+            1044
+          ],
+          "iou": 5.903579783191033e-06,
+          "verifier_rank": 3,
+          "verifier_score": 10.49,
+          "verifier_reasoning": "Pointwise score: 10.5/100",
+          "pointwise_breakdown": {
+            "geo": 5.49,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {},
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "red Ferrari sports car in the foreground",
+          "reasoning": "The query asks for a car with a color closer to lipstick color. Lipstick colors are typically vibrant reds. The car in the foreground is a Ferrari with a glossy, bright red paint finish that strongly resembles classic red lipstick shades. It is fully visible and positioned prominently in the foreground. The white car in the background does not match the lipstick color. Therefore, the red Ferrari is the correct match.",
+          "box": [
+            27,
+            411,
+            1288,
+            1047
+          ],
+          "iou": 5.903544931142528e-06,
+          "verifier_rank": 2,
+          "verifier_score": 10.49,
+          "verifier_reasoning": "Pointwise score: 10.5/100",
+          "pointwise_breakdown": {
+            "geo": 5.49,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {},
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "red Ferrari sports car in the foreground",
+          "reasoning": "The query asks for a car with a color closer to lipstick color. Lipstick color is typically a vibrant, saturated red. The car in the foreground is a Ferrari, painted in a glossy, deep red that closely matches the hue of classic lipstick shades. The car is the whole object described, not a part of it. The white car in the background is not relevant as its color does not match the lipstick description.",
+          "box": [
+            27,
+            409,
+            1288,
+            1041
+          ],
+          "iou": 5.903849900520129e-06,
+          "verifier_rank": 7,
+          "verifier_score": 10.49,
+          "verifier_reasoning": "Pointwise score: 10.5/100",
+          "pointwise_breakdown": {
+            "geo": 5.49,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {},
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "shiny red Ferrari sports car in the foreground",
+          "reasoning": "The query asks for a car whose color is \"closer to lipstick color.\" While lipstick colors vary, many classic and common lipsticks are a vibrant red, often described as \"red lipstick.\" The car in the foreground is a Ferrari, painted in a bright, glossy red that strongly resembles the color of classic red lipstick. The white car in the background is not a close match. Therefore, the red Ferrari is the best match for the query.",
+          "box": [
+            27,
+            409,
+            1286,
+            1042
+          ],
+          "iou": 5.903780190455949e-06,
+          "verifier_rank": 6,
+          "verifier_score": 10.49,
+          "verifier_reasoning": "Pointwise score: 10.5/100",
+          "pointwise_breakdown": {
+            "geo": 5.49,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {},
+          "pointwise_error": null
+        }
+      ]
+    },
+    {
+      "sample_idx": 3,
+      "query": "In a mechanical workshop, there are various machines and tools used for different purposes. What in the picture could be used to rotate or spin other parts or objects?",
+      "candidates": [
+        {
+          "hypothesis": "large black handwheel with three spokes",
+          "reasoning": "The query asks for something that can be used to rotate or spin other parts or objects. The object in the image is a large, black, wheel-like handle with three spokes, which is clearly designed to be turned by hand to drive a mechanism. This type of handle is commonly found on machinery to rotate shafts, gears, or other components. It is a part of a larger machine, but the handle itself is the functional element for rotation. Therefore, it fits the description perfectly.",
+          "box": [
+            19,
+            38,
+            1601,
+            1586
+          ],
+          "iou": 0.9129486106545435,
+          "verifier_rank": 5,
+          "verifier_score": 54.56,
+          "verifier_reasoning": "Pointwise score: 54.6/100",
+          "pointwise_breakdown": {
+            "geo": 6.06,
+            "rating": 20.0,
+            "iou": 28.5,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "rating_class": "PERFECT",
+            "predicted_iou": 95
+          },
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "large black handwheel with scalloped edge and three spokes",
+          "reasoning": "The object in the image is a large, black, circular handwheel with a scalloped edge and three spokes. Handwheels are mechanical components specifically designed to be turned by hand to rotate or spin other parts or objects connected to them, such as gears, shafts, or valves. This matches the query perfectly. The object is centrally located and clearly identifiable.",
+          "box": [
+            19,
+            38,
+            1603,
+            1585
+          ],
+          "iou": 0.9134546237485197,
+          "verifier_rank": 6,
+          "verifier_score": 54.55,
+          "verifier_reasoning": "Pointwise score: 54.5/100",
+          "pointwise_breakdown": {
+            "geo": 6.05,
+            "rating": 20.0,
+            "iou": 28.5,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "rating_class": "PERFECT",
+            "predicted_iou": 95
+          },
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "large black hand crank in the center",
+          "reasoning": "The image shows a large, black, wheel-like handle with a central hub and three spokes. This is a classic hand crank, which is specifically designed to be rotated by hand to spin or drive other mechanical parts. It is the most literal and obvious object in the image that serves the purpose described in the query.",
+          "box": [
+            19,
+            43,
+            1601,
+            1585
+          ],
+          "iou": 0.9123680593190228,
+          "verifier_rank": 1,
+          "verifier_score": 54.56,
+          "verifier_reasoning": "Pointwise score: 54.6/100",
+          "pointwise_breakdown": {
+            "geo": 6.06,
+            "rating": 20.0,
+            "iou": 28.5,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "rating_class": "PERFECT",
+            "predicted_iou": 95
+          },
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "large black hand-crank wheel in the center",
+          "reasoning": "The query asks for an object used to rotate or spin other parts or objects. The object in the image is a large, black, hand-cranked wheel or handle. This type of wheel is designed to be turned by hand to impart rotational motion to a connected mechanism, which fits the function of rotating or spinning other parts. Although it appears as a handle, its purpose is to generate rotation, making it the correct target.",
+          "box": [
+            19,
+            38,
+            1601,
+            1585
+          ],
+          "iou": 0.9125733657481279,
+          "verifier_rank": 2,
+          "verifier_score": 54.56,
+          "verifier_reasoning": "Pointwise score: 54.6/100",
+          "pointwise_breakdown": {
+            "geo": 6.06,
+            "rating": 20.0,
+            "iou": 28.5,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "rating_class": "PERFECT",
+            "predicted_iou": 95
+          },
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "large black handwheel in the center",
+          "reasoning": "The scene is an indoor mechanical workshop context, as indicated by the presence of machinery and tools. The query asks for an object used to rotate or spin other parts. The object in the image is a large, black, circular handwheel with a central hub and three spokes, which is a common component in mechanical workshops used to manually rotate shafts, gears, or other mechanical parts. The handwheel is prominently featured in the center of the image.",
+          "box": [
+            19,
+            40,
+            1601,
+            1586
+          ],
+          "iou": 0.9129088520919015,
+          "verifier_rank": 4,
+          "verifier_score": 54.56,
+          "verifier_reasoning": "Pointwise score: 54.6/100",
+          "pointwise_breakdown": {
+            "geo": 6.06,
+            "rating": 20.0,
+            "iou": 28.5,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "rating_class": "PERFECT",
+            "predicted_iou": 95
+          },
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "large black hand crank in the center",
+          "reasoning": "The query asks for an object used to rotate or spin other parts. The image shows a large, black, circular handle with a central hub and three spokes, which is characteristic of a hand crank. Hand cranks are specifically designed to be turned by hand to rotate machinery or other components. Its shape and position suggest it is a control mechanism for rotation. The visual attributes\u2014large, black, circular, with a textured grip\u2014are consistent with a hand crank used in mechanical workshops.",
+          "box": [
+            19,
+            38,
+            1601,
+            1585
+          ],
+          "iou": 0.9125762368548175,
+          "verifier_rank": 3,
+          "verifier_score": 54.56,
+          "verifier_reasoning": "Pointwise score: 54.6/100",
+          "pointwise_breakdown": {
+            "geo": 6.06,
+            "rating": 20.0,
+            "iou": 28.5,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "rating_class": "PERFECT",
+            "predicted_iou": 95
+          },
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "large black handwheel in the center",
+          "reasoning": "The image shows a large, black, circular handwheel with a scalloped edge and three spokes, which is commonly used in mechanical workshops to rotate or spin other parts or objects. It is positioned centrally in the foreground, and its design suggests it is a manual crank or handwheel for operating machinery. The chain attached to it further implies it is part of a mechanical system designed to transmit rotational motion.",
+          "box": [
+            19,
+            38,
+            1603,
+            1585
+          ],
+          "iou": 0.9134582122223418,
+          "verifier_rank": 7,
+          "verifier_score": 54.55,
+          "verifier_reasoning": "Pointwise score: 54.5/100",
+          "pointwise_breakdown": {
+            "geo": 6.05,
+            "rating": 20.0,
+            "iou": 28.5,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "rating_class": "PERFECT",
+            "predicted_iou": 95
+          },
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "large black handwheel with three spokes, centered in the image",
+          "reasoning": "The query asks for something that can rotate or spin other parts. While the object is a handwheel or crank, its direct function is to apply torque to rotate a shaft or mechanism. This is a common mechanical action. The object is clearly designed for manual rotation, and its shape and context (attached to machinery) indicate it's used to spin other components. No less obvious or metaphorical interpretation is needed here as the object's purpose is direct. The bounding box covers the entire handwheel.",
+          "box": [
+            20,
+            41,
+            1601,
+            1581
+          ],
+          "iou": 0.9110451117131941,
+          "verifier_rank": 0,
+          "verifier_score": 54.57,
+          "verifier_reasoning": "Pointwise score: 54.6/100",
+          "pointwise_breakdown": {
+            "geo": 6.07,
+            "rating": 20.0,
+            "iou": 28.5,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "rating_class": "PERFECT",
+            "predicted_iou": 95
+          },
+          "pointwise_error": null
+        }
+      ]
+    },
+    {
+      "sample_idx": 4,
+      "query": "the area where people can stand without getting wet",
+      "candidates": [
+        {
+          "hypothesis": "dry land shoreline in the background",
+          "reasoning": "The query asks for \"the area where people can stand without getting wet.\" In the image, the person is water skiing on a watercraft, which is inherently wet. The only area where one could stand without getting wet would be on the dry land visible in the background, specifically the sandy or dirt shoreline. The person is actively on the water, so the water itself is not a valid answer. The most literal and obvious area where people can stand without getting wet is the dry land on the far bank.",
+          "box": [
+            0,
+            127,
+            800,
+            187
+          ],
+          "iou": 0.21189819973025273,
+          "verifier_rank": 4,
+          "verifier_score": 10.32,
+          "verifier_reasoning": "Pointwise score: 10.3/100",
+          "pointwise_breakdown": {
+            "geo": 5.32,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {},
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "dry riverbank in the background",
+          "reasoning": "The query asks for \"the area where people can stand without getting wet.\" In the image, the person is water skiing on the water, which is inherently wet. The only area where one could stand without getting wet would be the dry land in the background, specifically the sandy/earthy bank along the riverbank. This area is visible in the upper portion of the image, behind the water. The person is not standing there, but that is the only logical location matching the query.",
+          "box": [
+            0,
+            110,
+            800,
+            175
+          ],
+          "iou": 0.13565374585111428,
+          "verifier_rank": 5,
+          "verifier_score": 10.19,
+          "verifier_reasoning": "Pointwise score: 10.2/100",
+          "pointwise_breakdown": {
+            "geo": 5.19,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {},
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "None",
+          "reasoning": "The query asks for \"the area where people can stand without getting wet.\" In the image, the person is water skiing on the water, which means they are standing in water and thus getting wet. There is no visible dry land or platform in the image where people could stand without getting wet. The only \"area\" shown is the water, which is wet. Therefore, no object matches the query.",
+          "box": [
+            0,
+            0,
+            800,
+            600
+          ],
+          "iou": 0.0017712985228443834,
+          "verifier_rank": 6,
+          "verifier_score": 9.69,
+          "verifier_reasoning": "Pointwise score: 9.7/100",
+          "pointwise_breakdown": {
+            "geo": 4.69,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {},
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "black wakeboard under the rider's feet",
+          "reasoning": "The query \"the area where people can stand without getting wet\" is metaphorical. In the context of wakeboarding, the rider stands on the board, which is designed to keep them above the water, allowing them to stand without getting wet. The board itself is the object that enables this. The board is black and located under the rider\u2019s feet in the water, surrounded by splashes. The rider is standing on it, so it is the area where they can stand without getting wet.",
+          "box": [
+            321,
+            237,
+            364,
+            265
+          ],
+          "iou": 0.007853829853444572,
+          "verifier_rank": 0,
+          "verifier_score": 15.01,
+          "verifier_reasoning": "Pointwise score: 15.0/100",
+          "pointwise_breakdown": {
+            "geo": 0.01,
+            "rating": 15.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "rating_class": "GOOD"
+          },
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "dry land on the riverbank in the background",
+          "reasoning": "The scene is outdoors on a body of water, with a person water skiing. The query asks for \"the area where people can stand without getting wet.\" In this context, the only area where someone could stand without getting wet would be on the dry land visible in the background, specifically the riverbank. The person is on a water ski, so they are in the water and getting wet. There is no dry platform or area for standing in the water. The dry land is visible along the horizon behind the water.",
+          "box": [
+            0,
+            120,
+            800,
+            180
+          ],
+          "iou": 0.2268901380264281,
+          "verifier_rank": 2,
+          "verifier_score": 10.33,
+          "verifier_reasoning": "Pointwise score: 10.3/100",
+          "pointwise_breakdown": {
+            "geo": 5.33,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {},
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "dry land area behind the water",
+          "reasoning": "The query \"the area where people can stand without getting wet\" refers to a part of the scene \u2014 specifically, the dry land or shore area, which is visible in the background. The person is on a water ski in the water, and the splash around them indicates the water is wet. The land area behind the water, with the hills and sparse vegetation, is the part where people can stand without getting wet. This area is located in the upper portion of the image, behind the water.",
+          "box": [
+            0,
+            126,
+            800,
+            186
+          ],
+          "iou": 0.21401229045363213,
+          "verifier_rank": 3,
+          "verifier_score": 10.32,
+          "verifier_reasoning": "Pointwise score: 10.3/100",
+          "pointwise_breakdown": {
+            "geo": 5.32,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {},
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "random fill",
+          "reasoning": "Random fill to meet N requirement",
+          "box": [
+            458,
+            143,
+            529,
+            245
+          ],
+          "iou": 0.02262390670553936,
+          "verifier_rank": 7,
+          "verifier_score": 5.03,
+          "verifier_reasoning": "Pointwise score: 5.0/100",
+          "pointwise_breakdown": {
+            "geo": 0.03,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {},
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "random fill",
+          "reasoning": "Random fill to meet N requirement",
+          "box": [
+            264,
+            385,
+            501,
+            581
+          ],
+          "iou": 0.0,
+          "verifier_rank": 1,
+          "verifier_score": 12.15,
+          "verifier_reasoning": "Pointwise score: 12.2/100",
+          "pointwise_breakdown": {
+            "geo": 7.15,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "predicted_iou": 0
+          },
+          "pointwise_error": null
+        }
+      ]
+    },
+    {
+      "sample_idx": 5,
+      "query": "the person who appears to have already won in the battle",
+      "candidates": [
+        {
+          "hypothesis": "the boy in the black singlet and black headgear, on top of his opponent",
+          "reasoning": "The scene is an indoor wrestling match, as indicated by the mat and the protective headgear worn by the participants. The query asks for \"the person who appears to have already won in the battle.\" In wrestling, a wrestler who is on top and has their opponent pinned or subdued is typically the winner. The boy in the black singlet is on top, pinning the boy in the blue singlet, who is on his back. This position strongly suggests the boy in black has already won the match. The boy in black is wearing a black headgear and a black singlet, and is positioned above the other wrestler.",
+          "box": [
+            0,
+            171,
+            2012,
+            1496
+          ],
+          "iou": 0.001131112991741117,
+          "verifier_rank": 3,
+          "verifier_score": 12.01,
+          "verifier_reasoning": "Pointwise score: 12.0/100",
+          "pointwise_breakdown": {
+            "geo": 7.01,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "predicted_iou": 0
+          },
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "the wrestler in the black singlet on top",
+          "reasoning": "The query asks for \"the person who appears to have already won in the battle.\" In the image, the wrestler in the black singlet is on top of the wrestler in the blue singlet, applying a pinning position. This dominant position strongly suggests the wrestler in black has already won or is in control of the match. The wrestler in blue is on their back, indicating they are at a disadvantage. Therefore, the wrestler in the black singlet is the one who appears to have already won.",
+          "box": [
+            0,
+            171,
+            2007,
+            1496
+          ],
+          "iou": 0.001129911054667652,
+          "verifier_rank": 2,
+          "verifier_score": 12.01,
+          "verifier_reasoning": "Pointwise score: 12.0/100",
+          "pointwise_breakdown": {
+            "geo": 7.01,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "predicted_iou": 0
+          },
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "the boy in the black singlet and black headgear, on top of his opponent",
+          "reasoning": "The query asks for \"the person who appears to have already won in the battle.\" In wrestling, a wrestler who has their opponent pinned or is in a dominant position is typically considered to have won. The boy in the black singlet is on top, controlling the boy in the blue singlet, who is on his back. This dominant position strongly suggests the boy in black has already won or is about to win. This is the most literal and obvious match for the query.",
+          "box": [
+            0,
+            168,
+            2003,
+            1499
+          ],
+          "iou": 0.0011070333558297208,
+          "verifier_rank": 6,
+          "verifier_score": 12.01,
+          "verifier_reasoning": "Pointwise score: 12.0/100",
+          "pointwise_breakdown": {
+            "geo": 7.01,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "predicted_iou": 0
+          },
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "the wrestler in the black singlet on top",
+          "reasoning": "The query \"the person who appears to have already won in the battle\" refers to the wrestler in the black singlet who is on top, pinning the opponent. This position in wrestling typically indicates a win. The person is the whole subject of the action, not a part of something larger. The bounding box encompasses the entire wrestler in black.",
+          "box": [
+            0,
+            169,
+            2003,
+            1499
+          ],
+          "iou": 0.0011071041135250828,
+          "verifier_rank": 7,
+          "verifier_score": 12.01,
+          "verifier_reasoning": "Pointwise score: 12.0/100",
+          "pointwise_breakdown": {
+            "geo": 7.01,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "predicted_iou": 0
+          },
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "the wrestler in the black singlet and black headgear, positioned on top of the opponent",
+          "reasoning": "The query refers to \"the person who appears to have already won in the battle.\" In the image, one wrestler (in the black singlet) is on top, pinning the other wrestler (in the blue singlet) to the mat. This dominant position strongly suggests the wrestler in black has already won or is in control of the match. The visual attributes of this person include: wearing a black singlet, a black headgear, and is positioned on top of the opponent. The other wrestler is on their back, indicating they are in a losing position.",
+          "box": [
+            0,
+            168,
+            2001,
+            1496
+          ],
+          "iou": 0.0011276507705418233,
+          "verifier_rank": 5,
+          "verifier_score": 12.01,
+          "verifier_reasoning": "Pointwise score: 12.0/100",
+          "pointwise_breakdown": {
+            "geo": 7.01,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "predicted_iou": 0
+          },
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "the wrestler in the black singlet pinning the opponent",
+          "reasoning": "The query refers to \"the person who appears to have already won in the battle.\" In the image, the wrestler in the black singlet is on top, pinning the wrestler in the blue singlet to the mat. This dominant position strongly suggests the black singlet wrestler has already won or is in control of the match. The black singlet wrestler is located in the foreground, occupying the central part of the image. The bounding box is drawn around the black singlet wrestler.",
+          "box": [
+            0,
+            171,
+            2012,
+            1496
+          ],
+          "iou": 0.0011305282479683897,
+          "verifier_rank": 4,
+          "verifier_score": 12.01,
+          "verifier_reasoning": "Pointwise score: 12.0/100",
+          "pointwise_breakdown": {
+            "geo": 7.01,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "predicted_iou": 0
+          },
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "the wrestler in the black singlet on top",
+          "reasoning": "The query \"the person who appears to have already won in the battle\" refers to the wrestler in the black singlet who is on top, pinning the other wrestler. In wrestling, being on top and controlling the opponent in this manner typically indicates a dominant position, often leading to a pin or victory. The wrestler in black is clearly in control, while the wrestler in blue is on his back, suggesting the black wrestler has already won or is about to win.",
+          "box": [
+            0,
+            168,
+            2012,
+            1496
+          ],
+          "iou": 0.0011268909705150706,
+          "verifier_rank": 1,
+          "verifier_score": 12.01,
+          "verifier_reasoning": "Pointwise score: 12.0/100",
+          "pointwise_breakdown": {
+            "geo": 7.01,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "predicted_iou": 0
+          },
+          "pointwise_error": null
+        },
+        {
+          "hypothesis": "boy in black singlet dominating the match",
+          "reasoning": "In wrestling, a dominant position like the one shown \u2014 where one wrestler is on top, controlling the opponent\u2019s head and torso \u2014 often indicates the top wrestler has already won the match or is in a position to win. The boy in the black singlet is clearly in control, suggesting he has already won or is about to win. This interpretation is metaphorical, as the \u201cbattle\u201d is not necessarily over yet, but the position implies victory.",
+          "box": [
+            0,
+            168,
+            2007,
+            1496
+          ],
+          "iou": 0.0011286337788487231,
+          "verifier_rank": 0,
+          "verifier_score": 12.01,
+          "verifier_reasoning": "Pointwise score: 12.0/100",
+          "pointwise_breakdown": {
+            "geo": 7.01,
+            "rating": 5.0,
+            "iou": 0.0,
+            "boundary": 0.0,
+            "semantic": 0
+          },
+          "pointwise_raw": {
+            "predicted_iou": 0
+          },
+          "pointwise_error": null
+        }
+      ]
+    }
+  ]
 }
