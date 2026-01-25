@@ -206,10 +206,14 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
         geo_score = geo_score_raw * 0.10
         
         # Prepare VLM Input
+        import io
+        import base64
         overlay = apply_red_alpha_overlay(image, mask, alpha=0.5)
-        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
-            overlay.save(tmp.name, quality=95)
-            tmp_path = tmp.name
+        
+        # Optimize: Save to memory instead of disk
+        buffer = io.BytesIO()
+        overlay.convert('RGB').save(buffer, format="JPEG", quality=85) # Quality 85 is sufficient/faster
+        b64_img = base64.b64encode(buffer.getvalue()).decode('utf-8')
         
         # JSON Schema for guided decoding - enforces all 7 fields
         scoring_schema = {
@@ -300,7 +304,7 @@ Wrong object entirely:
 
 Respond with ONLY the JSON, no explanation."""
 
-            messages = create_vision_message(prompt, tmp_path)
+            messages = create_vision_message(prompt, base64_image=b64_img)
             
             # For vLLM with Qwen3: disable thinking via chat_template_kwargs
             completion = self.client.chat.completions.create(
@@ -424,6 +428,4 @@ Respond with ONLY the JSON, no explanation."""
             if self.verbose:
                 print(f"Composite score error: {e}")
             return {"total_score": 0, "error": str(e)}
-        finally:
-            if os.path.exists(tmp_path):
-                os.remove(tmp_path)
+
