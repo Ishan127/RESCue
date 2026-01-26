@@ -125,7 +125,20 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
         # 1. Run VLM Scoring (Parallel)
         # Increase workers to match N for high throughput async servers
         max_workers = min(128, n) 
-        vlm_results = self._pointwise_score_batch(image_input, masks, query, max_workers=max_workers)
+        
+        # Pre-encode image for Prefix Caching efficiency
+        from .api_utils import encode_pil_image, encode_image
+        base64_img = None
+        w, h = 0, 0
+        if isinstance(image_input, str):
+            base64_img = encode_image(image_input)
+            with Image.open(image_input) as img:
+                w, h = img.size
+        else:
+            base64_img = encode_pil_image(image_input)
+            w, h = image_input.size
+            
+        vlm_results = self._pointwise_score_batch(base64_img, w, h, masks, query, max_workers=max_workers)
         
         # 2. Run CLIP Scoring (Batch)
         try:
@@ -421,17 +434,16 @@ Output JSON: {{ "winner": "A" or "B", "reason": "short explanation" }}"""
                 print(f"Duel Error: {e}")
             return True # Conservative: keep current winner
 
-    def _pointwise_score_batch(self, image, masks, query, max_workers=32):
+    def _pointwise_score_batch(self, base64_img, w, h, masks, query, max_workers=32):
         """
-        Run parallel pointwise scoring for all masks.
-        Returns list of dicts with scores and breakdown.
+        Run parallel pointwise scoring for all masks using Cached Box Prompting.
         """
         from concurrent.futures import ThreadPoolExecutor, as_completed
         
         results = []
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_idx = {
-                executor.submit(self._score_single_composite, image, mask, query): i 
+                executor.submit(self._score_single_box, base64_img, w, h, mask, query): i 
                 for i, mask in enumerate(masks)
             }
             
@@ -450,123 +462,82 @@ Output JSON: {{ "winner": "A" or "B", "reason": "short explanation" }}"""
 
 
 
-    def _score_single_composite(self, image, mask, query):
+    def _score_single_box(self, base64_img, w, h, mask, query):
         """
-        Score a single mask using the 5-part composite metric (0-100).
-        
-        Uses vLLM guided JSON decoding to guarantee all fields are returned.
-        
-        Components:
-        1. Geometric (10%) - mask size/coverage heuristic
-        2. Rating (20%) - LLM rates PERFECT/GOOD/AVERAGE/BAD/WRONG  
-        3. IoU (30%) - LLM predicts estimated IoU
-        4. Boundary (20%) - LLM rates edge quality
-        5. Semantic (20%) - 4 sub-metrics for category/attribute/context/count
+        Score using Bounding Box Prompting on the original image.
+        Target Metric: Evaluate if the object inside the box matches the query description + segmentation quality inference.
         """
-        # 1. Geometric (10%) - purely local calculation
-        geo_score_raw = self._compute_mask_heuristic(mask)  # 0-100
+        # 1. Geometric (10%)
+        geo_score_raw = self._compute_mask_heuristic(mask)
         geo_score = geo_score_raw * 0.10
         
-        # Prepare VLM Input
-        import io
-        import base64
-        overlay = apply_red_alpha_overlay(image, mask, alpha=0.5, black_background=True)
+        # Calculate Box
+        mask_np = np.array(mask) > 0
+        if mask_np.ndim == 3: mask_np = mask_np[:, :, 0]
         
-        # Optimize: Save to memory instead of disk
+        rows = np.any(mask_np, axis=1)
+        cols = np.any(mask_np, axis=0)
         
-        # Use centralized encoder
-        from .api_utils import encode_pil_image
-        b64_img = encode_pil_image(overlay)
+        if not np.any(rows) or not np.any(cols):
+            return {"total_score": 0, "error": "Empty mask"}
+            
+        ymin, ymax = np.where(rows)[0][[0, -1]]
+        xmin, xmax = np.where(cols)[0][[0, -1]]
         
-        # JSON Schema for guided decoding - enforces all 7 fields
+        # Normalize to 1000 for Qwen3-VL
+        x1_n = int(xmin / w * 1000)
+        y1_n = int(ymin / h * 1000)
+        x2_n = int(xmax / w * 1000)
+        y2_n = int(ymax / h * 1000)
+        
+        box_str = f"[{x1_n}, {y1_n}, {x2_n}, {y2_n}]"
+        
+        # JSON Schema
         scoring_schema = {
             "type": "object",
             "properties": {
-                "rating_class": {
-                    "type": "string",
-                    "enum": ["PERFECT", "GOOD", "AVERAGE", "BAD", "WRONG"]
-                },
-                "predicted_iou": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 100
-                },
-                "boundary_score": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 100
-                },
-                "semantic_category": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 5
-                },
-                "semantic_attribute": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 5
-                },
-                "semantic_context": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 5
-                },
-                "semantic_count": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 5
-                }
+                "rating_class": {"type": "string", "enum": ["PERFECT", "GOOD", "AVERAGE", "BAD", "WRONG"]},
+                "predicted_iou": {"type": "integer", "minimum": 0, "maximum": 100},
+                "boundary_score": {"type": "integer", "minimum": 0, "maximum": 100},
+                "semantic_category": {"type": "integer", "minimum": 0, "maximum": 5},
+                "semantic_attribute": {"type": "integer", "minimum": 0, "maximum": 5},
+                "semantic_context": {"type": "integer", "minimum": 0, "maximum": 5},
+                "semantic_count": {"type": "integer", "minimum": 0, "maximum": 5}
             },
-            "required": [
-                "rating_class", "predicted_iou", "boundary_score",
-                "semantic_category", "semantic_attribute", "semantic_context", "semantic_count"
-            ]
+            "required": ["rating_class", "predicted_iou", "boundary_score", "semantic_category", "semantic_attribute", "semantic_context", "semantic_count"]
         }
             
         try:
-            # Balanced prompt for accurate scoring with good variation
             prompt = f"""/no_think
-You are evaluating a segmentation mask. The RED region in the image is the proposed mask for: "{query}"
+Evaluate the object located at {box_str}.
+Query: "{query}"
 
-Output ONLY a JSON object with these 7 scores:
+Is this object the correct one? rate the segmentation implied by this box.
 
+Output ONLY a JSON object with these scores:
 === RATING CLASS ===
-- "PERFECT": Exact object, pixel-perfect boundaries (rare, <10% of masks)
-- "GOOD": Correct object, minor boundary imperfections (most correct masks: 60%)
-- "AVERAGE": Right object but visible issues - boundary bleeds, extra parts (20%)
-- "BAD": Partially wrong - includes incorrect regions or misses key parts
-- "WRONG": Completely wrong object (only if mask is on unrelated object)
+- "PERFECT": Exact match to query
+- "GOOD": Correct object
+- "AVERAGE": Right type, maybe wrong instance
+- "BAD": Wrong object
 
-=== NUMERIC SCORES ===
-predicted_iou (0-100): Overlap with ideal mask
-- 80-95 typical for GOOD masks, 60-79 for AVERAGE, <60 for BAD
+=== NUMERIC SCORES (0-100/0-5) ===
+predicted_iou: Estimate overlap with ground truth
+boundary_score: Estimate if box/mask fits object well
+semantic_category: Correct object type? (0-5)
+semantic_attribute: Attributes match? (0-5)
+semantic_context: Context matches? (0-5)
+semantic_count: Count matches? (0-5)
 
-boundary_score (0-100): Edge accuracy
-- 80-90 for clean edges, 60-79 for minor issues, <60 for poor edges
+Output ONLY the JSON."""
 
-semantic_category (0-5): Correct object type? (5=exact, 3-4=related, 0=wrong type)
-semantic_attribute (0-5): Attributes match? (color/size/shape - 5=perfect, 3-4=mostly, 1-2=some)
-semantic_context (0-5): Context/action matches query? (5=perfect, 3-4=mostly)
-semantic_count (0-5): Correct instance count? (5=exact count)
-
-
-=== SCORING GUIDANCE ===
-- If the mask covers the RIGHT object type, semantic_category should be 4-5
-- Only use rating "WRONG" if the mask is on a completely unrelated object
-- Use the full 0-5 range for semantic scores based on specific issues
-- Most masks of the correct object are "GOOD" or "AVERAGE", not "PERFECT"
-
-Output ONLY the detailed metrics JSON.
-"""
-
-            messages = create_vision_message(prompt, base64_image=b64_img)
+            messages = create_vision_message(prompt, base64_image=base64_img)
             
-            # For vLLM with Qwen3: Disable thinking for fast pointwise scoring
             completion = self.client.chat.completions.create(
                 model=self.model_path,
                 messages=messages,
-                temperature=0.1,  # Lower temperature for consistency
-                max_tokens=256,  # Short generation
+                temperature=0.1,
+                max_tokens=256,
                 extra_body={
                     "chat_template_kwargs": {"enable_thinking": False},
                     "guided_json": scoring_schema,
@@ -575,17 +546,7 @@ Output ONLY the detailed metrics JSON.
             )
             text = completion.choices[0].message.content.strip()
             
-            # Log raw VLM response for debugging
-            import datetime
-            log_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "verifier_vlm_log.txt")
-            with open(log_path, "a", encoding="utf-8") as log_f:
-                log_f.write(f"\n{'='*60}\n")
-                log_f.write(f"Timestamp: {datetime.datetime.now().isoformat()}\n")
-                log_f.write(f"Query: {query}\n")
-                log_f.write(f"Raw VLM Response:\n{text}\n")
-            
-            # --- Parse JSON ---
-            # Strip Qwen3's <think>...</think> block if present
+            # --- Parse JSON (Logic reused) ---
             json_text = text
             if '</think>' in text:
                 json_text = text.split('</think>')[-1].strip()
@@ -594,77 +555,29 @@ Output ONLY the detailed metrics JSON.
             
             data = {}
             try:
-                try:
-                    parsed = json_repair.loads(json_text)
-                    if isinstance(parsed, dict):
-                        data = parsed
-                    elif isinstance(parsed, str):
-                        if self.verbose:
-                            print(f"json_repair returned string, using regex fallback")
-                        json_match = re.search(r'\{[^{}]*\}', parsed)
-                        if json_match:
-                            data = json.loads(json_match.group(0))
-                except ImportError:
-                    if self.verbose:
-                        print("json_repair not found, using regex fallback")
-                    json_match = re.search(r'\{[^{}]*\}', json_text)
-                    if json_match:
-                        data = json.loads(json_match.group(0))
-            except Exception as e:
-                if self.verbose:
-                    print(f"JSON Parsing fully failed: {e}")
-                
-            # Final fallback: manual key extraction
+                parsed = json_repair.loads(json_text)
+                if isinstance(parsed, dict): data = parsed
+            except:
+                match = re.search(r'\{[^{}]*\}', json_text)
+                if match: data = json.loads(match.group(0))
+            
+            # Fallbacks
             if not data:
-                if "PERFECT" in text:
-                    data["rating_class"] = "PERFECT"
-                elif "GOOD" in text:
-                    data["rating_class"] = "GOOD"
-                iou_m = re.search(r'IOU.*?(\d+)', text, re.IGNORECASE)
-                if iou_m:
-                    data["predicted_iou"] = int(iou_m.group(1))
-
-            # --- Calculate Scores ---
+                if "PERFECT" in text: data["rating_class"] = "PERFECT"
+                elif "GOOD" in text: data["rating_class"] = "GOOD"
             
-            # 2. Rating (20%)
-            r_class = data.get("rating_class", "BAD")
-            if isinstance(r_class, str):
-                r_class = r_class.upper()
-            else:
-                r_class = "BAD"
-            
-            if "PERFECT" in r_class:
-                r_val = 100
-            elif "GOOD" in r_class:
-                r_val = 75
-            elif "AVERAGE" in r_class:
-                r_val = 50
-            elif "WRONG" in r_class:
-                r_val = 0
-            elif "BAD" in r_class:
-                r_val = 25
-            else:
-                r_val = 25
+            # Calculate Scores (Reused weighting)
+            r_class = data.get("rating_class", "BAD").upper() if isinstance(data.get("rating_class"), str) else "BAD"
+            r_vals = {"PERFECT": 100, "GOOD": 75, "AVERAGE": 50, "BAD": 25, "WRONG": 0}
+            r_val = r_vals.get(r_class, 25)
             score_rating = r_val * 0.20
             
-            # 3. IoU (30%)
-            pred_iou = float(data.get("predicted_iou", 0))
-            score_iou = min(100, max(0, pred_iou)) * 0.30
+            score_iou = min(100, max(0, float(data.get("predicted_iou", 0)))) * 0.30
+            score_boundary = min(100, max(0, float(data.get("boundary_score", 0)))) * 0.20
             
-            # 4. Boundary (20%)
-            b_qual = float(data.get("boundary_score", 0))
-            score_boundary = min(100, max(0, b_qual)) * 0.20
-            
-            # 5. Semantic (20%) - sum of 4 * 5pts = 20pts max
-            # Now using flat field names from guided JSON schema
-            s1 = int(data.get("semantic_category", 0))
-            s2 = int(data.get("semantic_attribute", 0))
-            s3 = int(data.get("semantic_context", 0))
-            s4 = int(data.get("semantic_count", 0))
-            s_sum = min(5, s1) + min(5, s2) + min(5, s3) + min(5, s4)  # max 20
+            s_sum = sum([min(5, int(data.get(k, 0))) for k in ["semantic_category", "semantic_attribute", "semantic_context", "semantic_count"]])
             score_semantic = s_sum 
             
-            # Total
             total_score = geo_score + score_rating + score_iou + score_boundary + score_semantic
             
             return {
@@ -681,6 +594,6 @@ Output ONLY the detailed metrics JSON.
             
         except Exception as e:
             if self.verbose:
-                print(f"Composite score error: {e}")
+                print(f"Composite box score error: {e}")
             return {"total_score": 0, "error": str(e)}
 

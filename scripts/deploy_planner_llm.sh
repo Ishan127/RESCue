@@ -3,14 +3,14 @@
 # Fast hypothesis generation for bounding box proposals
 # Port: 8002
 
-export CUDA_VISIBLE_DEVICES=5
+export CUDA_VISIBLE_DEVICES=2
 
 python -m vllm.entrypoints.openai.api_server \
     --model Qwen/Qwen3-VL-8B-Instruct \
     --trust-remote-code \
     --gpu-memory-utilization 0.9 \
     --max-model-len 32768 \
-    --max-num-seqs 512 \
+    --max-num-seqs 2048 \
     --enable-prefix-caching \
     --port 8002 \
     --host 0.0.0.0
