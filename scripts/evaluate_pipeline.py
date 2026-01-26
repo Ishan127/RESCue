@@ -26,14 +26,14 @@ parser.add_argument("--max_n", type=int, default=64)
 parser.add_argument("--planner_url", default="http://localhost:8002/v1")
 parser.add_argument("--verifier_url", default="http://localhost:8000/v1")
 parser.add_argument("--executor_url", default="http://localhost:8001",
-                    help="SAM load balancer URL (single endpoint, internally routes to multiple backends)")
-parser.add_argument("--parallel_requests", type=int, default=8,
-                    help="Number of parallel requests to SAM cluster")
+                    help="SAM server URL")
+parser.add_argument("--parallel_requests", type=int, default=4,
+                    help="Number of parallel requests to SAM server")
 parser.add_argument("--pipeline_depth", type=int, default=3, help="Number of samples to process concurrently")
 parser.add_argument("--mode", choices=["comparative", "heuristic"], default="comparative")
 parser.add_argument("--workers_planner", type=int, default=2)
-parser.add_argument("--workers_executor", type=int, default=4)
-parser.add_argument("--workers_verifier", type=int, default=4)
+parser.add_argument("--workers_executor", type=int, default=2) # Reduced for single server
+parser.add_argument("--workers_verifier", type=int, default=2)
 args = parser.parse_args()
 
 print(f"Using SAM cluster at {args.executor_url} with {args.parallel_requests} parallel requests")
@@ -69,7 +69,7 @@ class SampleTask:
     image: Any
     query: str
     gt_mask: Optional[np.ndarray]
-    temp_img_path: str
+    # temp_img_path removed, image passed in-memory
     
     # Filled by planner stage
     hypotheses: List[Dict] = field(default_factory=list)
@@ -131,7 +131,8 @@ class PlannerStage(PipelineStage):
         task.t_start = time.time()
         
         try:
-            hypotheses = self.planner.generate_hypotheses(task.temp_img_path, task.query, N=self.max_n)
+            # Pass PIL image directly
+            hypotheses = self.planner.generate_hypotheses(task.image, task.query, N=self.max_n)
             task.hypotheses = hypotheses if hypotheses else []
             
         except Exception as e:
@@ -157,8 +158,9 @@ class ExecutorStage(PipelineStage):
             task.t_exec_done = time.time()
             return task
         
-        # Load fresh image copy
-        image = Image.open(task.temp_img_path).copy()
+        # Use in-memory image
+        image = task.image
+        
         
         prompts_list = []
         for hyp in task.hypotheses:
@@ -302,17 +304,17 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
             if gt_mask is not None:
                 gt_mask = np.array(gt_mask) > 0
             
-            # Unique temp file for each sample
-            temp_img_path = f"temp_pipeline_{sample_idx}.jpg"
-            image.save(temp_img_path)
-            temp_files.append(temp_img_path)
+            # No temp file creation needed
+            # temp_img_path = f"temp_pipeline_{sample_idx}.jpg"
+            # image.save(temp_img_path)
+            # temp_files.append(temp_img_path)
+            
             
             task = SampleTask(
                 sample_idx=sample_idx,
                 image=image,
                 query=query,
-                gt_mask=gt_mask,
-                temp_img_path=temp_img_path
+                gt_mask=gt_mask
             )
             
             q_input.put(task)
@@ -419,7 +421,7 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
                     'verifier_rank': rank_map.get(i, -1),
                     'verifier_score': cand.get('verifier_score'),
                     'verifier_reasoning': cand.get('verifier_reasoning'),
-                    # 'pointwise_breakdown': cand.get('pointwise_details', {}).get('breakdown'), # Save space
+                    'pointwise_breakdown': cand.get('pointwise_details', {}).get('breakdown'), # Logic restored
                 }
                 sample_info['candidates'].append(cand_info)
             
@@ -452,13 +454,13 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
     pbar.close()
     monitor_thread.join()
     
-    # Cleanup temp files
-    for f in temp_files:
-        if os.path.exists(f):
-            try:
-                os.remove(f)
-            except: 
-                pass
+    # Cleanup temp files - REMOVED
+    # for f in temp_files:
+    #     if os.path.exists(f):
+    #         try:
+    #             os.remove(f)
+    #         except: 
+    #             pass
     
     # Print results
     print_results(results_by_n, mode)

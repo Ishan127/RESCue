@@ -98,7 +98,7 @@ class Planner:
              logger.error("API base URL not provided. Local inference is removed in this refactor.")
              raise ValueError("API base URL is required.")
 
-    def generate_hypotheses(self, image_path: str, query: str, N: int = 1, temperature: float = 0.7, parallel: bool = True) -> List[Dict]:
+    def generate_hypotheses(self, image_input: Union[str, Any], query: str, N: int = 1, temperature: float = 0.7, parallel: bool = True) -> List[Dict]:
         if N < 1:
             return []
         
@@ -113,13 +113,19 @@ class Planner:
         candidates: List[Hypothesis] = []
         
         from PIL import Image
-        with Image.open(image_path) as img:
-            real_w, real_h = img.size
+        if isinstance(image_input, str):
+            with Image.open(image_input) as img:
+                real_w, real_h = img.size
+                img_area = real_w * real_h
+                # Keep path for parallel case if needed, or load if using threads
+        else:
+            # Assume PIL Image
+            real_w, real_h = image_input.size
             img_area = real_w * real_h
         
         if parallel and len(query_configs) > 1:
             candidates = self._generate_hypotheses_parallel(
-                image_path, query_configs, real_w, real_h, img_area
+                image_input, query_configs, real_w, real_h, img_area
             )
         else:
             for i, config in enumerate(query_configs):
@@ -129,7 +135,7 @@ class Planner:
                 
                 try:
                     hyp = self._generate_single_hypothesis(
-                        image_path, 
+                        image_input, 
                         varied_query,
                         strategy,
                         temp,
@@ -178,19 +184,19 @@ class Planner:
         
         return [h.to_dict() for h in final_hypotheses]
     
-    def _generate_hypotheses_parallel(self, image_path: str, query_configs: List[Dict], 
+    def _generate_hypotheses_parallel(self, image_input: Union[str, Any], query_configs: List[Dict], 
                                        w: int, h: int, img_area: int) -> List[Hypothesis]:
         """Generate hypotheses in parallel using ThreadPoolExecutor."""
         from concurrent.futures import ThreadPoolExecutor, as_completed
         
         candidates = []
         # Use more workers since planner has max-num-seqs=512 now
-        max_workers = min(128, len(query_configs))
+        max_workers = min(32, len(query_configs))
         
         def generate_one(config):
             try:
                 return self._generate_single_hypothesis(
-                    image_path,
+                    image_input,
                     config["query"],
                     config["strategy"],
                     config["temperature"],
@@ -475,10 +481,15 @@ Output ONLY a JSON object with this exact format:
         random.shuffle(templates)
         return templates[:count]
     
-    def _generate_single_hypothesis(self, image_path: str, query: str, strategy: str, 
+    def _generate_single_hypothesis(self, image_input: Union[str, Any], query: str, strategy: str, 
                                      temperature: float, w: int, h: int, img_area: int) -> Optional[Hypothesis]:
         prompt_text = self._construct_prompt(query, strategy)
-        messages = create_vision_message(prompt_text, image_path)
+        
+        # Handle input type for create_vision_message
+        image_path = image_input if isinstance(image_input, str) else None
+        image_obj = image_input if not isinstance(image_input, str) else None
+        
+        messages = create_vision_message(prompt_text, image_path=image_path, image=image_obj)
         
         try:
             completion = self.client.chat.completions.create(

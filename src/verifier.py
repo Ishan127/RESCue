@@ -61,12 +61,9 @@ Rate the segmentation quality from 0-100:
 
 Output JSON: {{"score": X, "reason": "brief explanation"}}"""
 
-        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
-            overlay_img.save(tmp.name, quality=95)
-            tmp_path = tmp.name
-        
+        # DIRECT IN-MEMORY PASSING
         try:
-            messages = create_vision_message(prompt, tmp_path)
+            messages = create_vision_message(prompt, image=overlay_img)
             
             completion = self.client.chat.completions.create(
                 model=self.model_path,
@@ -91,9 +88,10 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
             if self.verbose:
                 print(f"Verify error: {e}")
             return {"score": 50, "total": 50}
-        finally:
-            if os.path.exists(tmp_path):
-                os.remove(tmp_path)
+        except Exception as e:
+            if self.verbose:
+                print(f"Verify error: {e}")
+            return {"score": 50, "total": 50}
 
     def verify_batch_pointwise(self, image_input, masks, query):
         """
@@ -394,7 +392,7 @@ Output JSON: {{ "winner": "A" or "B", "reason": "short explanation" }}"""
         from concurrent.futures import ThreadPoolExecutor, as_completed
         
         results = []
-        with ThreadPoolExecutor(max_workers=128) as executor:
+        with ThreadPoolExecutor(max_workers=32) as executor:
             future_to_idx = {
                 executor.submit(self._score_single_composite, image, mask, query): i 
                 for i, mask in enumerate(masks)
@@ -412,6 +410,8 @@ Output JSON: {{ "winner": "A" or "B", "reason": "short explanation" }}"""
                     results.append({'mask_idx': idx, 'total_score': 0, 'error': str(e)})
                     
         return results
+
+
 
     def _score_single_composite(self, image, mask, query):
         """
@@ -436,9 +436,10 @@ Output JSON: {{ "winner": "A" or "B", "reason": "short explanation" }}"""
         overlay = apply_red_alpha_overlay(image, mask, alpha=0.5, black_background=True)
         
         # Optimize: Save to memory instead of disk
-        buffer = io.BytesIO()
-        overlay.convert('RGB').save(buffer, format="JPEG", quality=85) # Quality 85 is sufficient/faster
-        b64_img = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        
+        # Use centralized encoder
+        from .api_utils import encode_pil_image
+        b64_img = encode_pil_image(overlay)
         
         # JSON Schema for guided decoding - enforces all 7 fields
         scoring_schema = {
@@ -518,23 +519,19 @@ semantic_count (0-5): Correct instance count? (5=exact count)
 - Use the full 0-5 range for semantic scores based on specific issues
 - Most masks of the correct object are "GOOD" or "AVERAGE", not "PERFECT"
 
-Task:
-1. Reason step-by-step about the mask's alignment with the query.
-2. Check for over-segmentation (too large?) or under-segmentation (missing parts?).
-3. Evaluate if it captures the *intended* object versus a distraction.
-4. Output the detailed metrics JSON.
+Output ONLY the detailed metrics JSON.
 """
 
             messages = create_vision_message(prompt, base64_image=b64_img)
             
-            # For vLLM with Qwen3: Enable thinking for detailed reasoning
+            # For vLLM with Qwen3: Disable thinking for fast pointwise scoring
             completion = self.client.chat.completions.create(
                 model=self.model_path,
                 messages=messages,
-                temperature=0.2,  # Slightly higher than 0.0 to allow reasoning flow
-                max_tokens=4096,  # Increased for thinking block
+                temperature=0.1,  # Lower temperature for consistency
+                max_tokens=256,  # Short generation
                 extra_body={
-                    "chat_template_kwargs": {"enable_thinking": True},
+                    "chat_template_kwargs": {"enable_thinking": False},
                     "guided_json": scoring_schema,
                     "guided_decoding_backend": "outlines"
                 }
