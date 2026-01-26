@@ -417,6 +417,11 @@ class SAM3ImageModel:
         boxes: Optional[List[Tuple[List[float], bool]]] = None,
         points: Optional[List[Tuple[List[List[float]], List[int]]]] = None,
     ) -> Tuple[List[np.ndarray], List[List[float]], List[float]]:
+        # Add debugging log
+        num_prompts = len(text_prompts) if text_prompts else 0
+        num_boxes = len(boxes) if boxes else 0
+        logger.info(f"SAM3: Processing segment request | Prompts: {num_prompts}, Boxes: {num_boxes} | Image: {image.size}")
+
         # 1. Create Datapoint
         w, h = image.size
         datapoint = Datapoint(find_queries=[], images=[SAMImage(data=image, objects=[], size=[h, w])])

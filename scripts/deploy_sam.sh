@@ -1,14 +1,14 @@
 #!/bin/bash
 # Deploy Single SAM3 Server
 # GPU Assignment
-export CUDA_VISIBLE_DEVICES=5
-export HIP_VISIBLE_DEVICES=5
+export CUDA_VISIBLE_DEVICES=6
+export HIP_VISIBLE_DEVICES=6
 
 PORT=${SAM_PORT:-8001}
 HOST=${SAM_HOST:-0.0.0.0}
 
 echo "Starting SAM3 Single Node on $HOST:$PORT..."
-echo "GPU: Device 3"
+echo "GPU: Device 5"
 
 # Kill any existing process on this port or logic
 pkill -f "sam_server.py" 2>/dev/null || true

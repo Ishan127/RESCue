@@ -23,7 +23,7 @@ class Executor:
         remote_url: Optional[str] = None,
         confidence_threshold: float = 0.5, 
         resolution: int = 1008,
-        timeout: int = 300
+        timeout: int = 600
     ):
         self.remote_url = remote_url
         self.device = device or get_device()

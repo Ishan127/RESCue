@@ -4,14 +4,14 @@
 # GPU Assignment: Same as SAM (Device 4) or 5 if separate
 # User requested running on same GPU as SAM
 
-export CUDA_VISIBLE_DEVICES=5
-export HIP_VISIBLE_DEVICES=5
+export CUDA_VISIBLE_DEVICES=7
+export HIP_VISIBLE_DEVICES=7
 
 PORT=8003
 HOST=0.0.0.0
 
 echo "Starting SigLIP Verifier Server on $HOST:$PORT..."
-echo "GPU config: Device 4 (sharing with SAM)"
+echo "GPU: Device 7"
 
 # Install deps if needed (usually assumed present)
 # pip install uvicorn fastapi
