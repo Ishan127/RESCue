@@ -329,7 +329,8 @@ class SAM3ImageModel:
         
         # Auto-enable compilation on ROCm if not specified
         if compile is None:
-            compile = is_rocm_pytorch()
+            # compile = is_rocm_pytorch()
+            compile = False # DISABLE COMPILATION: Suspect generic recompilation is causing timeouts
             if compile:
                  logger.info("ROCm detected: Enabling torch.compile for SAM3 backbone optimization")
 
