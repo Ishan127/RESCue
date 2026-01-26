@@ -31,7 +31,10 @@ class ClipVerifier:
             image_np = np.array(image_input)
 
         try:
-            for i, mask in enumerate(masks):
+        from concurrent.futures import ThreadPoolExecutor
+        
+        def process_crop(idx, mask):
+            try:
                 # Ensure mask is boolean numpy
                 mask_np = np.array(mask) > 0
                 if mask_np.ndim == 3: mask_np = mask_np[:, :, 0]
@@ -40,7 +43,7 @@ class ClipVerifier:
                 cols = np.any(mask_np, axis=0)
                 
                 if not np.any(rows) or not np.any(cols):
-                    continue
+                    return None
                     
                 ymin, ymax = np.where(rows)[0][[0, -1]]
                 xmin, xmax = np.where(cols)[0][[0, -1]]
@@ -61,14 +64,12 @@ class ClipVerifier:
                 # Create a black background canvas
                 masked_crop = np.zeros_like(img_crop)
                 
-                # Copy pixels where mask is strictly True
-                # Note: mask_crop shape matches img_crop shape (H,W) vs (H,W,3)?
-                # We need broadcasting
+                # Handle shape mismatch if any
                 if mask_crop.shape != img_crop.shape[:2]:
-                    # This implies padding issues if mask wasn't cropped identically
-                    # But index slicing [ymin:ymax] guarantees same shape
-                    pass
-                
+                    # Resize mask crop to match img crop (nearest neighbor)
+                    import cv2
+                    mask_crop = cv2.resize(mask_crop.astype(np.uint8), (img_crop.shape[1], img_crop.shape[0]), interpolation=cv2.INTER_NEAREST) > 0
+
                 masked_crop[mask_crop] = img_crop[mask_crop]
                 
                 # Convert to PIL
@@ -78,9 +79,18 @@ class ClipVerifier:
                 buf = io.BytesIO()
                 crop_pil.convert("RGB").save(buf, format="JPEG", quality=90)
                 b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
-                
-                crops_b64.append(b64)
-                valid_indices.append(i)
+                return idx, b64
+            except Exception as e:
+                print(f"Crop Error {idx}: {e}")
+                return None
+
+        with ThreadPoolExecutor(max_workers=min(32, len(masks))) as executor:
+            futures = [executor.submit(process_crop, i, m) for i, m in enumerate(masks)]
+            for f in futures:
+                res = f.result()
+                if res:
+                    valid_indices.append(res[0])
+                    crops_b64.append(res[1])
                 
             if not crops_b64:
                 return [0.0] * len(masks)

@@ -123,7 +123,9 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
             print(f"[Pointwise] Scoring {n} masks independently...")
         
         # 1. Run VLM Scoring (Parallel)
-        vlm_results = self._pointwise_score_batch(image_input, masks, query)
+        # Increase workers to match N for high throughput async servers
+        max_workers = min(64, n) 
+        vlm_results = self._pointwise_score_batch(image_input, masks, query, max_workers=max_workers)
         
         # 2. Run CLIP Scoring (Batch)
         try:
@@ -141,16 +143,51 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
         # "Cross-Reasoning Path Agreement": Mean IoU with all other masks
         consistency_scores = []
         if n > 1:
-            # We can use a simpler loop for N=64 (4096 checks is instant)
-            for i in range(n):
-                total_iou = 0
-                count = 0
-                for j in range(n):
-                    if i == j: continue
-                    total_iou += calculate_iou(masks[i], masks[j])
-                    count += 1
-                avg_iou = total_iou / count if count > 0 else 0
-                consistency_scores.append(avg_iou)
+            try:
+                # Vectorized IoU Calculation (O(N^2) -> Matrix Op)
+                # Stack masks: (N, H, W) -> flattened (N, HW)
+                mask_stack = []
+                for m in masks:
+                    m_arr = np.array(m).astype(bool)
+                    if m_arr.ndim == 3: m_arr = m_arr[:,:,0] if m_arr.shape[2]==1 else m_arr[0]
+                    mask_stack.append(m_arr.reshape(-1))
+                
+                # Use float32 to prevent potential overflow in very large images/batches during dot product, though unlikely for pixels
+                # But bool matmul is not standard, convert to float or int
+                flat_masks = np.stack(mask_stack).astype(np.float32) 
+                
+                # Intersection: Dot product
+                intersections = flat_masks @ flat_masks.T # (N, N)
+                
+                # Areas
+                areas = flat_masks.sum(axis=1) # (N,)
+                
+                # Union = A + B - Intersection
+                # Broadcast areas: (N, 1) + (1, N)
+                unions = areas[:, None] + areas[None, :] - intersections
+                
+                # Avoid division by zero
+                unions[unions == 0] = 1.0
+                
+                iou_matrix = intersections / unions
+                
+                # Mean IoU for each mask with others (exclude self-diagonal)
+                # Subtract 1.0 (self-iou) and divide by N-1
+                consistency_scores = (iou_matrix.sum(axis=1) - 1.0) / (n - 1)
+                consistency_scores = consistency_scores.tolist()
+                
+            except Exception as e:
+                print(f"[Verifier] Vectorized IoU failed: {e}. Falling back to loop.")
+                # Fallback
+                for i in range(n):
+                    total_iou = 0
+                    count = 0
+                    for j in range(n):
+                        if i == j: continue
+                        total_iou += calculate_iou(masks[i], masks[j])
+                        count += 1
+                    avg_iou = total_iou / count if count > 0 else 0
+                    consistency_scores.append(avg_iou)
         else:
             consistency_scores = [1.0] * n # Single mask is consistent with itself
 
@@ -384,7 +421,7 @@ Output JSON: {{ "winner": "A" or "B", "reason": "short explanation" }}"""
                 print(f"Duel Error: {e}")
             return True # Conservative: keep current winner
 
-    def _pointwise_score_batch(self, image, masks, query):
+    def _pointwise_score_batch(self, image, masks, query, max_workers=32):
         """
         Run parallel pointwise scoring for all masks.
         Returns list of dicts with scores and breakdown.
@@ -392,7 +429,7 @@ Output JSON: {{ "winner": "A" or "B", "reason": "short explanation" }}"""
         from concurrent.futures import ThreadPoolExecutor, as_completed
         
         results = []
-        with ThreadPoolExecutor(max_workers=32) as executor:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_idx = {
                 executor.submit(self._score_single_composite, image, mask, query): i 
                 for i, mask in enumerate(masks)
