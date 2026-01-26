@@ -721,6 +721,4 @@ Output ONLY a JSON object with this exact format:
             
         return selected
 
-def get_default_planner(model_path="Qwen/Qwen3-VL-30B-A3B-Instruct"):
-    config = PlannerConfig(model_path=model_path)
-    return Planner(config)
+

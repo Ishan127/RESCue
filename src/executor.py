@@ -39,20 +39,18 @@ class Executor:
         self.model = None
         self.processor = None
 
-        if self.remote_url:
-            logger.info(f"Executor initialized in REMOTE mode. Target: {self.remote_url}")
-            print(f"Executor initialized in REMOTE mode. Target: {self.remote_url}")
-            self.session = requests.Session()
-            adapter = HTTPAdapter(pool_connections=100, pool_maxsize=100)
-            self.session.mount("http://", adapter)
-            self.session.mount("https://", adapter)
-            self.session.mount("http://localhost", adapter)
-            self._verify_server_connection()
-        else:
-            logger.info(f"Executor initializing in LOCAL mode on {self.device}...")
-            print(f"Executor initializing in LOCAL mode on {self.device}...")
-            self.session = None
-            self._load_local_model(model_path)
+        if not self.remote_url:
+             # Default to localhost if not provided, since we only support remote now
+             self.remote_url = "http://localhost:8001"
+             
+        logger.info(f"Executor initialized in REMOTE mode. Target: {self.remote_url}")
+        print(f"Executor initialized in REMOTE mode. Target: {self.remote_url}")
+        self.session = requests.Session()
+        adapter = HTTPAdapter(pool_connections=100, pool_maxsize=100)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
+        self.session.mount("http://localhost", adapter)
+        self._verify_server_connection()
 
     def _verify_server_connection(self):
         try:
@@ -67,53 +65,7 @@ class Executor:
             logger.warning(f"Could not connect to SAM3 server at {self.remote_url}: {e}")
             print(f"Warning: Could not connect to SAM3 server at {self.remote_url}: {e}")
 
-    def _load_local_model(self, model_path: str):
-        try:
-            from sam3.model_builder import build_sam3_image_model
-            from sam3.model.sam3_image_processor import Sam3Processor
-        except ImportError as e:
-            logger.error(f"SAM3 not installed: {e}")
-            raise ImportError("SAM3 library not installed. Install sam3 or use remote mode.")
 
-        load_from_HF = False
-        resolved_checkpoint_path = None
-
-        if model_path == "facebook/sam3":
-            load_from_HF = True
-        elif Path(model_path).exists():
-            resolved_checkpoint_path = model_path
-        else:
-            load_from_HF = True
-
-        logger.info(f"Loading model: {resolved_checkpoint_path or model_path}")
-        print(f"Loading model: {resolved_checkpoint_path or model_path}")
-
-        try:
-            self.model = build_sam3_image_model(
-                device=self.device,
-                checkpoint_path=resolved_checkpoint_path,
-                load_from_HF=load_from_HF,
-                eval_mode=True
-            )
-        except Exception as e:
-            logger.warning(f"First load attempt failed: {e}")
-            try:
-                self.model = build_sam3_image_model(
-                    device=self.device,
-                    ckpt_path=resolved_checkpoint_path
-                )
-            except Exception as e2:
-                logger.error(f"Failed to load model: {e2}")
-                raise
-
-        self.processor = Sam3Processor(
-            model=self.model,
-            resolution=self.resolution,
-            device=self.device,
-            confidence_threshold=self.confidence_threshold
-        )
-        logger.info("SAM3 model loaded successfully")
-        print("SAM3 model loaded successfully")
 
     def _image_to_base64(self, image_input: Union[np.ndarray, Image.Image]) -> str:
         if isinstance(image_input, np.ndarray):
@@ -144,12 +96,9 @@ class Executor:
         point_labels: Optional[List[int]] = None,
         prompts_list: Optional[List[Dict]] = None
     ) -> List[np.ndarray]:
-        if self.remote_url:
-            return self._segment_remote(
-                image, text_prompt, box, points, point_labels, prompts_list
-            )
-        else:
-            return self._segment_local(image, text_prompt, box, points, point_labels)
+        return self._segment_remote(
+            image, text_prompt, box, points, point_labels, prompts_list
+        )
 
     def execute(
         self, 
@@ -164,31 +113,20 @@ class Executor:
         self._cached_image = pil_image
         self._cached_image_size = pil_image.size
 
-        if self.remote_url:
-            try:
-                payload = {"image_base64": self._image_to_base64(pil_image)}
-                response = self.session.post(
-                    f"{self.remote_url}/set_image", 
-                    json=payload,
-                    timeout=self.timeout
-                )
-                response.raise_for_status()
-                self._session_active = True
-                return True
-            except Exception as e:
-                logger.error(f"Remote image encoding failed: {e}")
-                print(f"Remote image encoding failed: {e}")
-                return False
-        else:
-            try:
-                self._active_state = self.processor.set_image(pil_image)
-                self._session_active = True
-                return True
-            except Exception as e:
-                logger.error(f"Local image encoding failed: {e}")
-                print(f"Local image encoding failed: {e}")
-                self._active_state = None
-                return False
+        try:
+            payload = {"image_base64": self._image_to_base64(pil_image)}
+            response = self.session.post(
+                f"{self.remote_url}/set_image", 
+                json=payload,
+                timeout=self.timeout
+            )
+            response.raise_for_status()
+            self._session_active = True
+            return True
+        except Exception as e:
+            logger.error(f"Remote image encoding failed: {e}")
+            print(f"Remote image encoding failed: {e}")
+            return False
 
     def predict_masks(
         self, 
@@ -200,10 +138,7 @@ class Executor:
             print("Error: No cached image. Call encode_image first.")
             return []
 
-        if self.remote_url:
-            return self._predict_remote(box, text_prompt)
-        else:
-            return self._predict_local(box, text_prompt)
+        return self._predict_remote(box, text_prompt)
 
     def _segment_remote(
         self,
@@ -310,99 +245,7 @@ class Executor:
             print(f"Remote prediction failed: {e}")
             return []
 
-    def _segment_local(
-        self,
-        image: Union[np.ndarray, Image.Image],
-        text_prompt: Optional[str] = None,
-        box: Optional[List[float]] = None,
-        points: Optional[List[List[float]]] = None,
-        point_labels: Optional[List[int]] = None,
-    ) -> List[np.ndarray]:
-        pil_image = self._to_pil(image)
-        orig_w, orig_h = pil_image.size
 
-        try:
-            state = self.processor.set_image(pil_image)
-
-            if text_prompt:
-                state = self.processor.set_text_prompt(prompt=text_prompt, state=state)
-
-            if box:
-                state = self.processor.add_geometric_prompt(
-                    box=box,
-                    label=1,
-                    state=state
-                )
-                if "language_features" not in state.get("backbone_out", {}):
-                    dummy_text = self.processor.model.backbone.forward_text(["visual"], device=self.device)
-                    state["backbone_out"].update(dummy_text)
-                if hasattr(self.processor, '_forward_grounding'):
-                    state = self.processor._forward_grounding(state)
-
-            if points and point_labels:
-                pts_tensor = torch.tensor(points, device=self.device, dtype=torch.float32).view(-1, 1, 2)
-                labels_tensor = torch.tensor(point_labels, device=self.device, dtype=torch.long).view(-1, 1)
-
-                if "language_features" not in state.get("backbone_out", {}):
-                    dummy_text = self.processor.model.backbone.forward_text(["visual"], device=self.device)
-                    state["backbone_out"].update(dummy_text)
-
-                if "geometric_prompt" not in state:
-                    state["geometric_prompt"] = self.processor.model._get_dummy_prompt()
-
-                state["geometric_prompt"].append_points(points=pts_tensor, labels=labels_tensor)
-
-                if hasattr(self.processor, '_forward_grounding'):
-                    state = self.processor._forward_grounding(state)
-
-            return self._process_mask_output(state.get("masks"), (orig_w, orig_h))
-
-        except Exception as e:
-            logger.error(f"Local segmentation failed: {e}")
-            import traceback
-            traceback.print_exc()
-            return []
-
-    def _predict_local(
-        self, 
-        box: Optional[List[float]] = None, 
-        text_prompt: Optional[str] = None
-    ) -> List[np.ndarray]:
-        if self._active_state is None:
-            logger.error("No active state. Call encode_image first.")
-            return []
-
-        try:
-            import copy
-            state = copy.deepcopy(self._active_state)
-
-            if text_prompt:
-                state = self.processor.set_text_prompt(prompt=text_prompt, state=state)
-
-            if box:
-                state = self.processor.add_geometric_prompt(
-                    box=box,
-                    label=1,
-                    state=state
-                )
-
-            if "language_features" not in state.get("backbone_out", {}):
-                dummy_text = self.processor.model.backbone.forward_text(["visual"], device=self.device)
-                state["backbone_out"].update(dummy_text)
-
-            if "geometric_prompt" not in state:
-                state["geometric_prompt"] = self.processor.model._get_dummy_prompt()
-
-            if hasattr(self.processor, '_forward_grounding'):
-                state = self.processor._forward_grounding(state)
-
-            return self._process_mask_output(state.get("masks"), self._cached_image_size)
-
-        except Exception as e:
-            logger.error(f"Local prediction failed: {e}")
-            import traceback
-            traceback.print_exc()
-            return []
 
     def _process_mask_output(
         self, 
@@ -463,5 +306,4 @@ class Executor:
                 return response.status_code == 200
             except:
                 return False
-        else:
-            return self.model is not None and self.processor is not None
+        return False
