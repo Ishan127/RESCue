@@ -101,7 +101,7 @@ python scripts/evaluate_pipeline.py \
 - `--fraction`: Fraction of dataset to evaluate (0.1 = 10%)
 - `--parallel_requests`: Concurrent SAM requests (4 recommended for single node)
 - `--mode`: `comparative` (tournament) or `heuristic` (fast scoring)
-- `--max_n`: Maximum hypotheses to generate per sample (default: 64)
+- `--max_n`: Maximum hypotheses to generate per sample (optimized for 64-128, default: 64)
 
 ## 5. Results
 

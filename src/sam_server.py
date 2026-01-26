@@ -321,11 +321,17 @@ class SAM3ImageModel:
         device: str = "cuda:0",
         confidence_threshold: float = 0.5,
         resolution: int = 1008,
-        compile: bool = False,
+        compile: Optional[bool] = None,
     ):
         self.device = device
         self.confidence_threshold = confidence_threshold
         self.resolution = resolution
+        
+        # Auto-enable compilation on ROCm if not specified
+        if compile is None:
+            compile = is_rocm_pytorch()
+            if compile:
+                 logger.info("ROCm detected: Enabling torch.compile for SAM3 backbone optimization")
 
         logger.info(f"Loading SAM3 image model on {device}...")
 
@@ -489,7 +495,9 @@ class SAM3ImageModel:
             batch = copy_data_to_device(batch, torch.device(self.device), non_blocking=True) # Ensure device string
             
             # 6. Inference
-            with torch.inference_mode():
+            # 6. Inference
+            dtype_ctx = torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else torch.float16
+            with torch.inference_mode(), torch.autocast("cuda", dtype=dtype_ctx):
                 # Handling AMP manually if needed, or rely on global settings. 
                 # Assuming AMP is handled by context if set, else standard float32/16
                 output = self.model(batch)
