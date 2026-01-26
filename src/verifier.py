@@ -124,7 +124,7 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
         
         # 1. Run VLM Scoring (Parallel)
         # Increase workers to match N for high throughput async servers
-        max_workers = min(64, n) 
+        max_workers = min(128, n) 
         vlm_results = self._pointwise_score_batch(image_input, masks, query, max_workers=max_workers)
         
         # 2. Run CLIP Scoring (Batch)

@@ -190,8 +190,8 @@ class Planner:
         from concurrent.futures import ThreadPoolExecutor, as_completed
         
         candidates = []
-        # Use more workers since planner has max-num-seqs=512 now
-        max_workers = min(32, len(query_configs))
+        # Use more workers since planner has max-num-seqs=8192 now on MI325X
+        max_workers = min(128, len(query_configs))
         
         def generate_one(config):
             try:
