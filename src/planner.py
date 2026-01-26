@@ -98,7 +98,7 @@ class Planner:
              logger.error("API base URL not provided. Local inference is removed in this refactor.")
              raise ValueError("API base URL is required.")
 
-    def generate_hypotheses(self, image_input: Union[str, Any], query: str, N: int = 1, temperature: float = 0.7, parallel: bool = True) -> List[Dict]:
+    def generate_hypotheses(self, image_input: Union[str, Any], query: str, N: int = 1, temperature: float = 0.7, parallel: bool = True, strategy_filter: str = None) -> List[Dict]:
         if N < 1:
             return []
         
@@ -108,7 +108,7 @@ class Planner:
         target_count = int(N * 1.25)
         if target_count < N + 2: target_count = N + 2 # Ensure at least some selection buffer
         
-        query_configs = self._generate_query_configs(query, target_count, base_temp)
+        query_configs = self._generate_query_configs(query, target_count, base_temp, strategy_filter)
         
         candidates: List[Hypothesis] = []
         
@@ -225,13 +225,13 @@ class Planner:
         
         return candidates
     
-    def _generate_query_configs(self, original_query: str, N: int, base_temp: float) -> List[Dict]:
+    def _generate_query_configs(self, original_query: str, N: int, base_temp: float, strategy_filter: str = None) -> List[Dict]:
         """Generate N hypothesis configs with diverse strategies."""
         configs = []
         
         # Define strategy distribution for N hypotheses
         # Each strategy gets roughly equal share, with different temperatures
-        strategies = [
+        all_strategies = [
             ("original", base_temp),           # Direct match
             ("conservative", base_temp - 0.2), # Most literal interpretation
             ("exploratory", base_temp + 0.2),  # Alternative interpretations
@@ -241,6 +241,16 @@ class Planner:
             ("contextual", base_temp),         # By scene context
             ("part_whole", base_temp),         # Part of larger object or container
         ]
+        
+        if strategy_filter and strategy_filter.lower() != "all":
+            # Filter to specific strategy (case-insensitive)
+            # Find closest match or exact match
+            strategies = [s for s in all_strategies if s[0].lower() == strategy_filter.lower()]
+            if not strategies:
+                logger.warning(f"Strategy filter '{strategy_filter}' not found. Using all.")
+                strategies = all_strategies
+        else:
+            strategies = all_strategies
         
         # First: one hypothesis with original query for each strategy
         for strategy, temp in strategies:

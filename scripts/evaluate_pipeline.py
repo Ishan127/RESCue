@@ -34,6 +34,7 @@ parser.add_argument("--mode", choices=["comparative", "heuristic"], default="com
 parser.add_argument("--workers_planner", type=int, default=2)
 parser.add_argument("--workers_executor", type=int, default=2) # Reduced for single server
 parser.add_argument("--workers_verifier", type=int, default=2)
+parser.add_argument("--planner_strategy", type=str, default=None, help="Filter planner strategy (e.g. 'original', 'spatial')")
 args = parser.parse_args()
 
 print(f"Using SAM cluster at {args.executor_url} with {args.parallel_requests} parallel requests")
@@ -135,7 +136,7 @@ class PlannerStage(PipelineStage):
         
         try:
             # Pass PIL image directly
-            hypotheses = self.planner.generate_hypotheses(task.image, task.query, N=self.max_n)
+            hypotheses = self.planner.generate_hypotheses(task.image, task.query, N=self.max_n, strategy_filter=args.planner_strategy)
             task.hypotheses = hypotheses if hypotheses else []
             
         except Exception as e:
