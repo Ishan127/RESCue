@@ -112,20 +112,27 @@ class Planner:
         
         candidates: List[Hypothesis] = []
         
+        from .api_utils import encode_pil_image, encode_image
+        
+        # Pre-encode image to avoid doing it N times in parallel threads (CPU bottleneck)
+        base64_img = None
+        real_w, real_h, img_area = 0, 0, 0
         from PIL import Image
+        
         if isinstance(image_input, str):
+            base64_img = encode_image(image_input)
             with Image.open(image_input) as img:
                 real_w, real_h = img.size
-                img_area = real_w * real_h
-                # Keep path for parallel case if needed, or load if using threads
         else:
             # Assume PIL Image
+            base64_img = encode_pil_image(image_input)
             real_w, real_h = image_input.size
-            img_area = real_w * real_h
+            
+        img_area = real_w * real_h
         
         if parallel and len(query_configs) > 1:
             candidates = self._generate_hypotheses_parallel(
-                image_input, query_configs, real_w, real_h, img_area
+                base64_img, query_configs, real_w, real_h, img_area
             )
         else:
             for i, config in enumerate(query_configs):
@@ -135,7 +142,7 @@ class Planner:
                 
                 try:
                     hyp = self._generate_single_hypothesis(
-                        image_input, 
+                        base64_img, 
                         varied_query,
                         strategy,
                         temp,
@@ -184,7 +191,7 @@ class Planner:
         
         return [h.to_dict() for h in final_hypotheses]
     
-    def _generate_hypotheses_parallel(self, image_input: Union[str, Any], query_configs: List[Dict], 
+    def _generate_hypotheses_parallel(self, base64_image: str, query_configs: List[Dict], 
                                        w: int, h: int, img_area: int) -> List[Hypothesis]:
         """Generate hypotheses in parallel using ThreadPoolExecutor."""
         from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -196,7 +203,7 @@ class Planner:
         def generate_one(config):
             try:
                 return self._generate_single_hypothesis(
-                    image_input,
+                    base64_image,
                     config["query"],
                     config["strategy"],
                     config["temperature"],
@@ -481,15 +488,12 @@ Output ONLY a JSON object with this exact format:
         random.shuffle(templates)
         return templates[:count]
     
-    def _generate_single_hypothesis(self, image_input: Union[str, Any], query: str, strategy: str, 
+    def _generate_single_hypothesis(self, base64_image: str, query: str, strategy: str, 
                                      temperature: float, w: int, h: int, img_area: int) -> Optional[Hypothesis]:
         prompt_text = self._construct_prompt(query, strategy)
         
-        # Handle input type for create_vision_message
-        image_path = image_input if isinstance(image_input, str) else None
-        image_obj = image_input if not isinstance(image_input, str) else None
-        
-        messages = create_vision_message(prompt_text, image_path=image_path, image=image_obj)
+        # Pass base64_image directly
+        messages = create_vision_message(prompt_text, base64_image=base64_image)
         
         try:
             completion = self.client.chat.completions.create(
