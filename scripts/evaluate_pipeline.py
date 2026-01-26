@@ -112,7 +112,7 @@ class PipelineStage:
                 self.processed += 1
                 self.output_queue.put(task)
                 if self.progress_queue:
-                    self.progress_queue.put(1)
+                    self.progress_queue.put(self.name)
                 
             except queue.Empty:
                 continue
@@ -445,6 +445,10 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
     # Total operations = 3 steps (plan, exec, verify) * num_samples
     total_ops = num_samples * 3
     processed_ops = 0
+    
+    # Counts for breakdown
+    stage_counts = {"Planner": 0, "Executor": 0, "Verifier": 0}
+    
     pbar = tqdm(total=total_ops, desc="Pipeline Steps", unit="step")
     
     while processed_ops < total_ops:
@@ -453,8 +457,19 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
             if msg is None: # Premature shutdown signal
                 break
             
+            # msg should be stage name
+            if msg in stage_counts:
+                stage_counts[msg] += 1
+            
             processed_ops += 1
             pbar.update(1)
+            
+            # Update desc/postfix with breakdown
+            pbar.set_postfix({
+                'Pln': stage_counts['Planner'],
+                'Exc': stage_counts['Executor'],
+                'Ver': stage_counts['Verifier']
+            })
             
         except queue.Empty:
             print("Timeout waiting for progress")
