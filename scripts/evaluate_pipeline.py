@@ -250,7 +250,7 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
                             parallel_requests, pipeline_depth, mode):
     print(f"Loading ReasonSeg dataset...")
     try:
-        ds = load_dataset("Ricky06662/ReasonSeg_val", split="test")
+        ds = load_dataset("Ricky06662/ReasonSeg_test", split="test")
     except Exception as e:
         print(f"Failed to load dataset: {e}")
         return
