@@ -62,13 +62,13 @@ def create_vision_message(text_prompt, image_path=None, base64_image=None, image
         {
             "role": "user",
             "content": [
-                {"type": "text", "text": text_prompt},
                 {
                     "type": "image_url",
                     "image_url": {
                         "url": f"data:{mime_type};base64,{base64_image}"
                     },
                 },
+                {"type": "text", "text": text_prompt},
             ],
         }
     ]
