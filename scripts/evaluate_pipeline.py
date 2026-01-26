@@ -89,10 +89,11 @@ class SampleTask:
 
 class PipelineStage:
     """Base class for pipeline stages."""
-    def __init__(self, name: str, input_queue: queue.Queue, output_queue: queue.Queue):
+    def __init__(self, name: str, input_queue: queue.Queue, output_queue: queue.Queue, progress_queue: queue.Queue = None):
         self.name = name
         self.input_queue = input_queue
         self.output_queue = output_queue
+        self.progress_queue = progress_queue
         self.running = True
         self.processed = 0
     
@@ -110,6 +111,8 @@ class PipelineStage:
                 task = self.process(task)
                 self.processed += 1
                 self.output_queue.put(task)
+                if self.progress_queue:
+                    self.progress_queue.put(1)
                 
             except queue.Empty:
                 continue
@@ -121,8 +124,8 @@ class PipelineStage:
 class PlannerStage(PipelineStage):
     """Stage 1: Generate hypotheses from query."""
     
-    def __init__(self, input_queue, output_queue, planner_url, max_n):
-        super().__init__("Planner", input_queue, output_queue)
+    def __init__(self, input_queue, output_queue, planner_url, max_n, progress_queue=None):
+        super().__init__("Planner", input_queue, output_queue, progress_queue)
         # Each worker needs its own planner instance for thread safety if not handled internally
         self.planner = Planner(api_base=planner_url)
         self.max_n = max_n
@@ -146,8 +149,8 @@ class PlannerStage(PipelineStage):
 class ExecutorStage(PipelineStage):
     """Stage 2: Generate masks using SAM cluster (load-balanced)."""
     
-    def __init__(self, input_queue, output_queue, executor_url, parallel_requests=16):
-        super().__init__("Executor", input_queue, output_queue)
+    def __init__(self, input_queue, output_queue, executor_url, parallel_requests=16, progress_queue=None):
+        super().__init__("Executor", input_queue, output_queue, progress_queue)
         # Single executor per worker (requests Session is thread-safe, but safer to have separate instances)
         self.executor = Executor(remote_url=executor_url, timeout=300)
         self.parallel_requests = parallel_requests
@@ -194,8 +197,8 @@ class ExecutorStage(PipelineStage):
 class VerifierStage(PipelineStage):
     """Stage 3: Rank candidates using tournament."""
     
-    def __init__(self, input_queue, output_queue, verifier_url, mode):
-        super().__init__("Verifier", input_queue, output_queue)
+    def __init__(self, input_queue, output_queue, verifier_url, mode, progress_queue=None):
+        super().__init__("Verifier", input_queue, output_queue, progress_queue)
         self.verifier = Verifier()
         self.mode = mode
     
@@ -260,24 +263,24 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
     # Larger queues for higher throughput
     queue_size = pipeline_depth * 4
     q_input = queue.Queue(maxsize=queue_size)
-    q_planned = queue.Queue(maxsize=queue_size)
     q_executed = queue.Queue(maxsize=queue_size)
     q_output = queue.Queue()
+    q_progress = queue.Queue() # Queue for simple step completion events
     
     # Init workers
     planner_workers = []
     for i in range(args.workers_planner):
-        w = PlannerStage(q_input, q_planned, planner_url, max_n)
+        w = PlannerStage(q_input, q_planned, planner_url, max_n, progress_queue=q_progress)
         planner_workers.append(threading.Thread(target=w.run, name=f"Planner-{i}"))
 
     executor_workers = []
     for i in range(args.workers_executor):
-        w = ExecutorStage(q_planned, q_executed, executor_url, parallel_requests)
+        w = ExecutorStage(q_planned, q_executed, executor_url, parallel_requests, progress_queue=q_progress)
         executor_workers.append(threading.Thread(target=w.run, name=f"Executor-{i}"))
 
     verifier_workers = []
     for i in range(args.workers_verifier):
-        w = VerifierStage(q_executed, q_output, verifier_url, mode)
+        w = VerifierStage(q_executed, q_output, verifier_url, mode, progress_queue=q_progress)
         verifier_workers.append(threading.Thread(target=w.run, name=f"Verifier-{i}"))
     
     all_workers = planner_workers + executor_workers + verifier_workers
@@ -290,8 +293,6 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
     print(f"{'='*70}\n")
     
     # Feed samples
-    temp_files = []
-    
     def feed_samples():
         for sample_idx, sample in enumerate(ds):
             image = sample.get('image')
@@ -303,12 +304,6 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
             
             if gt_mask is not None:
                 gt_mask = np.array(gt_mask) > 0
-            
-            # No temp file creation needed
-            # temp_img_path = f"temp_pipeline_{sample_idx}.jpg"
-            # image.save(temp_img_path)
-            # temp_files.append(temp_img_path)
-            
             
             task = SampleTask(
                 sample_idx=sample_idx,
@@ -349,118 +344,126 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
             
         # 8. Signal output loop
         q_output.put(None)
+        
+        # 9. Signal progress loop completion (if strict count check fails)
+        q_progress.put(None)
 
     # Start monitor thread
     monitor_thread = threading.Thread(target=monitor_and_shutdown, name="Monitor")
     monitor_thread.start()
     
     # Collect results
-    N_VALUES = [1, 2, 4, 8, 16, 32, 64]
+    N_VALUES = [1, 2, 4, 8, 16, 32, 64, 128] # Added 128
     results_by_n = {n: {'ious': [], 'oracle_ious': [], 'times': []} for n in N_VALUES if n <= max_n}
     detailed_samples = []
     
-    completed = 0
-    pbar = tqdm(total=num_samples, desc="Processing")
+    # Result Collector Function (runs in thread)
+    def collect_results():
+        while True:
+            try:
+                task = q_output.get(timeout=1200)
+                if task is None:
+                    break
+                
+                total_time = task.t_verify_done - task.t_start
+                # Calculate detailed stats
+                
+                if not task.candidates or task.gt_mask is None:
+                    continue
+
+                # NEW: Collect detailed sample info
+                sample_info = {
+                    'sample_idx': task.sample_idx,
+                    'query': task.query,
+                    'timings': {
+                        'plan': round(task.t_plan_done - task.t_start, 2),
+                        'exec': round(task.t_exec_done - task.t_plan_done, 2),
+                        'verify': round(task.t_verify_done - task.t_exec_done, 2),
+                        'total': round(total_time, 2)
+                    },
+                    'candidates': []
+                }
+                
+                # Create a map from candidate index to rank
+                rank_map = {}
+                if task.ranking:
+                    for rank, candidate_idx in enumerate(task.ranking):
+                        rank_map[candidate_idx] = rank
+                
+                for i, cand in enumerate(task.candidates):
+                    hyp = cand.get('hypothesis', {})
+                    iou_score = float(cand.get('iou', 0))
+                    
+                    box = hyp.get('box')
+                    if hasattr(box, 'tolist'):
+                        box = box.tolist()
+                    
+                    cand_info = {
+                        'hypothesis': hyp.get('noun_phrase') or hyp.get('raw_text'),
+                        'reasoning': hyp.get('reasoning'),
+                        'box': box,
+                        'iou': iou_score,
+                        'verifier_rank': rank_map.get(i, -1),
+                        'verifier_score': cand.get('verifier_score'),
+                        'verifier_reasoning': cand.get('verifier_reasoning'),
+                        'pointwise_breakdown': cand.get('pointwise_details', {}).get('breakdown'),
+                    }
+                    sample_info['candidates'].append(cand_info)
+                
+                detailed_samples.append(sample_info)
+
+                # Evaluate for each N
+                for n in results_by_n.keys():
+                    if n > len(task.candidates):
+                        continue
+                    
+                    if n == 1:
+                        best_idx = 0
+                    elif task.ranking:
+                        best_idx = next((i for i in task.ranking if i < n), 0)
+                    else:
+                        best_idx = 0
+                    
+                    pred_mask = task.candidates[best_idx]['mask']
+                    iou = calculate_iou(pred_mask, task.gt_mask)
+                    oracle_iou = max(c.get('iou', 0) for c in task.candidates[:n])
+                    
+                    results_by_n[n]['ious'].append(iou)
+                    results_by_n[n]['oracle_ious'].append(oracle_iou)
+                    results_by_n[n]['times'].append(total_time)
+            
+            except Exception as e:
+                print(f"Result Collector Error: {e}")
+                break
+
+    # Start collector thread
+    collector_thread = threading.Thread(target=collect_results, name="Collector")
+    collector_thread.start()
     
-    while completed < num_samples:
+    # Main Loop: Track Progress
+    # Total operations = 3 steps (plan, exec, verify) * num_samples
+    total_ops = num_samples * 3
+    processed_ops = 0
+    pbar = tqdm(total=total_ops, desc="Pipeline Steps", unit="step")
+    
+    while processed_ops < total_ops:
         try:
-            task = q_output.get(timeout=1200)
-            if task is None:
+            msg = q_progress.get(timeout=1200)
+            if msg is None: # Premature shutdown signal
                 break
             
-            completed += 1
+            processed_ops += 1
             pbar.update(1)
             
-            total_time = task.t_verify_done - task.t_start
-            plan_time = task.t_plan_done - task.t_start
-            exec_time = task.t_exec_done - task.t_plan_done
-            verify_time = task.t_verify_done - task.t_exec_done
-            
-            pbar.set_postfix({
-                'plan': f'{plan_time:.1f}s',
-                'exec': f'{exec_time:.1f}s',
-                'verify': f'{verify_time:.1f}s',
-                'total': f'{total_time:.1f}s'
-            })
-            
-            if not task.candidates or task.gt_mask is None:
-                continue
-
-            # NEW: Collect detailed sample info
-            sample_info = {
-                'sample_idx': task.sample_idx,
-                'query': task.query,
-                'timings': {
-                    'plan': round(plan_time, 2),
-                    'exec': round(exec_time, 2),
-                    'verify': round(verify_time, 2),
-                    'total': round(total_time, 2)
-                },
-                'candidates': []
-            }
-            
-            # Create a map from candidate index to rank
-            rank_map = {}
-            if task.ranking:
-                for rank, candidate_idx in enumerate(task.ranking):
-                    rank_map[candidate_idx] = rank
-            
-            for i, cand in enumerate(task.candidates):
-                hyp = cand.get('hypothesis', {})
-                iou_score = float(cand.get('iou', 0))
-                
-                box = hyp.get('box')
-                if hasattr(box, 'tolist'):
-                    box = box.tolist()
-                
-                cand_info = {
-                    'hypothesis': hyp.get('noun_phrase') or hyp.get('raw_text'),
-                    'reasoning': hyp.get('reasoning'),
-                    'box': box,
-                    'iou': iou_score,
-                    'verifier_rank': rank_map.get(i, -1),
-                    'verifier_score': cand.get('verifier_score'),
-                    'verifier_reasoning': cand.get('verifier_reasoning'),
-                    'pointwise_breakdown': cand.get('pointwise_details', {}).get('breakdown'), # Logic restored
-                }
-                sample_info['candidates'].append(cand_info)
-            
-            detailed_samples.append(sample_info)
-
-            # Evaluate for each N
-            for n in results_by_n.keys():
-                if n > len(task.candidates):
-                    continue
-                
-                if n == 1:
-                    best_idx = 0
-                elif task.ranking:
-                    best_idx = next((i for i in task.ranking if i < n), 0)
-                else:
-                    best_idx = 0
-                
-                pred_mask = task.candidates[best_idx]['mask']
-                iou = calculate_iou(pred_mask, task.gt_mask)
-                oracle_iou = max(c.get('iou', 0) for c in task.candidates[:n])
-                
-                results_by_n[n]['ious'].append(iou)
-                results_by_n[n]['oracle_ious'].append(oracle_iou)
-                results_by_n[n]['times'].append(total_time)
-                
         except queue.Empty:
-            print("Timeout waiting for results")
+            print("Timeout waiting for progress")
             break
-    
+            
     pbar.close()
-    monitor_thread.join()
     
-    # Cleanup temp files - REMOVED
-    # for f in temp_files:
-    #     if os.path.exists(f):
-    #         try:
-    #             os.remove(f)
-    #         except: 
-    #             pass
+    # Wait for completion
+    monitor_thread.join()
+    collector_thread.join()
     
     # Print results
     print_results(results_by_n, mode)
