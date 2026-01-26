@@ -4,8 +4,8 @@
 # GPU Assignment: Same as SAM (Device 4) or 5 if separate
 # User requested running on same GPU as SAM
 
-export CUDA_VISIBLE_DEVICES=4
-export HIP_VISIBLE_DEVICES=4
+export CUDA_VISIBLE_DEVICES=5
+export HIP_VISIBLE_DEVICES=5
 
 PORT=8003
 HOST=0.0.0.0
