@@ -209,7 +209,7 @@ class Planner:
                     config["temperature"],
                     w, h, img_area
                 )
-            except:
+            except Exception:
                 return None
         
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -220,7 +220,7 @@ class Planner:
                     hyp = future.result()
                     if hyp:
                         candidates.append(hyp)
-                except:
+                except Exception:
                     pass
         
         return candidates
@@ -361,7 +361,7 @@ Output ONLY a JSON object with this exact format:
                 parsed = json.loads(text)
                 if isinstance(parsed, dict):
                     data = parsed
-            except:
+            except Exception:
                 try:
                     # 2. Try json_repair
                     import json_repair
@@ -370,7 +370,7 @@ Output ONLY a JSON object with this exact format:
                         data = parsed
                     elif isinstance(parsed, list): # Model might just return the list array directly
                          data = {"variations": parsed}
-                except:
+                except Exception:
                     # 3. Fallback regex for {"variations": [...]}
                     match = re.search(r'\{.*"variations".*\}', text, re.DOTALL)
                     if match:

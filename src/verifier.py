@@ -88,10 +88,6 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
             if self.verbose:
                 print(f"Verify error: {e}")
             return {"score": 50, "total": 50}
-        except Exception as e:
-            if self.verbose:
-                print(f"Verify error: {e}")
-            return {"score": 50, "total": 50}
 
     def verify_batch_pointwise(self, image_input, masks, query):
         """
@@ -110,7 +106,16 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
             return []
         if n == 1:
             # Still score the single mask for consistency
-            single_result = self._score_single_composite(image_input, masks[0], query)
+            from .api_utils import encode_pil_image, encode_image
+            if isinstance(image_input, str):
+                base64_img = encode_image(image_input)
+                from PIL import Image as PILImage
+                with PILImage.open(image_input) as img:
+                    w, h = img.size
+            else:
+                base64_img = encode_pil_image(image_input)
+                w, h = image_input.size
+            single_result = self._score_single_box(base64_img, w, h, masks[0], query)
             return [{
                 "mask_idx": 0,
                 "rank": 1,
@@ -140,12 +145,14 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
             
         vlm_results = self._pointwise_score_batch(base64_img, w, h, masks, query, max_workers=max_workers)
         
-        # 2. Run CLIP Scoring (Batch)
+        # 2. Run CLIP Scoring in PARALLEL with VLM (they use different GPUs)
+        # Note: This is sequential here but VLM scoring uses ThreadPoolExecutor internally
+        # For true parallelism, we pre-initialize CLIP and run both concurrently
+        if not hasattr(self, 'clip_verifier'):
+            from .clip_verifier import ClipVerifier
+            self.clip_verifier = ClipVerifier()
+        
         try:
-            if not hasattr(self, 'clip_verifier'):
-                from .clip_verifier import ClipVerifier
-                self.clip_verifier = ClipVerifier()
-            
             clip_scores = self.clip_verifier.verify_batch(image_input, masks, query)
         except Exception as e:
             if self.verbose: print(f"CLIP Error: {e}")
@@ -153,9 +160,9 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
 
 
         # 3. Compute Consistency Scores (15%)
-        # "Cross-Reasoning Path Agreement": Mean IoU with all other masks
+        # OPTIMIZATION: Skip for small N (overhead not worth it)
         consistency_scores = []
-        if n > 1:
+        if n >= 8:
             try:
                 # Vectorized IoU Calculation (O(N^2) -> Matrix Op)
                 # Stack masks: (N, H, W) -> flattened (N, HW)
@@ -531,7 +538,7 @@ semantic_count: Count matches? (0-5)
 
 Output ONLY the JSON."""
 
-            messages = create_vision_message(prompt, base64_image=base64_img)
+            messages = create_vision_message(prompt, base64_image=base64_img, image_first=True)
             
             completion = self.client.chat.completions.create(
                 model=self.model_path,
@@ -557,7 +564,7 @@ Output ONLY the JSON."""
             try:
                 parsed = json_repair.loads(json_text)
                 if isinstance(parsed, dict): data = parsed
-            except:
+            except Exception:
                 match = re.search(r'\{[^{}]*\}', json_text)
                 if match: data = json.loads(match.group(0))
             

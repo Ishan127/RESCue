@@ -36,7 +36,7 @@ def encode_pil_image(image):
     image.save(buffer, format="JPEG", quality=90)
     return base64.b64encode(buffer.getvalue()).decode('utf-8')
 
-def create_vision_message(text_prompt, image_path=None, base64_image=None, image=None):
+def create_vision_message(text_prompt, image_path=None, base64_image=None, image=None, image_first=True):
     if base64_image is None:
         if image is not None:
              base64_image = encode_pil_image(image)
@@ -58,17 +58,19 @@ def create_vision_message(text_prompt, image_path=None, base64_image=None, image
     else:
         mime_type = 'image/jpeg' # Default assumption
     
+    text_content = {"type": "text", "text": text_prompt}
+    image_content = {
+        "type": "image_url",
+        "image_url": {
+            "url": f"data:{mime_type};base64,{base64_image}"
+        },
+    }
+    
+    content = [image_content, text_content] if image_first else [text_content, image_content]
+
     return [
         {
             "role": "user",
-            "content": [
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:{mime_type};base64,{base64_image}"
-                    },
-                },
-                {"type": "text", "text": text_prompt},
-            ],
+            "content": content
         }
     ]

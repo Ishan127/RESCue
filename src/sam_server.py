@@ -750,7 +750,7 @@ def encode_mask_to_base64(mask: np.ndarray) -> str:
     mask_img = Image.fromarray(mask_uint8, mode="L")
     
     buffer = BytesIO()
-    mask_img.save(buffer, format="PNG")
+    mask_img.save(buffer, format="JPEG", quality=95)
     return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
 

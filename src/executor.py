@@ -74,7 +74,7 @@ class Executor:
             image = image_input
 
         buffer = io.BytesIO()
-        image.save(buffer, format="PNG")
+        image.save(buffer, format="JPEG", quality=90)
         return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
     def _base64_to_mask(self, b64_string: str) -> np.ndarray:
@@ -304,6 +304,6 @@ class Executor:
             try:
                 response = self.session.get(f"{self.remote_url}/health", timeout=5)
                 return response.status_code == 200
-            except:
+            except Exception:
                 return False
         return False

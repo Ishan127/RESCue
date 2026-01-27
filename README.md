@@ -3,30 +3,32 @@
 RESCue is a high-performance referring image segmentation system that uses a planner-verifier-executor architecture to achieve state-of-the-art accuracy while maintaining efficiency.
 
 ## Prerequisites
-- **Hardware**: 4x MI325X GPUs (256GB each) or equivalent high-VRAM setup
+- **Hardware**: 8x MI325X GPUs (256GB each) or equivalent high-VRAM setup
 - **Software**: ROCm 7.1.1, vLLM 0.14.0, Python 3.10+
 - **Memory**: ~160GB for LLM models
 
 ## Architecture
 
-RESCue uses a **dual-model + single SAM** setup for optimal speed vs quality:
+RESCue uses a **dual-VLM + SAM + CLIP** setup for optimal speed vs quality:
 
 | Service | Model | GPU(s) | Port | Purpose |
 |---------|-------|--------|------|---------|
-| **Verifier** | Qwen3-VL-32B-Thinking | 0, 1 | 8000 | Tournament-based mask ranking |
-| **Planner** | Qwen3-VL-8B-Instruct | 2 | 8002 | Fast hypothesis generation |
-| **SAM Server** | SAM3 | 3 | 8001 | High-quality segmentation |
+| **Verifier** | Qwen3-VL-30B-A3B-Thinking | 0, 1, 2, 3 | 8000 | Tournament-based mask ranking |
+| **Planner** | Qwen3-VL-8B-Instruct | 4, 5 | 8002 | Fast hypothesis generation |
+| **SAM Server** | SAM3 | 6 | 8001 | High-quality segmentation |
+| **CLIP Server** | SigLIP2-Giant | 7 | 8003 | Visual-semantic scoring |
 
 ### Key Features
 - **Pipeline Parallelism**: Process multiple samples concurrently across all GPUs
 - **Single SAM Node**: Efficient single-node execution with internal batching
 - **ROCm Compatibility**: Aggressive patches for AMD GPU torchvision operations
-- **Tournament Verification**: Efficient mask ranking without pairwise comparisons
+- **Hybrid Verification**: VLM + CLIP + Consistency scoring for robust ranking
+- **Tournament Refinement**: Efficient mask ranking with pyramid challenges
 
 ## 1. Environment Setup
 
 ### Client Setup (Local Machine / Front-End)
-Runs the logic, interacts with endpoints. **No Torch/vLLM required.**
+Runs the logic, interacts with endpoints.
 ```bash
 pip install -r requirements.txt
 ```
@@ -38,11 +40,10 @@ pip install -r requirements.txt
 pip install vllm==0.14.0
 ```
 
-**SAM Node (GPU 3)**:
+**SAM & CLIP Nodes**:
 ```bash
-pip install torch torchvision --index-url https://download.pytorch.org/whl/rocm6.0
+pip install fastapi uvicorn pillow numpy requests aiohttp transformers
 pip install "git+https://github.com/facebookresearch/sam3.git"
-pip install fastapi uvicorn pillow numpy requests aiohttp
 ```
 
 ## 2. Download Models
@@ -57,9 +58,9 @@ python scripts/download_models.py
 
 Run the following services in **separate terminals** (e.g., using `tmux`).
 
-### Terminal 1: Verifier (32B-Thinking) Service
+### Terminal 1: Verifier (30B-A3B-Thinking) Service
 
-Deploys Qwen3-VL-32B-Thinking on vLLM (tensor-parallel=2 for chain-of-thought verification).
+Deploys Qwen3-VL-30B-A3B-Thinking on vLLM (tensor-parallel=4 for chain-of-thought verification).
 
 ```bash
 bash scripts/deploy_llm.sh
@@ -84,11 +85,20 @@ bash scripts/deploy_sam.sh
 ```
 *Wait for: `Uvicorn running on http://0.0.0.0:8001`*
 
+### Terminal 4: CLIP Server
+
+Deploys SigLIP2-Giant for visual-semantic verification scoring.
+
+```bash
+bash scripts/deploy_clip.sh
+```
+*Wait for: `Uvicorn running on http://0.0.0.0:8003`*
+
 ## 4. Run Evaluation
 
 ### Pipeline-Parallel Evaluation (Recommended)
 
-Processes multiple samples concurrently using all 4 GPUs:
+Processes multiple samples concurrently using all 8 GPUs:
 
 ```bash
 python scripts/evaluate_pipeline.py \
@@ -120,6 +130,7 @@ Override endpoints if needed:
 export PLANNER_API_BASE=http://localhost:8002/v1
 export VERIFIER_API_BASE=http://localhost:8000/v1
 export EXECUTOR_URL=http://localhost:8001
+export CLIP_SERVER_URL=http://localhost:8003/verify
 ```
 
 ## Troubleshooting
@@ -133,11 +144,12 @@ export EXECUTOR_URL=http://localhost:8001
 curl http://localhost:8000/health  # Verifier
 curl http://localhost:8002/health  # Planner
 curl http://localhost:8001/health  # SAM Server
+curl http://localhost:8003/health  # CLIP Server
 ```
 
 ## Architecture Details
 
 - **Planner**: Generates diverse bounding box hypotheses for referring expressions
 - **Executor**: Segments images using SAM3
-- **Verifier**: Ranks masks using tournament elimination (O(N) instead of O(N²))
+- **Verifier**: Ranks masks using hybrid scoring (50% VLM + 35% CLIP + 15% Consistency) with pyramid tournament refinement
 - **Pipeline**: Concurrent processing of planning, execution, and verification stages
