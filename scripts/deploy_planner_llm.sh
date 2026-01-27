@@ -1,5 +1,5 @@
 #!/bin/bash
-# Deploy Qwen3-VL-8B-Instruct (PLANNER) on GPU 5
+# Deploy Qwen3-VL-8B-Instruct (PLANNER) on GPU 4,5
 # Fast hypothesis generation for bounding box proposals
 # Port: 8002
 
@@ -13,5 +13,6 @@ python -m vllm.entrypoints.openai.api_server \
     --max-model-len 32768 \
     --max-num-seqs 2048 \
     --enable-prefix-caching \
+    --guided-decoding-backend outlines \
     --port 8002 \
     --host 0.0.0.0
