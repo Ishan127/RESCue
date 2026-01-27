@@ -10,7 +10,7 @@ from collections import defaultdict
 from .utils import get_device
 from .api_utils import get_planner_client, create_vision_message, PLANNER_MODEL, PLANNER_API_BASE
 
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("RESCue.Planner")
 
 @dataclass(frozen=True)
@@ -108,7 +108,9 @@ class Planner:
         target_count = int(N * 2.0)
         if target_count < N + 2: target_count = N + 2 # Ensure at least some selection buffer
         
+        logger.info(f"Generating {target_count} query variations for {query}...")
         query_configs = self._generate_query_configs(query, target_count, base_temp, strategy_filter)
+        logger.info(f"Generated {len(query_configs)} configs. Starting hypothesis generation...")
         
         candidates: List[Hypothesis] = []
         
@@ -261,6 +263,7 @@ class Planner:
         
         while len(all_variations) < num_variations:
             needed = min(batch_size, num_variations - len(all_variations))
+            logger.debug(f"Generating batch of {needed} variations...")
             batch = self._generate_variation_batch(original_query, needed, all_variations)
             if not batch:
                 break
