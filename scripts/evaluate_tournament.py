@@ -223,7 +223,7 @@ def main():
     
     # Load dataset
     print("Loading ReasonSeg dataset...")
-    ds = load_dataset("sainingyu/ReasonSeg", split="val", trust_remote_code=True)
+    ds = load_dataset("Ricky06662/ReasonSeg_test", split="test")
     num_samples = int(len(ds) * args.fraction)
     ds = ds.shuffle(seed=42).select(range(num_samples))
     

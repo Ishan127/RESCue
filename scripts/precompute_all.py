@@ -55,7 +55,7 @@ from PIL import Image
 def load_dataset_samples(fraction):
     """Load ReasonSeg dataset."""
     print("Loading ReasonSeg dataset...")
-    ds = load_dataset("sainingyu/ReasonSeg", split="val", trust_remote_code=True)
+    ds = load_dataset("Ricky06662/ReasonSeg_test", split="test")
     num_samples = int(len(ds) * fraction)
     print(f"Samples: {num_samples}/{len(ds)}")
     return ds.shuffle(seed=42).select(range(num_samples))
