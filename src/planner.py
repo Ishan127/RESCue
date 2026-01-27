@@ -12,6 +12,7 @@ from .api_utils import get_planner_client, create_vision_message, PLANNER_MODEL,
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("RESCue.Planner")
+BATCH_SIZE = 4
 
 @dataclass(frozen=True)
 class PlannerConfig:
@@ -133,27 +134,18 @@ class Planner:
         img_area = real_w * real_h
         
         if parallel and len(query_configs) > 1:
-            candidates = self._generate_hypotheses_parallel(
-                base64_img, query_configs, real_w, real_h, img_area
+            # Batch configs to reduce API calls
+            batches = [query_configs[i:i + BATCH_SIZE] for i in range(0, len(query_configs), BATCH_SIZE)]
+            logger.info(f"Processing {len(query_configs)} queries in {len(batches)} batches (Batch Size: {BATCH_SIZE})...")
+            
+            candidates = self._run_batches_parallel(
+                base64_img, batches, real_w, real_h, img_area
             )
         else:
-            for i, config in enumerate(query_configs):
-                varied_query = config["query"]
-                strategy = config["strategy"]
-                temp = config["temperature"]
-                
-                try:
-                    hyp = self._generate_single_hypothesis(
-                        base64_img, 
-                        varied_query,
-                        strategy,
-                        temp,
-                        real_w, real_h, img_area
-                    )
-                    if hyp:
-                        candidates.append(hyp)
-                except Exception as e:
-                    pass
+            # Fallback to sequential batched processing
+            batches = [query_configs[i:i + BATCH_SIZE] for i in range(0, len(query_configs), BATCH_SIZE)]
+            for batch in batches:
+                candidates.extend(self._process_batch(base64_img, batch, real_w, real_h, img_area))
         
         final_hypotheses = self._select_diverse_subset(candidates, N, query)
         
@@ -164,39 +156,131 @@ class Planner:
         
         return [h.to_dict() for h in final_hypotheses]
     
-    def _generate_hypotheses_parallel(self, base64_image: str, query_configs: List[Dict], 
+    def _run_batches_parallel(self, base64_image: str, batches: List[List[Dict]], 
                                        w: int, h: int, img_area: int) -> List[Hypothesis]:
-        """Generate hypotheses in parallel using ThreadPoolExecutor."""
+        """Generate hypotheses in parallel batches."""
         from concurrent.futures import ThreadPoolExecutor, as_completed
         
         candidates = []
-        # Use more workers since planner has max-num-seqs=8192 now on MI325X
-        max_workers = min(128, len(query_configs))
-        
-        def generate_one(config):
-            try:
-                return self._generate_single_hypothesis(
-                    base64_image,
-                    config["query"],
-                    config["strategy"],
-                    config["temperature"],
-                    w, h, img_area
-                )
-            except Exception:
-                return None
+        # Reduce workers since we are batching (effectively 4x throughput per worker)
+        max_workers = min(32, len(batches)) 
         
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [executor.submit(generate_one, cfg) for cfg in query_configs]
+            futures = [executor.submit(self._process_batch, base64_image, batch, w, h, img_area) for batch in batches]
             
             for future in as_completed(futures):
                 try:
-                    hyp = future.result()
-                    if hyp:
-                        candidates.append(hyp)
-                except Exception:
-                    pass
+                    results = future.result()
+                    if results:
+                        candidates.extend(results)
+                except Exception as e:
+                    logger.error(f"Batch failed: {e}")
         
         return candidates
+
+    def _process_batch(self, base64_image: str, batch: List[Dict], w: int, h: int, img_area: int) -> List[Hypothesis]:
+        """Process a single batch of queries."""
+        try:
+            # Construct multi-query prompt
+            prompt_text = self._construct_batched_prompt(batch)
+            
+            # Use max temp from batch for sampling, or average
+            max_temp = max(c["temperature"] for c in batch)
+            
+            messages = create_vision_message(prompt_text, base64_image=base64_image)
+            
+            completion = self.client.chat.completions.create(
+                model=self.config.model_path,
+                messages=messages,
+                temperature=max_temp,
+                max_tokens=2048, # Increased for multiple outputs
+            )
+            
+            text = completion.choices[0].message.content
+            return self._parse_batched_completion(text, batch, w, h, img_area)
+            
+        except Exception as e:
+            logger.warning(f"Batch error: {e}")
+            return []
+
+    def _construct_batched_prompt(self, batch: List[Dict]) -> str:
+        prompt = "I will provide multiple object queries. For EACH query, identify the object and provide a bounding box.\n\n"
+        for i, item in enumerate(batch):
+            prompt += f"Query {i+1}: {item['query']} (Strategy: {item['strategy']})\n"
+            
+        prompt += "\nOutput format must be exactly:\n"
+        for i in range(len(batch)):
+            prompt += f"{i+1}. Box: [x1, y1, x2, y2] | Concept: <short description>\n"
+            
+        prompt += "\nCoordinates are 0-1000. Provide one line per query in order."
+        return prompt
+
+    def _parse_batched_completion(self, text: str, batch: List[Dict], w: int, h: int, img_area: int) -> List[Hypothesis]:
+        results = []
+        lines = text.strip().split('\n')
+        
+        # Simple heuristic: try to match lines to queries
+        # We expect N lines. If we get fewer, we map them sequentially.
+        
+        current_idx = 0
+        
+        for line in lines:
+            if current_idx >= len(batch):
+                break
+                
+            # Look for Box pattern
+            box_match = re.search(r"Box:\s*\[\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)[,\s]+(\d+)\s*\]", line)
+            if not box_match:
+                continue
+                
+            try:
+                coords = [int(c) for c in box_match.groups()]
+                
+                # Parse concept
+                concept = "object"
+                if "|" in line:
+                    parts = line.split("|")
+                    for p in parts:
+                        if "Concept:" in p:
+                            concept = p.split("Concept:")[1].strip()
+                
+                # Validate box
+                x1, y1, x2, y2 = coords
+                px1 = int(x1 / 1000 * w)
+                py1 = int(y1 / 1000 * h)
+                px2 = int(x2 / 1000 * w)
+                py2 = int(y2 / 1000 * h)
+                
+                # Clip
+                px1 = max(0, min(px1, w))
+                py1 = max(0, min(py1, h))
+                px2 = max(0, min(px2, w))
+                py2 = max(0, min(py2, h))
+                
+                if px2 <= px1 or py2 <= py1:
+                    current_idx += 1
+                    continue
+                    
+                box = [px1, py1, px2, py2]
+                box_area = (px2 - px1) * (py2 - py1)
+                
+                if box_area >= img_area * self.config.min_box_area_ratio:
+                    config = batch[current_idx]
+                    results.append(Hypothesis(
+                        box=box,
+                        reasoning=f"Batch generated for: {config['query']}",
+                        target_concept=concept,
+                        confidence=0.8, # Placeholder as logprobs are tricky in batch
+                        source_strategy=config['strategy'],
+                        raw_text=line
+                    ))
+                    
+                current_idx += 1
+                
+            except Exception:
+                continue
+                
+        return results
     
     def _generate_query_configs(self, original_query: str, N: int, base_temp: float, strategy_filter: str = None) -> List[Dict]:
         """Generate N hypothesis configs with diverse strategies."""

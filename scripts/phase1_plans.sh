@@ -56,8 +56,8 @@ echo "Step 3: Generating plans..."
 python scripts/precompute_all.py \
     --phase plans \
     --cache_dir cache \
-    --max_n 512 \
-    --workers 8 \
+    --max_n 256 \
+    --workers 4 \
     --planner_url http://localhost:8002/v1
 
 # Step 4: Shutdown planner
