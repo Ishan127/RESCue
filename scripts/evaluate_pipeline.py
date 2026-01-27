@@ -261,11 +261,9 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
     
     ds = ds.shuffle(seed=42).select(range(num_samples))
     
-    # Larger queues for higher throughput
-    queue_size = pipeline_depth * 4
-    q_input = queue.Queue(maxsize=queue_size)
-    q_planned = queue.Queue(maxsize=queue_size)
-    q_executed = queue.Queue(maxsize=queue_size)
+    q_input = queue.Queue()
+    q_planned = queue.Queue()
+    q_executed = queue.Queue()
     q_output = queue.Queue()
     q_progress = queue.Queue() # Queue for simple step completion events
     
