@@ -42,6 +42,7 @@ parser.add_argument("--planner_url", default="http://localhost:8002/v1")
 parser.add_argument("--sam_url", default="http://localhost:8001")
 parser.add_argument("--clip_url", default="http://localhost:8003/verify")
 parser.add_argument("--verifier_url", default="http://localhost:8000/v1")
+parser.add_argument("--planner_strategy", default=None, help="Filter planner strategy")
 args = parser.parse_args()
 
 # Set environment
@@ -99,7 +100,7 @@ def run_phase_plans(ds, cache_dir, max_n, workers):
             return sample_key, None
         
         try:
-            hypotheses = planner.generate_hypotheses(image, query, N=max_n)
+            hypotheses = planner.generate_hypotheses(image, query, N=max_n, strategy_filter=args.planner_strategy)
             
             # FALLBACK: If not enough, retry with higher temperature
             retry_count = 0
@@ -144,7 +145,7 @@ def run_phase_masks(ds, plans, cache_dir, workers):
     masks_dir = os.path.join(cache_dir, "masks")
     os.makedirs(masks_dir, exist_ok=True)
     
-    executor = Executor(remote_url=args.sam_url)
+    executor = Executor(remote_url=args.sam_url, timeout=300)
     
     def process_sample(item):
         sample_idx, sample = item
@@ -172,12 +173,14 @@ def run_phase_masks(ds, plans, cache_dir, workers):
             
             try:
                 bbox = hyp.get('box') or hyp.get('bbox')
-                query = hyp.get('query') or hyp.get('noun_phrase', '')
                 
-                if bbox:
-                    masks = executor.segment(image, boxes=[bbox])
-                else:
-                    masks = executor.segment(image, text_prompts=[query])
+                # Use prompts_list format like original pipeline
+                prompts_list = [{
+                    "type": "box",
+                    "box": bbox,
+                    "label": True
+                }]
+                masks = executor.segment(image, prompts_list=prompts_list)
                 
                 if masks and len(masks) > 0:
                     np.savez_compressed(mask_path, mask=masks[0])
