@@ -14,6 +14,6 @@ python -m vllm.entrypoints.openai.api_server \
     --max-num-seqs 8192 \
     --dtype bfloat16 \
     --enable-prefix-caching \
-    --guided-decoding-backend outlines \
+    --structured-outputs-config '{"backend": "outlines"}' \
     --port 8000 \
     --host 0.0.0.0

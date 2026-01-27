@@ -13,6 +13,6 @@ python -m vllm.entrypoints.openai.api_server \
     --max-model-len 32768 \
     --max-num-seqs 2048 \
     --enable-prefix-caching \
-    --guided-decoding-backend outlines \
+    --structured-outputs-config '{"backend": "outlines"}' \
     --port 8002 \
     --host 0.0.0.0
