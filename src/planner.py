@@ -104,8 +104,8 @@ class Planner:
         
         base_temp = temperature if temperature is not None else self.config.base_temperature
         
-        # Over-generate by 25% to allow for selection filtering
-        target_count = int(N * 1.25)
+        # Over-generate by 100% (2.0x) to ensure we have enough valid candidates
+        target_count = int(N * 2.0)
         if target_count < N + 2: target_count = N + 2 # Ensure at least some selection buffer
         
         query_configs = self._generate_query_configs(query, target_count, base_temp, strategy_filter)
@@ -155,39 +155,10 @@ class Planner:
         
         final_hypotheses = self._select_diverse_subset(candidates, N, query)
         
-        # --- PAD WITH RANDOM HYPOTHESES IF < N ---
+        # --- FILTERING DONE ---
+        # Log warning if under-generated (no random padding)
         if len(final_hypotheses) < N:
-            needed = N - len(final_hypotheses)
-            logger.warning(f"Generated {len(final_hypotheses)} hypotheses. Padding with {needed} random hypotheses.")
-            import random
-            
-            for i in range(needed):
-                # Random box within image coords - with bounds checking
-                max_x1 = max(1, int(real_w * 0.8))
-                max_y1 = max(1, int(real_h * 0.8))
-                x1 = random.randint(0, max_x1)
-                y1 = random.randint(0, max_y1)
-                
-                # Ensure valid width/height ranges
-                min_w = max(1, int(real_w * 0.05))
-                max_w = max(min_w + 1, int(real_w - x1))
-                min_h = max(1, int(real_h * 0.05))
-                max_h = max(min_h + 1, int(real_h - y1))
-                
-                w = random.randint(min_w, max_w)
-                h = random.randint(min_h, max_h)
-                
-                box = [x1, y1, x1 + w, y1 + h]
-                
-                final_hypotheses.append(Hypothesis(
-                    box=box,
-                    reasoning="Random fill to meet N requirement",
-                    target_concept="random fill",
-                    confidence=0.1,
-                    source_strategy="random",
-                    raw_text="Randomly generated"
-                ))
-        # ----------------------------------------
+            logger.warning(f"Generated {len(final_hypotheses)}/{N} hypotheses. No random padding added.")
         
         return [h.to_dict() for h in final_hypotheses]
     

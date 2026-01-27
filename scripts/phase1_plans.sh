@@ -57,7 +57,7 @@ python scripts/precompute_all.py \
     --phase plans \
     --cache_dir cache \
     --max_n 512 \
-    --workers 64 \
+    --workers 8 \
     --planner_url http://localhost:8002/v1
 
 # Step 4: Shutdown planner
