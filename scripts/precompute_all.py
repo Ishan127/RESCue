@@ -116,16 +116,18 @@ def run_phase_plans(ds, cache_dir, max_n, workers):
             print(f"Error on sample {sample_idx}: {e}")
             return sample_key, None
     
+    print("DEBUG: Enumerating dataset...", flush=True)
     work_items = list(enumerate(ds))
+    print(f"DEBUG: Dataset enumerated (size={len(work_items)})", flush=True)
     results = dict(existing_plans)
     
-    print(f"Starting execution with {workers} workers for {len(work_items)} items...")
+    print(f"Starting execution with {workers} workers for {len(work_items)} items...", flush=True)
     
     # Process sequentially for the first item to warm up/debug
     first_item = work_items[0]
-    print("Running warmup on sample 0 sequentiallly...")
+    print("Running warmup on sample 0 sequentiallly...", flush=True)
     process_sample(first_item)
-    print("Warmup complete.")
+    print("Warmup complete.", flush=True)
 
     with ThreadPoolExecutor(max_workers=workers) as executor:
         print("Submitting futures...")

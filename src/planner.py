@@ -82,22 +82,29 @@ class Hypothesis:
 
 class Planner:
     def __init__(self, config: PlannerConfig = None, **kwargs):
+        print("DEBUG: Planner.__init__ start", flush=True)
         if config is None:
             self.config = PlannerConfig(**kwargs)
         else:
             self.config = config
             
+        print("DEBUG: Getting device...", flush=True)
         self.device = self.config.device or get_device()
+        print(f"DEBUG: Device is {self.device}", flush=True)
         self.client = None
         
         if self.config.api_base:
             logger.info(f"Initializing Planner with API: {self.config.api_base}")
+            print("DEBUG: Importing get_openai_client...", flush=True)
             from .api_utils import get_openai_client
             # Create client explicitly with the configured API base
+            print("DEBUG: Creating OpenAI client...", flush=True)
             self.client = get_openai_client(base_url=self.config.api_base)
+            print("DEBUG: OpenAI client created.", flush=True)
         else:
              logger.error("API base URL not provided. Local inference is removed in this refactor.")
              raise ValueError("API base URL is required.")
+        print("DEBUG: Planner.__init__ end", flush=True)
 
     def generate_hypotheses(self, image_input: Union[str, Any], query: str, N: int = 1, temperature: float = 0.7, parallel: bool = True, strategy_filter: str = None) -> List[Dict]:
         if N < 1:
