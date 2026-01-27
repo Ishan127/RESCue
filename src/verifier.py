@@ -544,7 +544,7 @@ Output ONLY the JSON."""
                 model=self.model_path,
                 messages=messages,
                 temperature=0.1,
-                max_tokens=256,
+                max_tokens=2048,
                 extra_body={
                     "chat_template_kwargs": {"enable_thinking": False},
                     "guided_json": scoring_schema,
