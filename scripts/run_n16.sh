@@ -8,9 +8,9 @@ echo "Expected time per sample: ~8-12s"
 python scripts/evaluate_pipeline.py \
     --max_n 16 \
     --parallel_requests 32 \
-    --workers_planner 4 \
+    --workers_planner 8 \
     --workers_executor 8 \
-    --workers_verifier 32 \
+    --workers_verifier 64 \
     --mode comparative \
     --fraction 1.0 \
     "$@"
