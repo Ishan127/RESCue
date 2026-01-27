@@ -83,28 +83,29 @@ def run_phase_plans(ds, cache_dir, max_n, workers):
     
     planner = Planner(api_base=args.planner_url)
     
-    def process_sample(item):
-        sample_idx, sample = item
+    def process_sample_by_idx(sample_idx):
         sample_key = f"sample_{sample_idx}"
         
-        # Check if already have enough hypotheses
+        # Check if already have enough hypotheses -> SKIP loading image
         if sample_key in existing_plans:
             existing_hyps = existing_plans[sample_key].get('hypotheses', [])
             if len(existing_hyps) >= max_n:
                 return sample_key, existing_plans[sample_key]
         
-        image = sample.get('image')
-        query = sample.get('text') or sample.get('query') or sample.get('sentence')
-        
-        if image is None or query is None:
-            return sample_key, None
-        
+        # Load sample only if needed
         try:
+            sample = ds[sample_idx]
+            image = sample.get('image')
+            query = sample.get('text') or sample.get('query') or sample.get('sentence')
+            
+            if image is None or query is None:
+                return sample_key, None
+            
             hypotheses = planner.generate_hypotheses(image, query, N=max_n, strategy_filter=args.planner_strategy)
             
             # FALLBACK: If not enough, retry with higher temperature
             retry_count = 0
-            while len(hypotheses) < max_n and retry_count < 3:
+            while len(hypotheses) < max_n and retry_count < 1:
                 retry_count += 1
                 print(f"[Retry {retry_count}] Sample {sample_idx}: {len(hypotheses)}/{max_n}")
                 more = planner.generate_hypotheses(image, query, N=max_n - len(hypotheses), 
@@ -116,23 +117,22 @@ def run_phase_plans(ds, cache_dir, max_n, workers):
             print(f"Error on sample {sample_idx}: {e}")
             return sample_key, None
     
-    print("DEBUG: Enumerating dataset...", flush=True)
-    work_items = list(enumerate(ds))
-    print(f"DEBUG: Dataset enumerated (size={len(work_items)})", flush=True)
+    # Use indices list instead of loading full dataset
+    num_samples = len(ds)
+    all_indices = list(range(num_samples))
     results = dict(existing_plans)
     
-    print(f"Starting execution with {workers} workers for {len(work_items)} items...", flush=True)
+    print(f"Starting execution with {workers} workers for {num_samples} items...", flush=True)
     
-    # Process sequentially for the first item to warm up/debug
-    first_item = work_items[0]
-    print("Running warmup on sample 0 sequentiallly...", flush=True)
-    process_sample(first_item)
-    print("Warmup complete.", flush=True)
-
+    # Warmup
+    if num_samples > 0:
+        print("Running warmup on sample 0...", flush=True)
+        process_sample_by_idx(0)
+        print("Warmup complete.", flush=True)
+    
     with ThreadPoolExecutor(max_workers=workers) as executor:
-        print("Submitting futures...")
-        futures = {executor.submit(process_sample, item): item[0] for item in work_items[1:]}
-        print(f"Submitted {len(futures)} futures.")
+        # Submit indices 1..N
+        futures = {executor.submit(process_sample_by_idx, idx): idx for idx in all_indices[1:]}
         
         for future in tqdm(as_completed(futures), total=len(futures), desc="Phase 1: Plans"):
             key, result = future.result()
