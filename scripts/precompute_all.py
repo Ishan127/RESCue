@@ -122,17 +122,9 @@ def run_phase_plans(ds, cache_dir, max_n, workers):
     all_indices = list(range(num_samples))
     results = dict(existing_plans)
     
-    print(f"Starting execution with {workers} workers for {num_samples} items...", flush=True)
-    
-    # Warmup
-    if num_samples > 0:
-        print("Running warmup on sample 0...", flush=True)
-        process_sample_by_idx(0)
-        print("Warmup complete.", flush=True)
-    
     with ThreadPoolExecutor(max_workers=workers) as executor:
-        # Submit indices 1..N
-        futures = {executor.submit(process_sample_by_idx, idx): idx for idx in all_indices[1:]}
+        # Submit indices
+        futures = {executor.submit(process_sample_by_idx, idx): idx for idx in all_indices}
         
         for future in tqdm(as_completed(futures), total=len(futures), desc="Phase 1: Plans"):
             key, result = future.result()
