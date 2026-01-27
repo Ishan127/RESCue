@@ -119,8 +119,18 @@ def run_phase_plans(ds, cache_dir, max_n, workers):
     work_items = list(enumerate(ds))
     results = dict(existing_plans)
     
+    print(f"Starting execution with {workers} workers for {len(work_items)} items...")
+    
+    # Process sequentially for the first item to warm up/debug
+    first_item = work_items[0]
+    print("Running warmup on sample 0 sequentiallly...")
+    process_sample(first_item)
+    print("Warmup complete.")
+
     with ThreadPoolExecutor(max_workers=workers) as executor:
-        futures = {executor.submit(process_sample, item): item[0] for item in work_items}
+        print("Submitting futures...")
+        futures = {executor.submit(process_sample, item): item[0] for item in work_items[1:]}
+        print(f"Submitted {len(futures)} futures.")
         
         for future in tqdm(as_completed(futures), total=len(futures), desc="Phase 1: Plans"):
             key, result = future.result()
