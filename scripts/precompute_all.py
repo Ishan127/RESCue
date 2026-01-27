@@ -286,7 +286,6 @@ def run_phase_clip(ds, plans, cache_dir, workers):
 def run_phase_vlm(ds, plans, cache_dir, workers):
     """Precompute VLM pointwise scores for all masks."""
     from src.verifier import Verifier
-    from src.api_utils import encode_pil_image
     
     masks_dir = os.path.join(cache_dir, "masks")
     verifier = Verifier()
@@ -325,12 +324,9 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
             return sample_key, None
         
         try:
-            # Pre-encode image
-            base64_img = encode_pil_image(image)
-            w, h = image.size
             
             # Run pointwise scoring
-            results = verifier._pointwise_score_batch(base64_img, w, h, masks, query, max_workers=16)
+            results = verifier.verify_batch_pointwise(image, masks, query)
             
             # Map scores back
             vlm_scores = {}
@@ -338,8 +334,8 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
                 mask_idx = res.get('mask_idx', 0)
                 hyp_idx = valid_indices[mask_idx]
                 vlm_scores[hyp_idx] = {
-                    'total_score': res.get('total_score', 0),
-                    'breakdown': res.get('breakdown', {})
+                    'total_score': res.get('score', 0),
+                    'breakdown': res.get('pointwise_details', {})
                 }
             
             with open(vlm_path, 'w') as f:
