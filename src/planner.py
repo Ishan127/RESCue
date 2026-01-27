@@ -204,135 +204,94 @@ class Planner:
             return []
 
     def _construct_batched_prompt(self, batch: List[Dict]) -> str:
-        prompt = "I will provide multiple object queries. For EACH query, identify the object and provide a bounding box.\n\n"
+        prompt = "I will provide multiple different perspectives/queries for an object. Consider ALL of them acting as a committee.\n"
+        prompt += "Your task: Synthesize these views and identify the SINGLE BEST object that satisfies the majority of them.\n\n"
         
         # Strategy map
         strategies = {
-            "original": (
-                "Step 1 (See): Identify the object that DIRECTLY matches the query.\n"
-                "Step 2 (Think): Verify this is the most relevant match.\n"
-                "Step 3 (Propose): Output the precise bounding box."
-            ),
-            "conservative": (
-                "Step 1 (See): List ALL visible objects that could relate to the query.\n"
-                "Step 2 (Think): Select the MOST LITERAL and OBVIOUS match.\n"
-                "Step 3 (Propose): Output the precise bounding box."
-            ),
-            "exploratory": (
-                "Step 1 (Brainstorm): Consider ALTERNATIVE or LESS OBVIOUS interpretations.\n"
-                "Step 2 (Select): Choose an object that matches INDIRECTLY or METAPHORICALLY.\n"
-                "Step 3 (Propose): Output the bounding box for this alternative."
-            ),
-            "spatial": (
-                "Step 1 (Scan): Systematically scan DIFFERENT REGIONS - edges, corners, background, foreground.\n"
-                "Step 2 (Locate): Find a matching object that might be PARTIALLY VISIBLE or in an UNEXPECTED location.\n"
-                "Step 3 (Propose): Output the bounding box."
-            ),
-            "functional": (
-                "Step 1 (Function): Think about what FUNCTION or PURPOSE the query implies.\n"
-                "Step 2 (Find): Find an object that SERVES that function, even if it looks different.\n"
-                "Step 3 (Propose): Output the bounding box."
-            ),
-            "visual": (
-                "Step 1 (Attributes): Focus on VISUAL ATTRIBUTES - color, shape, texture, size.\n"
-                "Step 2 (Match): Find objects with SIMILAR visual properties to what the query describes.\n"
-                "Step 3 (Propose): Output the bounding box."
-            ),
-            "contextual": (
-                "Step 1 (Scene): Understand the SCENE TYPE and CONTEXT (indoor, outdoor, kitchen, etc.).\n"
-                "Step 2 (Expect): Find objects that TYPICALLY appear in this context matching the query.\n"
-                "Step 3 (Propose): Output the bounding box."
-            ),
-            "part_whole": (
-                "Step 1 (Decompose): Consider if the query refers to a PART of something larger.\n"
-                "Step 2 (Compose): Or if the query is a CONTAINER/WHOLE that includes smaller parts.\n"
-                "Step 3 (Propose): Output the bounding box for the part or whole."
-            )
+            "original": "Focus on the DIRECT match.",
+            "conservative": "Focus on the MOST LITERAL match.",
+            "exploratory": "Consider ALTERNATIVE interpretations.",
+            "spatial": "Scan regions and partial visibility.",
+            "functional": "Think about FUNCTION/PURPOSE.",
+            "visual": "Focus on VISUAL ATTRIBUTES.",
+            "contextual": "Use SCENE CONTEXT.",
+            "part_whole": "Consider PART/WHOLE relationships."
         }
-        default_strategy = (
-            "Step 1 (See): Identify objects relevant to the query.\n"
-            "Step 2 (Think): Analyze and select the best match.\n"
-            "Step 3 (Propose): Output the bounding box."
-        )
 
         for i, item in enumerate(batch):
             s_name = item['strategy']
-            instr = strategies.get(s_name, default_strategy)
-            prompt += f"Query {i+1}: {item['query']} (Strategy: {s_name})\nInstructions:\n{instr}\n\n"
+            instr = strategies.get(s_name, "Analyze matching objects.")
+            prompt += f"Perspective {i+1}: {item['query']}\n   Strategy: {instr}\n"
             
-        prompt += "\nOutput format must be exactly:\n"
-        for i in range(len(batch)):
-            prompt += f"{i+1}. Box: [x1, y1, x2, y2] | Concept: <short description>\n"
-            
-        prompt += "\nCoordinates are 0-1000. Provide one line per query in order."
+        prompt += "\nTask: Output ONE single bounding box that best represents the consensus of these perspectives.\n"
+        prompt += "Format your answer EXACTLY as:\n"
+        prompt += "Reasoning: <synthesis of why this object was chosen>\n"
+        prompt += "Target Concept: <short description>\n"
+        prompt += "Box: [x1, y1, x2, y2]\n"
+        prompt += "\nCoordinates are 0-1000."
         return prompt
 
     def _parse_batched_completion(self, text: str, batch: List[Dict], w: int, h: int, img_area: int) -> List[Hypothesis]:
-        results = []
-        lines = text.strip().split('\n')
-        
-        # Simple heuristic: try to match lines to queries
-        # We expect N lines. If we get fewer, we map them sequentially.
-        
-        current_idx = 0
-        
-        for line in lines:
-            if current_idx >= len(batch):
-                break
+        # Parse single consensus box
+        box_match = re.search(r"Box:\s*\[\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)[,\s]+(\d+)\s*\]", text)
+        if not box_match:
+            # Fallback for plain array
+            box_match = re.search(r"\[\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)[,\s]+(\d+)\s*\]", text)
+            
+        if not box_match:
+            return []
+            
+        try:
+            coords = [int(c) for c in box_match.groups()]
+            x1, y1, x2, y2 = coords
+            
+            # Parse concept and reasoning
+            concept_match = re.search(r"Target Concept:\s*(.*)", text)
+            reasoning_match = re.search(r"Reasoning:\s*(.*)", text, re.DOTALL)
+            
+            concept = concept_match.group(1).strip() if concept_match else "consensus object"
+            reasoning = reasoning_match.group(1).strip() if reasoning_match else "Consensus of batch"
+            
+            if "Target Concept:" in reasoning:
+                reasoning = reasoning.split("Target Concept:")[0].strip()
+            
+            px1 = int(x1 / 1000 * w)
+            py1 = int(y1 / 1000 * h)
+            px2 = int(x2 / 1000 * w)
+            py2 = int(y2 / 1000 * h)
+            
+            px1 = max(0, min(px1, w))
+            py1 = max(0, min(py1, h))
+            px2 = max(0, min(px2, w))
+            py2 = max(0, min(py2, h))
+            
+            if px2 <= px1 or py2 <= py1:
+                return []
                 
-            # Look for Box pattern
-            box_match = re.search(r"Box:\s*\[\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)[,\s]+(\d+)\s*\]", line)
-            if not box_match:
-                continue
+            box = [px1, py1, px2, py2]
+            box_area = (px2 - px1) * (py2 - py1)
+            
+            if box_area < img_area * self.config.min_box_area_ratio:
+                return []
                 
-            try:
-                coords = [int(c) for c in box_match.groups()]
-                
-                # Parse concept
-                concept = "object"
-                if "|" in line:
-                    parts = line.split("|")
-                    for p in parts:
-                        if "Concept:" in p:
-                            concept = p.split("Concept:")[1].strip()
-                
-                # Validate box
-                x1, y1, x2, y2 = coords
-                px1 = int(x1 / 1000 * w)
-                py1 = int(y1 / 1000 * h)
-                px2 = int(x2 / 1000 * w)
-                py2 = int(y2 / 1000 * h)
-                
-                # Clip
-                px1 = max(0, min(px1, w))
-                py1 = max(0, min(py1, h))
-                px2 = max(0, min(px2, w))
-                py2 = max(0, min(py2, h))
-                
-                if px2 <= px1 or py2 <= py1:
-                    current_idx += 1
-                    continue
-                    
-                box = [px1, py1, px2, py2]
-                box_area = (px2 - px1) * (py2 - py1)
-                
-                if box_area >= img_area * self.config.min_box_area_ratio:
-                    config = batch[current_idx]
-                    results.append(Hypothesis(
-                        box=box,
-                        reasoning=f"Batch generated for: {config['query']}",
-                        target_concept=concept,
-                        confidence=0.8, # Placeholder as logprobs are tricky in batch
-                        source_strategy=config['strategy'],
-                        raw_text=line
-                    ))
-                    
-                current_idx += 1
-                
-            except Exception:
-                continue
-                
-        return results
+            # FAN-OUT: Create one hypothesis per query in the batch, sharing the box
+            results = []
+            for item in batch:
+                results.append(Hypothesis(
+                    box=box,
+                    reasoning=f"Consensus for '{item['query']}' via batch. {reasoning}",
+                    target_concept=concept,
+                    confidence=0.85, 
+                    source_strategy=item['strategy'], # Keep original strategy label
+                    raw_text=text
+                ))
+            
+            return results
+            
+        except Exception as e:
+            logger.warning(f"Failed to parse consensus box: {e}")
+            return []
     
     def _generate_query_configs(self, original_query: str, N: int, base_temp: float, strategy_filter: str = None) -> List[Dict]:
         """Generate N hypothesis configs with diverse strategies."""
