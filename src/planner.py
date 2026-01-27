@@ -205,8 +205,60 @@ class Planner:
 
     def _construct_batched_prompt(self, batch: List[Dict]) -> str:
         prompt = "I will provide multiple object queries. For EACH query, identify the object and provide a bounding box.\n\n"
+        
+        # Strategy map
+        strategies = {
+            "original": (
+                "Step 1 (See): Identify the object that DIRECTLY matches the query.\n"
+                "Step 2 (Think): Verify this is the most relevant match.\n"
+                "Step 3 (Propose): Output the precise bounding box."
+            ),
+            "conservative": (
+                "Step 1 (See): List ALL visible objects that could relate to the query.\n"
+                "Step 2 (Think): Select the MOST LITERAL and OBVIOUS match.\n"
+                "Step 3 (Propose): Output the precise bounding box."
+            ),
+            "exploratory": (
+                "Step 1 (Brainstorm): Consider ALTERNATIVE or LESS OBVIOUS interpretations.\n"
+                "Step 2 (Select): Choose an object that matches INDIRECTLY or METAPHORICALLY.\n"
+                "Step 3 (Propose): Output the bounding box for this alternative."
+            ),
+            "spatial": (
+                "Step 1 (Scan): Systematically scan DIFFERENT REGIONS - edges, corners, background, foreground.\n"
+                "Step 2 (Locate): Find a matching object that might be PARTIALLY VISIBLE or in an UNEXPECTED location.\n"
+                "Step 3 (Propose): Output the bounding box."
+            ),
+            "functional": (
+                "Step 1 (Function): Think about what FUNCTION or PURPOSE the query implies.\n"
+                "Step 2 (Find): Find an object that SERVES that function, even if it looks different.\n"
+                "Step 3 (Propose): Output the bounding box."
+            ),
+            "visual": (
+                "Step 1 (Attributes): Focus on VISUAL ATTRIBUTES - color, shape, texture, size.\n"
+                "Step 2 (Match): Find objects with SIMILAR visual properties to what the query describes.\n"
+                "Step 3 (Propose): Output the bounding box."
+            ),
+            "contextual": (
+                "Step 1 (Scene): Understand the SCENE TYPE and CONTEXT (indoor, outdoor, kitchen, etc.).\n"
+                "Step 2 (Expect): Find objects that TYPICALLY appear in this context matching the query.\n"
+                "Step 3 (Propose): Output the bounding box."
+            ),
+            "part_whole": (
+                "Step 1 (Decompose): Consider if the query refers to a PART of something larger.\n"
+                "Step 2 (Compose): Or if the query is a CONTAINER/WHOLE that includes smaller parts.\n"
+                "Step 3 (Propose): Output the bounding box for the part or whole."
+            )
+        }
+        default_strategy = (
+            "Step 1 (See): Identify objects relevant to the query.\n"
+            "Step 2 (Think): Analyze and select the best match.\n"
+            "Step 3 (Propose): Output the bounding box."
+        )
+
         for i, item in enumerate(batch):
-            prompt += f"Query {i+1}: {item['query']} (Strategy: {item['strategy']})\n"
+            s_name = item['strategy']
+            instr = strategies.get(s_name, default_strategy)
+            prompt += f"Query {i+1}: {item['query']} (Strategy: {s_name})\nInstructions:\n{instr}\n\n"
             
         prompt += "\nOutput format must be exactly:\n"
         for i in range(len(batch)):
