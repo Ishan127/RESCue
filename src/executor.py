@@ -57,8 +57,8 @@ class Executor:
             response = self.session.get(f"{self.remote_url}/health", timeout=5)
             response.raise_for_status()
             health = response.json()
-            logger.info(f"Server health: {health}")
-            print(f"Server health: {health}")
+            # logger.info(f"Server health: {health}")
+            # print(f"Server health: {health}")
             if health.get("status") != "healthy":
                 logger.warning("Server status is not healthy")
         except requests.RequestException as e:

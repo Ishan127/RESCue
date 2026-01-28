@@ -291,15 +291,46 @@ def run_phase_masks(ds, plans, cache_dir, workers):
 # ============================================================================
 # PHASE 3: GET CLIP SCORES
 # ============================================================================
+# ============================================================================
+# PHASE 3: GET CLIP SCORES
+# ============================================================================
 def run_phase_clip(ds, plans, cache_dir, workers):
     """Get CLIP scores for all masks."""
     from src.clip_verifier import ClipVerifier
     
     masks_dir = os.path.join(cache_dir, "masks")
-    clip_verifier = ClipVerifier(server_url=args.clip_url)
     
+    # We will instantiate ClipVerifier inside threads
+    base_url = args.clip_url
+    base_port = 8011
+    try:
+        from urllib.parse import urlparse
+        if base_url:
+            parsed = urlparse(base_url)
+            if parsed.port:
+                base_port = parsed.port
+    except:
+        pass
+
+    import threading
+    thread_local = threading.local()
+
     def process_sample_by_idx(sample_idx):
         sample_key = f"sample_{sample_idx}"
+        
+        # Route to specific server (0-7)
+        worker_id = sample_idx % 8 
+        target_port = base_port + worker_id
+        target_url = f"http://localhost:{target_port}/verify"
+        
+        # Get or create thread-local verifier
+        if not hasattr(thread_local, "verifiers"):
+            thread_local.verifiers = {}
+            
+        if target_url not in thread_local.verifiers:
+            thread_local.verifiers[target_url] = ClipVerifier(server_url=target_url)
+            
+        local_verifier = thread_local.verifiers[target_url]
         
         if sample_key not in plans:
             return sample_key, None
@@ -341,7 +372,7 @@ def run_phase_clip(ds, plans, cache_dir, workers):
             if not masks:
                 return sample_key, None
             
-            scores = clip_verifier.verify_batch(image, masks, query)
+            scores = local_verifier.verify_batch(image, masks, query)
             
             # Map scores back to hypothesis indices structure
             clip_scores = {}
