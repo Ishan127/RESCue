@@ -101,6 +101,9 @@ class ClipVerifier:
             if not crops_b64:
                 return [0.0] * len(masks)
                 
+            if not crops_b64:
+                return [0.0] * len(masks)
+                
             payload = {
                 "crops": crops_b64,
                 "query": query

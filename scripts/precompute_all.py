@@ -407,14 +407,29 @@ def run_phase_clip(ds, plans, cache_dir, workers):
 # PHASE 4: VLM POINTWISE SCORING
 # ============================================================================
 def run_phase_vlm(ds, plans, cache_dir, workers):
-    """Precompute VLM pointwise scores for all masks."""
+    """Compute VLM pointwise scores using vLLM endpoint."""
     from src.verifier import Verifier
     
     masks_dir = os.path.join(cache_dir, "masks")
-    verifier = Verifier()
     
+    # Single endpoint for vLLM (TP=8)
+    verifier_url = args.verifier_url # http://localhost:8000/v1
+    
+    import threading
+    thread_local = threading.local()
+
     def process_sample_by_idx(sample_idx):
         sample_key = f"sample_{sample_idx}"
+        
+        # Get or create thread-local verifier
+        if not hasattr(thread_local, "verifier"):
+            # Initialize with single global URL
+            thread_local.verifier = Verifier(
+                model_name="Qwen/Qwen3-VL-30B-A3B-Thinking",
+                api_base=verifier_url 
+            )
+            
+        local_verifier = thread_local.verifier
         
         if sample_key not in plans:
             return sample_key, None
@@ -435,9 +450,9 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
             if image is None:
                 return sample_key, None
             
-            # Load masks
+            # Load masks (all versions)
             masks = []
-            mask_meta = []
+            mask_meta = [] # (hyp_idx, version)
             
             for hyp_idx in range(len(hypotheses)):
                 # Look for versions
@@ -457,7 +472,8 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
                 return sample_key, None
         
             # Run pointwise scoring
-            results = verifier.verify_batch_pointwise(image, masks, query)
+            # Assuming verifier.verify_batch_pointwise supports batch of masks
+            results = local_verifier.verify_batch_pointwise(image, masks, query)
             
             # Map scores back
             vlm_scores = {}
@@ -480,12 +496,14 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
             return sample_key, len(results)
         except Exception as e:
             print(f"VLM error on {sample_key}: {e}")
+            import traceback
+            traceback.print_exc()
             return sample_key, None
     
     num_samples = len(ds)
     all_indices = list(range(num_samples))
     
-    print(f"Starting Phase 4 with {workers} workers...", flush=True)
+    print(f"Starting Phase 4 with {workers} workers (Targeting vLLM at {verifier_url})...", flush=True)
 
     with ThreadPoolExecutor(max_workers=workers) as executor:
         futures = {executor.submit(process_sample_by_idx, idx): idx for idx in all_indices}
