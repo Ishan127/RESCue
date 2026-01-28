@@ -412,8 +412,10 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
     
     masks_dir = os.path.join(cache_dir, "masks")
     
-    # Single endpoint for vLLM (TP=8)
-    verifier_url = args.verifier_url # http://localhost:8000/v1
+    # Single endpoint for vLLM (TP=8) OR Multiple (TP=4x2)
+    # Split by comma if multiple
+    verifier_urls = args.verifier_url.split(",")
+    verifier_urls = [u.strip() for u in verifier_urls if u.strip()]
     
     import threading
     thread_local = threading.local()
@@ -421,15 +423,24 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
     def process_sample_by_idx(sample_idx):
         sample_key = f"sample_{sample_idx}"
         
-        # Get or create thread-local verifier
-        if not hasattr(thread_local, "verifier"):
-            # Initialize with single global URL
-            thread_local.verifier = Verifier(
+        # Round Robin Load Balancing
+        # If 1 URL: idx % 1 = 0
+        # If 2 URLs: idx % 2 = 0 or 1
+        target_url_idx = sample_idx % len(verifier_urls)
+        target_url = verifier_urls[target_url_idx]
+        
+        # Get or create thread-local verifier for THIS url
+        if not hasattr(thread_local, "verifiers"):
+             thread_local.verifiers = {}
+             
+        if target_url not in thread_local.verifiers:
+            # Initialize with specific URL
+            thread_local.verifiers[target_url] = Verifier(
                 model_path="Qwen/Qwen3-VL-30B-A3B-Thinking",
-                api_base=verifier_url 
+                api_base=target_url 
             )
             
-        local_verifier = thread_local.verifier
+        local_verifier = thread_local.verifiers[target_url]
         
         if sample_key not in plans:
             return sample_key, None
