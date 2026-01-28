@@ -516,7 +516,7 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
     num_samples = len(ds)
     all_indices = list(range(num_samples))
     
-    print(f"Starting Phase 4 with {workers} workers (Targeting vLLM at {verifier_url})...", flush=True)
+    print(f"Starting Phase 4 with {workers} workers (Targeting vLLM at {args.verifier_url})...", flush=True)
 
     with ThreadPoolExecutor(max_workers=workers) as executor:
         futures = {executor.submit(process_sample_by_idx, idx): idx for idx in all_indices}
