@@ -152,10 +152,35 @@ def run_phase_masks(ds, plans, cache_dir, workers):
     masks_dir = os.path.join(cache_dir, "masks")
     os.makedirs(masks_dir, exist_ok=True)
     
-    executor = Executor(remote_url=args.sam_url, timeout=300)
+    # Multi-GPU Scaling: Routing based on sample_idx
+    # We don't verify connection here because we will connect dynamically inside threads
+    # BUT we do need to verify at least one to ensure we don't start blindly
+    # (Actually phase2_masks.sh already verifies all 8, so we can skip verification here to be faster)
     
+    # We will instantiate Executor inside the thread to target specific ports
+    base_url = args.sam_url # e.g. http://localhost:8001
+    base_port = 8001
+    try:
+        if base_url:
+            from urllib.parse import urlparse
+            parsed = urlparse(base_url)
+            if parsed.port:
+                base_port = parsed.port
+    except:
+        pass
+
     def process_sample_by_idx(sample_idx):
         sample_key = f"sample_{sample_idx}"
+        
+        # Route to specific server (0-7)
+        # 8 workers -> 8 servers. Ideally matched 1-to-1 if workers process in order.
+        worker_id = sample_idx % 8 
+        target_port = base_port + worker_id
+        target_url = f"http://localhost:{target_port}"
+        
+        # Instantiate local executor for this worker/task
+        # Timeout increased to 600s for large batches
+        local_executor = Executor(remote_url=target_url, timeout=600)
         
         if sample_key not in plans:
             return sample_key, 0
@@ -210,7 +235,7 @@ def run_phase_masks(ds, plans, cache_dir, workers):
                 
                 try:
                     # Single batched call for ALL hypotheses for this version
-                    masks = executor.segment(image, prompts_list=prompts_list)
+                    masks = local_executor.segment(image, prompts_list=prompts_list)
                     
                     if masks:
                         # Save results mapping back to hypothesis index
