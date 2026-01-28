@@ -86,7 +86,7 @@ ulimit -n 65536 2>/dev/null || true
 python scripts/precompute_all.py \
     --phase vlm \
     --cache_dir cache \
-    --workers 128 \
+    --workers 256 \
     --verifier_url "http://localhost:8000/v1,http://localhost:8001/v1"
 
 # Step 4: Shutdown Verifiers
