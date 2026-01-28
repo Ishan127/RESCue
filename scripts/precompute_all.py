@@ -486,7 +486,15 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
         
             # Run pointwise scoring
             # Assuming verifier.verify_batch_pointwise supports batch of masks
-            results = local_verifier.verify_batch_pointwise(image, masks, query)
+            # OPTIMIZATION: skip_clip=True, skip_consistency=True, max_workers=1
+            results = local_verifier.verify_batch_pointwise(
+                image, 
+                masks, 
+                query,
+                skip_clip=True,
+                skip_consistency=True,
+                max_workers=1
+            )
             
             # Map scores back
             vlm_scores = {}

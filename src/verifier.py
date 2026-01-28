@@ -99,7 +99,7 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
                 print(f"Verify error: {e}")
             return {"score": 50, "total": 50}
 
-    def verify_batch_pointwise(self, image_input, masks, query):
+    def verify_batch_pointwise(self, image_input, masks, query, skip_clip=False, skip_consistency=False, max_workers=None):
         """
         Pointwise-only ranking: Score each mask independently, rank by total score.
         
@@ -139,7 +139,8 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
         
         # 1. Run VLM Scoring (Parallel)
         # Increase workers to match N for high throughput async servers
-        max_workers = min(128, n) 
+        if max_workers is None:
+             max_workers = min(128, n) 
         
         # Pre-encode image for Prefix Caching efficiency
         from .api_utils import encode_pil_image, encode_image
@@ -156,23 +157,22 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
         vlm_results = self._pointwise_score_batch(base64_img, w, h, masks, query, max_workers=max_workers)
         
         # 2. Run CLIP Scoring in PARALLEL with VLM (they use different GPUs)
-        # Note: This is sequential here but VLM scoring uses ThreadPoolExecutor internally
-        # For true parallelism, we pre-initialize CLIP and run both concurrently
-        if not hasattr(self, 'clip_verifier'):
-            from .clip_verifier import ClipVerifier
-            self.clip_verifier = ClipVerifier()
-        
-        try:
-            clip_scores = self.clip_verifier.verify_batch(image_input, masks, query)
-        except Exception as e:
-            if self.verbose: print(f"CLIP Error: {e}")
-            clip_scores = [0.0] * n
-
+        clip_scores = [0.0] * n
+        if not skip_clip:
+            if not hasattr(self, 'clip_verifier'):
+                from .clip_verifier import ClipVerifier
+                self.clip_verifier = ClipVerifier()
+            
+            try:
+                clip_scores = self.clip_verifier.verify_batch(image_input, masks, query)
+            except Exception as e:
+                if self.verbose: print(f"CLIP Error: {e}")
+                clip_scores = [0.0] * n
 
         # 3. Compute Consistency Scores (15%)
         # OPTIMIZATION: Skip for small N (overhead not worth it)
         consistency_scores = []
-        if n >= 8:
+        if not skip_consistency and n >= 8:
             try:
                 # Vectorized IoU Calculation (O(N^2) -> Matrix Op)
                 # Stack masks: (N, H, W) -> flattened (N, HW)
@@ -208,7 +208,7 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
                 
             except Exception as e:
                 print(f"[Verifier] Vectorized IoU failed: {e}. Falling back to loop.")
-                # Fallback
+                # Fallback old loop
                 for i in range(n):
                     total_iou = 0
                     count = 0
@@ -219,7 +219,7 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
                     avg_iou = total_iou / count if count > 0 else 0
                     consistency_scores.append(avg_iou)
         else:
-            consistency_scores = [1.0] * n # Single mask is consistent with itself
+             consistency_scores = [1.0] * n
 
         # 4. Combine Scores (50% VLM + 35% CLIP + 15% Consistency)
         final_results = []

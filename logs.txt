@@ -1,156 +1,864 @@
-Logs:
-Server health: {'status': 'healthy', 'backends_total': 24, 'backends_healthy': 24, 'backends': {'http://localhost:8010': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8011': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8012': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8013': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8014': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8015': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8016': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8017': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8018': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8019': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8020': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8021': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8022': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8023': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8024': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8025': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8026': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8027': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8028': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8029': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8030': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8031': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8032': {'healthy': True, 'consecutive_failures': 0}, 'http://localhost:8033': {'healthy': True, 'consecutive_failures': 0}}}
-[Executor] Initialized with load balancer at http://localhost:8001
-[Executor] Will send up to 16 parallel requests
+Crop Error 1089: Unable to allocate 43.3 MiB for an array with shape (5677291,) and data type int64
+Crop Error 1091: Unable to allocate 43.3 MiB for an array with shape (5677291,) and data type int64
+Crop Error 1096: Unable to allocate 43.3 MiB for an array with shape (5677291,) and data type int64
+Crop Error 1090: Unable to allocate 43.3 MiB for an array with shape (5677291,) and data type int64
+Crop Error 1103: Unable to allocate 43.3 MiB for an array with shape (5677327,) and data type int64
+Crop Error 1094: Unable to allocate 43.3 MiB for an array with shape (5677291,) and data type int64
+Crop Error 1097: Unable to allocate 43.3 MiB for an array with shape (5677291,) and data type int64
+Crop Error 1095: Unable to allocate 43.3 MiB for an array with shape (5677291,) and data type int64
+Crop Error 1106: Unable to allocate 43.3 MiB for an array with shape (5677327,) and data type int64
+Crop Error 1109: Unable to allocate 43.3 MiB for an array with shape (5677327,) and data type int64
+Crop Error 1107: Unable to allocate 43.3 MiB for an array with shape (5677327,) and data type int64
+Crop Error 1098: Unable to allocate 43.3 MiB for an array with shape (5677291,) and data type int64
+Crop Error 1101: Unable to allocate 43.3 MiB for an array with shape (5677327,) and data type int64
+Crop Error 1100: Unable to allocate 43.3 MiB for an array with shape (5677327,) and data type int64
+Crop Error 1105: Unable to allocate 43.3 MiB for an array with shape (5677327,) and data type int64
+Crop Error 1084: Unable to allocate 43.3 MiB for an array with shape (5677291,) and data type int64
+Crop Error 1108: Unable to allocate 43.3 MiB for an array with shape (5677327,) and data type int64
+Crop Error 1102: Unable to allocate 43.3 MiB for an array with shape (5677327,) and data type int64
+Crop Error 1104: Unable to allocate 43.3 MiB for an array with shape (5677327,) and data type int64
+Crop Error 1099: Unable to allocate 43.3 MiB for an array with shape (5677291,) and data type int64
+Crop Error 1093: Unable to allocate 43.3 MiB for an array with shape (5677291,) and data type int64
+Crop Error 1092: Unable to allocate 43.3 MiB for an array with shape (5677291,) and data type int64
+Crop Error 1216: Unable to allocate 16.2 MiB for an array with shape (5677321, 3) and data type uint8
+Crop Error 1227: Unable to allocate 43.3 MiB for an array with shape (5677321,) and data type int64
+Crop Error 1226: Unable to allocate 43.3 MiB for an array with shape (5677321,) and data type int64
+Crop Error 1222: Unable to allocate 43.3 MiB for an array with shape (5677321,) and data type int64
+Crop Error 1213: Unable to allocate 43.3 MiB for an array with shape (5677321,) and data type int64
+Crop Error 1228: Unable to allocate 43.3 MiB for an array with shape (5677321,) and data type int64
+Crop Error 1206:
+Crop Error 1217: Unable to allocate 43.3 MiB for an array with shape (5677321,) and data type int64
+Crop Error 1212: Unable to allocate 43.3 MiB for an array with shape (5677321,) and data type int64
+Crop Error 1219: Unable to allocate 43.3 MiB for an array with shape (5677321,) and data type int64
+Crop Error 1211: Unable to allocate 43.3 MiB for an array with shape (5677321,) and data type int64
+Crop Error 1214:
+Crop Error 1229: Unable to allocate 43.3 MiB for an array with shape (5677321,) and data type int64
+Crop Error 1202:
+Crop Error 1218: Unable to allocate 43.3 MiB for an array with shape (5677321,) and data type int64
+Crop Error 1224: Unable to allocate 43.3 MiB for an array with shape (5677321,) and data type int64
+Crop Error 1215: Unable to allocate 16.2 MiB for an array with shape (5677321, 3) and data type uint8
+Crop Error 1223: Unable to allocate 43.3 MiB for an array with shape (5677321,) and data type int64
+Crop Error 1204:
+Crop Error 1220: Unable to allocate 43.3 MiB for an array with shape (5677321,) and data type int64
+Crop Error 1209:
+Crop Error 1208: Unable to allocate 43.3 MiB for an array with shape (5677321,) and data type int64
+Crop Error 1207: Unable to allocate 43.3 MiB for an array with shape (5677321,) and data type int64
+Crop Error 1249: Unable to allocate 43.3 MiB for an array with shape (5677321,) and data type int64
+Crop Error 1245: Unable to allocate 43.3 MiB for an array with shape (5677321,) and data type int64
+Crop Error 1232: Unable to allocate 43.3 MiB for an array with shape (5677321,) and data type int64
+Crop Error 1225: Unable to allocate 43.3 MiB for an array with shape (5677321,) and data type int64
+Crop Error 1241:
+Crop Error 1244: Unable to allocate 43.3 MiB for an array with shape (5677321,) and data type int64
+Crop Error 1210:
+Crop Error 1256: Unable to allocate 43.3 MiB for an array with shape (5677330,) and data type int64
+Crop Error 1239: Unable to allocate 43.3 MiB for an array with shape (5677321,) and data type int64
+Crop Error 1260: Unable to allocate 43.3 MiB for an array with shape (5677330,) and data type int64
+Crop Error 1255: Unable to allocate 43.3 MiB for an array with shape (5677330,) and data type int64
+Crop Error 1246: Unable to allocate 43.3 MiB for an array with shape (5677321,) and data type int64
+Crop Error 1238:
+Crop Error 1261: Unable to allocate 43.3 MiB for an array with shape (5677330,) and data type int64
+Crop Error 1262: Unable to allocate 43.3 MiB for an array with shape (5677330,) and data type int64
+Crop Error 1259: Unable to allocate 43.3 MiB for an array with shape (5677330,) and data type int64
+Crop Error 1265: Unable to allocate 43.3 MiB for an array with shape (5677330,) and data type int64
+Crop Error 1263: Unable to allocate 16.2 MiB for an array with shape (5677330, 3) and data type uint8
+Crop Error 1267: Unable to allocate 43.3 MiB for an array with shape (5677330,) and data type int64
+Crop Error 1250: Unable to allocate 43.3 MiB for an array with shape (5677330,) and data type int64
+Crop Error 1269: Unable to allocate 43.3 MiB for an array with shape (5677330,) and data type int64
+Crop Error 1257: Unable to allocate 43.3 MiB for an array with shape (5677330,) and data type int64
+Crop Error 1243:
+Crop Error 1270: Unable to allocate 43.3 MiB for an array with shape (5677346,) and data type int64
+Crop Error 1271: Unable to allocate 43.3 MiB for an array with shape (5677346,) and data type int64
+Crop Error 1264: Unable to allocate 43.3 MiB for an array with shape (5677330,) and data type int64
+Crop Error 1274: Unable to allocate 43.3 MiB for an array with shape (5677346,) and data type int64
+Crop Error 1273: Unable to allocate 43.3 MiB for an array with shape (5677346,) and data type int64
+Crop Error 1240:
+Crop Error 1242:
+Crop Error 1276: Unable to allocate 43.3 MiB for an array with shape (5677346,) and data type int64
+Crop Error 1247: Unable to allocate 43.3 MiB for an array with shape (5677321,) and data type int64
+Crop Error 1254: Unable to allocate 43.3 MiB for an array with shape (5677330,) and data type int64
+Crop Error 1253: Unable to allocate 43.3 MiB for an array with shape (5677330,) and data type int64
+Crop Error 1251: Unable to allocate 16.2 MiB for an array with shape (5677330, 3) and data type uint8
+Crop Error 1248:
+Crop Error 1266: Unable to allocate 43.3 MiB for an array with shape (5677330,) and data type int64
+Crop Error 1286: Unable to allocate 10.9 MiB for an array with shape (1424905,) and data type int64
+Crop Error 1252: Unable to allocate 43.3 MiB for an array with shape (5677330,) and data type int64
+Crop Error 1277: Unable to allocate 43.3 MiB for an array with shape (5677346,) and data type int64
+Crop Error 1279: Unable to allocate 43.3 MiB for an array with shape (5677346,) and data type int64
+Crop Error 1289: Unable to allocate 10.9 MiB for an array with shape (1424905,) and data type int64
+Crop Error 1275: Unable to allocate 43.3 MiB for an array with shape (5677346,) and data type int64
+Crop Error 1268: Unable to allocate 43.3 MiB for an array with shape (5677330,) and data type int64
+Crop Error 1278: Unable to allocate 43.3 MiB for an array with shape (5677346,) and data type int64
+Crop Error 1292: Unable to allocate 43.3 MiB for an array with shape (5677333,) and data type int64
+Crop Error 1296: Unable to allocate 43.3 MiB for an array with shape (5677333,) and data type int64
+Crop Error 1294: Unable to allocate 43.3 MiB for an array with shape (5677333,) and data type int64
+Crop Error 1285: Unable to allocate 10.9 MiB for an array with shape (1424905,) and data type int64
+Crop Error 1300: Unable to allocate 10.9 MiB for an array with shape (1424712,) and data type int64
+Crop Error 1258: Unable to allocate 43.3 MiB for an array with shape (5677330,) and data type int64
+Crop Error 1282: Unable to allocate 10.9 MiB for an array with shape (1424905,) and data type int64
+Crop Error 1293: Unable to allocate 43.3 MiB for an array with shape (5677333,) and data type int64
+Crop Error 1290: Unable to allocate 43.3 MiB for an array with shape (5677333,) and data type int64
+Crop Error 1291: Unable to allocate 43.3 MiB for an array with shape (5677333,) and data type int64
+Crop Error 1284: Unable to allocate 10.9 MiB for an array with shape (1424905,) and data type int64
+Crop Error 1272: Unable to allocate 43.3 MiB for an array with shape (5677346,) and data type int64
+Crop Error 1295: Unable to allocate 43.3 MiB for an array with shape (5677333,) and data type int64
+Crop Error 1280: Unable to allocate 10.9 MiB for an array with shape (1424905,) and data type int64
+Crop Error 1297: Unable to allocate 43.3 MiB for an array with shape (5677333,) and data type int64
+Crop Error 1298: Unable to allocate 43.3 MiB for an array with shape (5677333,) and data type int64
+Crop Error 1299: Unable to allocate 43.3 MiB for an array with shape (5677333,) and data type int64
+Crop Error 1316: Unable to allocate 10.9 MiB for an array with shape (1424707,) and data type int64
+Crop Error 1301: Unable to allocate 10.9 MiB for an array with shape (1424712,) and data type int64
+Crop Error 1312: Unable to allocate 10.9 MiB for an array with shape (1424707,) and data type int64
+Crop Error 1303: Unable to allocate 10.9 MiB for an array with shape (1424712,) and data type int64
+Crop Error 1304: Unable to allocate 10.9 MiB for an array with shape (1424712,) and data type int64
+Crop Error 1329: Unable to allocate 10.9 MiB for an array with shape (1424755,) and data type int64
+Crop Error 1305: Unable to allocate 10.9 MiB for an array with shape (1424712,) and data type int64
+Crop Error 1306: Unable to allocate 10.9 MiB for an array with shape (1424712,) and data type int64
+Crop Error 1313: Unable to allocate 10.9 MiB for an array with shape (1424707,) and data type int64
+Crop Error 1331: Unable to allocate 10.9 MiB for an array with shape (1424714,) and data type int64
+Crop Error 1326: Unable to allocate 10.9 MiB for an array with shape (1424755,) and data type int64
+Crop Error 1324: Unable to allocate 10.9 MiB for an array with shape (1424755,) and data type int64
+Crop Error 1318: Unable to allocate 10.9 MiB for an array with shape (1424707,) and data type int64
+Crop Error 1334: Unable to allocate 10.9 MiB for an array with shape (1424714,) and data type int64
+Crop Error 1317: Unable to allocate 10.9 MiB for an array with shape (1424707,) and data type int64
+Crop Error 1322: Unable to allocate 10.9 MiB for an array with shape (1424755,) and data type int64
+Crop Error 1325: Unable to allocate 10.9 MiB for an array with shape (1424755,) and data type int64
+Crop Error 1308: Unable to allocate 10.9 MiB for an array with shape (1424712,) and data type int64
+Crop Error 1311: Unable to allocate 10.9 MiB for an array with shape (1424707,) and data type int64
+Crop Error 1332: Unable to allocate 10.9 MiB for an array with shape (1424714,) and data type int64
+Crop Error 1335: Unable to allocate 10.9 MiB for an array with shape (1424714,) and data type int64
+Crop Error 1320: Unable to allocate 10.9 MiB for an array with shape (1424755,) and data type int64
+Crop Error 1336: Unable to allocate 10.9 MiB for an array with shape (1424714,) and data type int64
+Crop Error 1319: Unable to allocate 10.9 MiB for an array with shape (1424707,) and data type int64
+Crop Error 1342: Unable to allocate 10.9 MiB for an array with shape (1424399,) and data type int64
+Crop Error 1341: Unable to allocate 10.9 MiB for an array with shape (1424399,) and data type int64
+Crop Error 1339: Unable to allocate 10.9 MiB for an array with shape (1424714,) and data type int64
+Crop Error 1337: Unable to allocate 10.9 MiB for an array with shape (1424714,) and data type int64
+Crop Error 1338: Unable to allocate 10.9 MiB for an array with shape (1424714,) and data type int64
+Crop Error 1343: Unable to allocate 10.9 MiB for an array with shape (1424399,) and data type int64
+Crop Error 1333: Unable to allocate 10.9 MiB for an array with shape (1424714,) and data type int64
+Crop Error 1340: Unable to allocate 10.9 MiB for an array with shape (1424399,) and data type int64
+Crop Error 1330: Unable to allocate 10.9 MiB for an array with shape (1424714,) and data type int64
+Crop Error 1345: Unable to allocate 10.9 MiB for an array with shape (1424399,) and data type int64
+Crop Error 1346: Unable to allocate 10.9 MiB for an array with shape (1424399,) and data type int64
+Crop Error 1350: Unable to allocate 10.9 MiB for an array with shape (1424389,) and data type int64
+Crop Error 1347: Unable to allocate 10.9 MiB for an array with shape (1424399,) and data type int64
+Crop Error 1344: Unable to allocate 10.9 MiB for an array with shape (1424399,) and data type int64
+Crop Error 1315: Unable to allocate 10.9 MiB for an array with shape (1424707,) and data type int64
+Crop Error 1349: Unable to allocate 10.9 MiB for an array with shape (1424399,) and data type int64
+Crop Error 1354: Unable to allocate 10.9 MiB for an array with shape (1424389,) and data type int64
+Crop Error 1352: Unable to allocate 10.9 MiB for an array with shape (1424389,) and data type int64
+Crop Error 1351: Unable to allocate 10.9 MiB for an array with shape (1424389,) and data type int64
+Crop Error 1358: Unable to allocate 10.9 MiB for an array with shape (1424389,) and data type int64
+Crop Error 1353: Unable to allocate 10.9 MiB for an array with shape (1424389,) and data type int64
+Crop Error 1355: Unable to allocate 10.9 MiB for an array with shape (1424389,) and data type int64
+Crop Error 1356: Unable to allocate 10.9 MiB for an array with shape (1424389,) and data type int64
+Crop Error 1370: Unable to allocate 10.9 MiB for an array with shape (1424453,) and data type int64
+Crop Error 1357: Unable to allocate 10.9 MiB for an array with shape (1424389,) and data type int64
+Crop Error 1361: Unable to allocate 10.9 MiB for an array with shape (1424453,) and data type int64
+Crop Error 1360: Unable to allocate 10.9 MiB for an array with shape (1424453,) and data type int64
+Crop Error 1363: Unable to allocate 10.9 MiB for an array with shape (1424453,) and data type int64
+Crop Error 1368: Unable to allocate 10.9 MiB for an array with shape (1424453,) and data type int64
+Crop Error 1367: Unable to allocate 10.9 MiB for an array with shape (1424453,) and data type int64
+Crop Error 1369: Unable to allocate 10.9 MiB for an array with shape (1424453,) and data type int64
+Crop Error 1366: Unable to allocate 10.9 MiB for an array with shape (1424453,) and data type int64
+Crop Error 1365: Unable to allocate 10.9 MiB for an array with shape (1424453,) and data type int64
+Crop Error 1373: Unable to allocate 10.9 MiB for an array with shape (1424453,) and data type int64
+Crop Error 1377: Unable to allocate 10.9 MiB for an array with shape (1424453,) and data type int64
+Crop Error 1362: Unable to allocate 10.9 MiB for an array with shape (1424453,) and data type int64
+Crop Error 1321: Unable to allocate 10.9 MiB for an array with shape (1424755,) and data type int64
+Crop Error 1371: Unable to allocate 10.9 MiB for an array with shape (1424453,) and data type int64
+Crop Error 1372: Unable to allocate 10.9 MiB for an array with shape (1424453,) and data type int64
+Crop Error 1374: Unable to allocate 10.9 MiB for an array with shape (1424453,) and data type int64
+Crop Error 1359: Unable to allocate 10.9 MiB for an array with shape (1424389,) and data type int64
+Crop Error 1379: Unable to allocate 10.9 MiB for an array with shape (1424453,) and data type int64
+Crop Error 1381: Unable to allocate 10.9 MiB for an array with shape (1424756,) and data type int64
+Crop Error 1392: Unable to allocate 10.9 MiB for an array with shape (1424728,) and data type int64
+Crop Error 1386: Unable to allocate 10.9 MiB for an array with shape (1424756,) and data type int64
+Crop Error 1396: Unable to allocate 10.9 MiB for an array with shape (1424728,) and data type int64
+Crop Error 1425: Unable to allocate 10.9 MiB for an array with shape (1424775,) and data type int64
+Crop Error 1419: Unable to allocate 10.9 MiB for an array with shape (1424728,) and data type int64
+Crop Error 1417: Unable to allocate 10.9 MiB for an array with shape (1424728,) and data type int64
+Crop Error 1427: Unable to allocate 10.9 MiB for an array with shape (1424775,) and data type int64
+Crop Error 1426: Unable to allocate 10.9 MiB for an array with shape (1424775,) and data type int64
+Crop Error 1436: Unable to allocate 10.9 MiB for an array with shape (1424767,) and data type int64
+Crop Error 1431: Unable to allocate 10.9 MiB for an array with shape (1424767,) and data type int64
+Crop Error 1418: Unable to allocate 10.9 MiB for an array with shape (1424728,) and data type int64
+Crop Error 1453: Unable to allocate 10.9 MiB for an array with shape (1424767,) and data type int64
+Crop Error 1460: Unable to allocate 10.9 MiB for an array with shape (1424669,) and data type int64
+Crop Error 1445: Unable to allocate 10.9 MiB for an array with shape (1424767,) and data type int64
+Crop Error 1454: Unable to allocate 10.9 MiB for an array with shape (1424767,) and data type int64
+Crop Error 1452: Unable to allocate 10.9 MiB for an array with shape (1424767,) and data type int64
+Crop Error 1449: Unable to allocate 10.9 MiB for an array with shape (1424767,) and data type int64
+Crop Error 1455: Unable to allocate 10.9 MiB for an array with shape (1424767,) and data type int64
+Crop Error 1450: Unable to allocate 10.9 MiB for an array with shape (1424767,) and data type int64
+Crop Error 1444: Unable to allocate 10.9 MiB for an array with shape (1424767,) and data type int64
+Crop Error 1478: Unable to allocate 10.9 MiB for an array with shape (1424669,) and data type int64
+Crop Error 1482: Unable to allocate 10.9 MiB for an array with shape (1424714,) and data type int64
+Crop Error 1494: Unable to allocate 10.9 MiB for an array with shape (1424714,) and data type int64
+Crop Error 1491: Unable to allocate 10.9 MiB for an array with shape (1424714,) and data type int64
+Crop Error 1495: Unable to allocate 10.9 MiB for an array with shape (1424714,) and data type int64
+Crop Error 1505: Unable to allocate 10.9 MiB for an array with shape (1424714,) and data type int64
+Crop Error 1515: Unable to allocate 10.9 MiB for an array with shape (1424688,) and data type int64
+Crop Error 1501: Unable to allocate 10.9 MiB for an array with shape (1424714,) and data type int64
+Crop Error 1521: Unable to allocate 10.9 MiB for an array with shape (1424723,) and data type int64
+Crop Error 1509: Unable to allocate 10.9 MiB for an array with shape (1424714,) and data type int64
+Crop Error 1506: Unable to allocate 10.9 MiB for an array with shape (1424714,) and data type int64
+Crop Error 1512: Unable to allocate 10.9 MiB for an array with shape (1424688,) and data type int64
+Crop Error 1523: Unable to allocate 10.9 MiB for an array with shape (1424723,) and data type int64
+Crop Error 1514: Unable to allocate 10.9 MiB for an array with shape (1424688,) and data type int64
+Crop Error 1518: Unable to allocate 10.9 MiB for an array with shape (1424688,) and data type int64
+Crop Error 1533: Unable to allocate 10.9 MiB for an array with shape (1424723,) and data type int64
+Crop Error 1531: Unable to allocate 10.9 MiB for an array with shape (1424723,) and data type int64
+Crop Error 1520: Unable to allocate 10.9 MiB for an array with shape (1424723,) and data type int64
+Crop Error 1527: Unable to allocate 10.9 MiB for an array with shape (1424723,) and data type int64
+Crop Error 1539: Unable to allocate 10.9 MiB for an array with shape (1424723,) and data type int64
+Crop Error 1536: Unable to allocate 10.9 MiB for an array with shape (1424723,) and data type int64
+Crop Error 1560: Unable to allocate 10.9 MiB for an array with shape (1425164,) and data type int64
+Crop Error 1542: Unable to allocate 10.9 MiB for an array with shape (1425230,) and data type int64
+Crop Error 1555: Unable to allocate 10.9 MiB for an array with shape (1425164,) and data type int64
+Crop Error 1566: Unable to allocate 10.9 MiB for an array with shape (1425164,) and data type int64
+Crop Error 1554: Unable to allocate 10.9 MiB for an array with shape (1425164,) and data type int64
+Crop Error 1564: Unable to allocate 10.9 MiB for an array with shape (1425164,) and data type int64
+Crop Error 1547: Unable to allocate 10.9 MiB for an array with shape (1425230,) and data type int64
+Crop Error 1552: Unable to allocate 10.9 MiB for an array with shape (1425164,) and data type int64
+Crop Error 1559: Unable to allocate 10.9 MiB for an array with shape (1425164,) and data type int64
+Crop Error 1562: Unable to allocate 10.9 MiB for an array with shape (1425164,) and data type int64
+Crop Error 1545: Unable to allocate 10.9 MiB for an array with shape (1425230,) and data type int64
+Crop Error 1544: Unable to allocate 10.9 MiB for an array with shape (1425230,) and data type int64
+Crop Error 1573: Unable to allocate 10.9 MiB for an array with shape (1425164,) and data type int64
+Crop Error 1577: Unable to allocate 10.9 MiB for an array with shape (1425164,) and data type int64
+Crop Error 1586: Unable to allocate 10.9 MiB for an array with shape (1424529,) and data type int64
+Crop Error 1591: Unable to allocate 10.9 MiB for an array with shape (1424529,) and data type int64
+Crop Error 1576: Unable to allocate 10.9 MiB for an array with shape (1425164,) and data type int64
+Crop Error 1565: Unable to allocate 10.9 MiB for an array with shape (1425164,) and data type int64
+Crop Error 1582: Unable to allocate 10.9 MiB for an array with shape (1424529,) and data type int64
+Crop Error 1589: Unable to allocate 10.9 MiB for an array with shape (1424529,) and data type int64
+Crop Error 1600: Unable to allocate 10.9 MiB for an array with shape (1424529,) and data type int64
+Crop Error 1575: Unable to allocate 10.9 MiB for an array with shape (1425164,) and data type int64
+Crop Error 1596: Unable to allocate 10.9 MiB for an array with shape (1424529,) and data type int64
+Crop Error 1579: Unable to allocate 10.9 MiB for an array with shape (1425164,) and data type int64
+Crop Error 1567: Unable to allocate 10.9 MiB for an array with shape (1425164,) and data type int64
+Crop Error 1583: Unable to allocate 10.9 MiB for an array with shape (1424529,) and data type int64
+Crop Error 1598: Unable to allocate 10.9 MiB for an array with shape (1424529,) and data type int64
+Crop Error 1607: Unable to allocate 10.9 MiB for an array with shape (1424529,) and data type int64
+Crop Error 1602: Unable to allocate 10.9 MiB for an array with shape (1424529,) and data type int64
+Crop Error 1597: Unable to allocate 10.9 MiB for an array with shape (1424529,) and data type int64
+Crop Error 1605: Unable to allocate 10.9 MiB for an array with shape (1424529,) and data type int64
+Crop Error 1563: Unable to allocate 10.9 MiB for an array with shape (1425164,) and data type int64
+Crop Error 1619: Unable to allocate 10.9 MiB for an array with shape (1424529,) and data type int64
+Crop Error 1616: Unable to allocate 10.9 MiB for an array with shape (1424529,) and data type int64
+Crop Error 1617: Unable to allocate 10.9 MiB for an array with shape (1424529,) and data type int64
+Crop Error 1608: Unable to allocate 10.9 MiB for an array with shape (1424529,) and data type int64
+Crop Error 1599: Unable to allocate 10.9 MiB for an array with shape (1424529,) and data type int64
+Crop Error 1612: Unable to allocate 10.9 MiB for an array with shape (1424529,) and data type int64
+Crop Error 1621: Unable to allocate 10.9 MiB for an array with shape (1424634,) and data type int64
+Crop Error 1606: Unable to allocate 10.9 MiB for an array with shape (1424529,) and data type int64
+Crop Error 1629: Unable to allocate 10.9 MiB for an array with shape (1424634,) and data type int64
+Crop Error 1643: Unable to allocate 10.9 MiB for an array with shape (1424634,) and data type int64
+Crop Error 1632: Unable to allocate 10.9 MiB for an array with shape (1424634,) and data type int64
+Crop Error 1647: Unable to allocate 10.9 MiB for an array with shape (1424634,) and data type int64
+Crop Error 1651: Unable to allocate 10.9 MiB for an array with shape (1424621,) and data type int64
+Crop Error 1631: Unable to allocate 10.9 MiB for an array with shape (1424634,) and data type int64
+Crop Error 1655: Unable to allocate 10.9 MiB for an array with shape (1424621,) and data type int64
+Crop Error 1641: Unable to allocate 10.9 MiB for an array with shape (1424634,) and data type int64
+Crop Error 1653: Unable to allocate 10.9 MiB for an array with shape (1424621,) and data type int64
+Crop Error 1636: Unable to allocate 10.9 MiB for an array with shape (1424634,) and data type int64
+Crop Error 1642: Unable to allocate 10.9 MiB for an array with shape (1424634,) and data type int64
+Crop Error 1676: Unable to allocate 10.9 MiB for an array with shape (1424967,) and data type int64
+Crop Error 1658: Unable to allocate 10.9 MiB for an array with shape (1424621,) and data type int64
+Crop Error 1667: Unable to allocate 10.9 MiB for an array with shape (1424967,) and data type int64
+Crop Error 1670: Unable to allocate 10.9 MiB for an array with shape (1424967,) and data type int64
+Crop Error 1669: Unable to allocate 10.9 MiB for an array with shape (1424967,) and data type int64
+Crop Error 1677: Unable to allocate 10.9 MiB for an array with shape (1424967,) and data type int64
+Crop Error 1662: Unable to allocate 10.9 MiB for an array with shape (1424967,) and data type int64
+Crop Error 1679: Unable to allocate 10.9 MiB for an array with shape (1424967,) and data type int64
+Crop Error 1674: Unable to allocate 10.9 MiB for an array with shape (1424967,) and data type int64
+Crop Error 1666: Unable to allocate 10.9 MiB for an array with shape (1424967,) and data type int64
+Crop Error 1680: Unable to allocate 10.9 MiB for an array with shape (1424967,) and data type int64
+Crop Error 1663: Unable to allocate 10.9 MiB for an array with shape (1424967,) and data type int64
+Crop Error 1675: Unable to allocate 10.9 MiB for an array with shape (1424967,) and data type int64
+Crop Error 1688: Unable to allocate 10.9 MiB for an array with shape (1424967,) and data type int64
+Crop Error 1696: Unable to allocate 10.9 MiB for an array with shape (1424953,) and data type int64
+Crop Error 1683: Unable to allocate 10.9 MiB for an array with shape (1424967,) and data type int64
+Crop Error 1682: Unable to allocate 10.9 MiB for an array with shape (1424967,) and data type int64
+Crop Error 1697: Unable to allocate 10.9 MiB for an array with shape (1424953,) and data type int64
+Crop Error 1699: Unable to allocate 10.9 MiB for an array with shape (1424953,) and data type int64
+Crop Error 1691: Unable to allocate 10.9 MiB for an array with shape (1424953,) and data type int64
+Crop Error 1685: Unable to allocate 10.9 MiB for an array with shape (1424967,) and data type int64
+Crop Error 1686: Unable to allocate 10.9 MiB for an array with shape (1424967,) and data type int64
+Crop Error 1704: Unable to allocate 10.9 MiB for an array with shape (1424953,) and data type int64
+Crop Error 1695: Unable to allocate 10.9 MiB for an array with shape (1424953,) and data type int64
+Crop Error 1708: Unable to allocate 10.9 MiB for an array with shape (1424953,) and data type int64
+Crop Error 1707: Unable to allocate 10.9 MiB for an array with shape (1424953,) and data type int64
+Crop Error 1700: Unable to allocate 4.08 MiB for an array with shape (1424953, 3) and data type uint8
+Crop Error 1681: Unable to allocate 10.9 MiB for an array with shape (1424967,) and data type int64
+Crop Error 1701: Unable to allocate 10.9 MiB for an array with shape (1424953,) and data type int64
+Crop Error 1710: Unable to allocate 10.9 MiB for an array with shape (1424953,) and data type int64
+Crop Error 1715: Unable to allocate 10.9 MiB for an array with shape (1424953,) and data type int64
+Crop Error 1702: Unable to allocate 10.9 MiB for an array with shape (1424953,) and data type int64
+Crop Error 1709: Unable to allocate 10.9 MiB for an array with shape (1424953,) and data type int64
+Crop Error 1706: Unable to allocate 10.9 MiB for an array with shape (1424953,) and data type int64
+Crop Error 1712: Unable to allocate 10.9 MiB for an array with shape (1424953,) and data type int64
+Crop Error 1713: Unable to allocate 10.9 MiB for an array with shape (1424953,) and data type int64
+Crop Error 1711: Unable to allocate 10.9 MiB for an array with shape (1424953,) and data type int64
+Crop Error 1668: Unable to allocate 10.9 MiB for an array with shape (1424967,) and data type int64
+Crop Error 1726: Unable to allocate 10.9 MiB for an array with shape (1424943,) and data type int64
+Crop Error 1728: Unable to allocate 10.9 MiB for an array with shape (1424943,) and data type int64
+Crop Error 1731: Unable to allocate 10.9 MiB for an array with shape (1424914,) and data type int64
+Crop Error 1736: Unable to allocate 10.9 MiB for an array with shape (1424914,) and data type int64
+Crop Error 1734: Unable to allocate 4.08 MiB for an array with shape (1424914, 3) and data type uint8
+Crop Error 1732: Unable to allocate 10.9 MiB for an array with shape (1424914,) and data type int64
+Crop Error 1724: Unable to allocate 4.08 MiB for an array with shape (1424943, 3) and data type uint8
+Crop Error 1718: Unable to allocate 10.9 MiB for an array with shape (1424953,) and data type int64
+Crop Error 1717: Unable to allocate 10.9 MiB for an array with shape (1424953,) and data type int64
+Crop Error 1730: Unable to allocate 10.9 MiB for an array with shape (1424914,) and data type int64
+Crop Error 1721: Unable to allocate 10.9 MiB for an array with shape (1424943,) and data type int64
+Crop Error 1719: Unable to allocate 10.9 MiB for an array with shape (1424953,) and data type int64
+Crop Error 1720: Unable to allocate 10.9 MiB for an array with shape (1424943,) and data type int64
+Crop Error 1714: Unable to allocate 10.9 MiB for an array with shape (1424953,) and data type int64
+Crop Error 1727: Unable to allocate 10.9 MiB for an array with shape (1424943,) and data type int64
+Crop Error 1729: Unable to allocate 10.9 MiB for an array with shape (1424943,) and data type int64
+Crop Error 1716: Unable to allocate 10.9 MiB for an array with shape (1424953,) and data type int64
+Crop Error 1756: Unable to allocate 10.9 MiB for an array with shape (1424925,) and data type int64
+Crop Error 1760: Unable to allocate 10.9 MiB for an array with shape (1424925,) and data type int64
+Crop Error 1758: Unable to allocate 10.9 MiB for an array with shape (1424925,) and data type int64
+Crop Error 1759: Unable to allocate 10.9 MiB for an array with shape (1424925,) and data type int64
+Crop Error 1761: Unable to allocate 10.9 MiB for an array with shape (1424925,) and data type int64
+Crop Error 1763: Unable to allocate 10.9 MiB for an array with shape (1424925,) and data type int64
+Crop Error 1762: Unable to allocate 10.9 MiB for an array with shape (1424925,) and data type int64
+Crop Error 1767: Unable to allocate 10.9 MiB for an array with shape (1424925,) and data type int64
+Crop Error 1764: Unable to allocate 10.9 MiB for an array with shape (1424925,) and data type int64
+Crop Error 1765: Unable to allocate 10.9 MiB for an array with shape (1424925,) and data type int64
+Crop Error 1753: Unable to allocate 4.08 MiB for an array with shape (1424925, 3) and data type uint8
+Crop Error 1769: Unable to allocate 10.9 MiB for an array with shape (1424925,) and data type int64
+Crop Error 1770: Unable to allocate 43.3 MiB for an array with shape (5677360,) and data type int64
+Crop Error 1766: Unable to allocate 10.9 MiB for an array with shape (1424925,) and data type int64
+Crop Error 1768: Unable to allocate 10.9 MiB for an array with shape (1424925,) and data type int64
+Crop Error 1773: Unable to allocate 43.3 MiB for an array with shape (5677360,) and data type int64
+Crop Error 1774: Unable to allocate 16.3 MiB for an array with shape (1862, 3058, 3) and data type uint8
+Crop Error 1771: Unable to allocate 43.3 MiB for an array with shape (5677360,) and data type int64
+Crop Error 1777: Unable to allocate 43.3 MiB for an array with shape (5677360,) and data type int64
+Crop Error 1772: Unable to allocate 43.3 MiB for an array with shape (5677360,) and data type int64
+Crop Error 1778: Unable to allocate 43.3 MiB for an array with shape (5677360,) and data type int64
+Crop Error 1781: Unable to allocate 43.3 MiB for an array with shape (5677289,) and data type int64
+Crop Error 1776: Unable to allocate 43.3 MiB for an array with shape (5677360,) and data type int64
+Crop Error 1775: Unable to allocate 43.3 MiB for an array with shape (5677360,) and data type int64
+Crop Error 1779: Unable to allocate 43.3 MiB for an array with shape (5677360,) and data type int64
+Crop Error 1783: Unable to allocate 43.3 MiB for an array with shape (5677289,) and data type int64
+Crop Error 1757: Unable to allocate 10.9 MiB for an array with shape (1424925,) and data type int64
+Crop Error 1746: Unable to allocate 10.9 MiB for an array with shape (1424975,) and data type int64
+Crop Error 1743: Unable to allocate 10.9 MiB for an array with shape (1424975,) and data type int64
+Crop Error 1780: Unable to allocate 43.3 MiB for an array with shape (5677289,) and data type int64
+Crop Error 1788: Unable to allocate 43.3 MiB for an array with shape (5677289,) and data type int64
+Crop Error 1785: Unable to allocate 43.3 MiB for an array with shape (5677289,) and data type int64
+Crop Error 1742: Unable to allocate 10.9 MiB for an array with shape (1424975,) and data type int64
+Crop Error 1789: Unable to allocate 43.3 MiB for an array with shape (5677289,) and data type int64
+Crop Error 1747: Unable to allocate 10.9 MiB for an array with shape (1424975,) and data type int64
+Crop Error 1799: Unable to allocate 43.3 MiB for an array with shape (5677289,) and data type int64
+Crop Error 1810: Unable to allocate 43.3 MiB for an array with shape (5677289,) and data type int64
+Crop Error 1793: Unable to allocate 16.2 MiB for an array with shape (5677289, 3) and data type uint8
+Crop Error 1805: Unable to allocate 16.2 MiB for an array with shape (5677289, 3) and data type uint8
+Crop Error 1794: Unable to allocate 16.2 MiB for an array with shape (5677289, 3) and data type uint8
+Crop Error 1800: Unable to allocate 43.3 MiB for an array with shape (5677289,) and data type int64
+Crop Error 1802: Unable to allocate 16.2 MiB for an array with shape (5677289, 3) and data type uint8
+Crop Error 1792: Unable to allocate 43.3 MiB for an array with shape (5677289,) and data type int64
+Crop Error 1791: Unable to allocate 16.2 MiB for an array with shape (5677289, 3) and data type uint8
+Crop Error 1813: Unable to allocate 16.2 MiB for an array with shape (5677289, 3) and data type uint8
+Crop Error 1814: Unable to allocate 43.3 MiB for an array with shape (5677289,) and data type int64
+Crop Error 1811: Unable to allocate 16.2 MiB for an array with shape (5677289, 3) and data type uint8
+Crop Error 1795:
+Crop Error 1804: Unable to allocate 43.3 MiB for an array with shape (5677289,) and data type int64
+Crop Error 1808: Unable to allocate 43.3 MiB for an array with shape (5677289,) and data type int64
+Crop Error 1796: Unable to allocate 16.2 MiB for an array with shape (5677289, 3) and data type uint8
+Crop Error 1782: Unable to allocate 16.2 MiB for an array with shape (5677289, 3) and data type uint8
+Crop Error 1809: Unable to allocate 43.3 MiB for an array with shape (5677289,) and data type int64
+Crop Error 1803: Unable to allocate 16.2 MiB for an array with shape (5677289, 3) and data type uint8
+Crop Error 1828: Unable to allocate 16.2 MiB for an array with shape (5677289, 3) and data type uint8
+Crop Error 1815: Unable to allocate 43.3 MiB for an array with shape (5677289,) and data type int64
+Crop Error 1812: Unable to allocate 43.3 MiB for an array with shape (5677289,) and data type int64
+Crop Error 1821: Unable to allocate 43.3 MiB for an array with shape (5677289,) and data type int64
+Crop Error 1822: Unable to allocate 16.2 MiB for an array with shape (5677289, 3) and data type uint8
+Crop Error 1826: Unable to allocate 43.3 MiB for an array with shape (5677289,) and data type int64
+Crop Error 1801: Unable to allocate 16.2 MiB for an array with shape (5677289, 3) and data type uint8
+Crop Error 1790: Unable to allocate 16.2 MiB for an array with shape (5677289, 3) and data type uint8
+Crop Error 1829: Unable to allocate 43.3 MiB for an array with shape (5677289,) and data type int64
+Crop Error 1823: Unable to allocate 16.2 MiB for an array with shape (5677289, 3) and data type uint8
+Crop Error 1836: Unable to allocate 16.2 MiB for an array with shape (5677306, 3) and data type uint8
+Crop Error 1827: Unable to allocate 43.3 MiB for an array with shape (5677289,) and data type int64
+Crop Error 1786: Unable to allocate 16.2 MiB for an array with shape (5677289, 3) and data type uint8
+Crop Error 1843: Unable to allocate 43.3 MiB for an array with shape (5677306,) and data type int64
+Crop Error 1819: Unable to allocate 43.3 MiB for an array with shape (5677289,) and data type int64
+Crop Error 1844: Unable to allocate 43.3 MiB for an array with shape (5677306,) and data type int64
+Crop Error 1840: Unable to allocate 16.2 MiB for an array with shape (5677306, 3) and data type uint8
+Crop Error 1849: Unable to allocate 43.3 MiB for an array with shape (5677306,) and data type int64
+Crop Error 1838: Unable to allocate 16.2 MiB for an array with shape (5677306, 3) and data type uint8
+Crop Error 1834: Unable to allocate 43.3 MiB for an array with shape (5677306,) and data type int64
+Crop Error 1847: Unable to allocate 43.3 MiB for an array with shape (5677306,) and data type int64
+Crop Error 1851: Unable to allocate 43.3 MiB for an array with shape (5677306,) and data type int64
+Crop Error 1846: Unable to allocate 43.3 MiB for an array with shape (5677306,) and data type int64
+Crop Error 1841: Unable to allocate 43.3 MiB for an array with shape (5677306,) and data type int64
+Crop Error 1807: Unable to allocate 43.3 MiB for an array with shape (5677289,) and data type int64
+Crop Error 1839: Unable to allocate 16.2 MiB for an array with shape (5677306, 3) and data type uint8
+Crop Error 1824: Unable to allocate 16.2 MiB for an array with shape (5677289, 3) and data type uint8
+Crop Error 1833: Unable to allocate 16.2 MiB for an array with shape (5677306, 3) and data type uint8
+Crop Error 1837: Unable to allocate 43.3 MiB for an array with shape (5677306,) and data type int64
+Crop Error 1832: Unable to allocate 43.3 MiB for an array with shape (5677306,) and data type int64
+Crop Error 1842: Unable to allocate 43.3 MiB for an array with shape (5677306,) and data type int64
+Crop Error 1825: Unable to allocate 43.3 MiB for an array with shape (5677289,) and data type int64
+Crop Error 1848: Unable to allocate 43.3 MiB for an array with shape (5677306,) and data type int64
+Crop Error 1845: Unable to allocate 43.3 MiB for an array with shape (5677306,) and data type int64
+Crop Error 1830: Unable to allocate 43.3 MiB for an array with shape (5677306,) and data type int64
+Crop Error 1835: Unable to allocate 43.3 MiB for an array with shape (5677306,) and data type int64
+Crop Error 1871: Unable to allocate 43.3 MiB for an array with shape (5677310,) and data type int64
+Crop Error 1872: Unable to allocate 43.3 MiB for an array with shape (5677310,) and data type int64
+Crop Error 1866: Unable to allocate 43.3 MiB for an array with shape (5677318,) and data type int64
+Crop Error 1875: Unable to allocate 43.3 MiB for an array with shape (5677310,) and data type int64
+Crop Error 1873: Unable to allocate 43.3 MiB for an array with shape (5677310,) and data type int64
+Crop Error 1878: Unable to allocate 43.3 MiB for an array with shape (5677310,) and data type int64
+Crop Error 1879: Unable to allocate 43.3 MiB for an array with shape (5677310,) and data type int64
+Crop Error 1884: Unable to allocate 16.3 MiB for an array with shape (1862, 3058, 3) and data type uint8
+Crop Error 1870: Unable to allocate 43.3 MiB for an array with shape (5677310,) and data type int64
+Crop Error 1881: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1883: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1880: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1855: Unable to allocate 16.2 MiB for an array with shape (5677306, 3) and data type uint8
+Crop Error 1890: Unable to allocate 16.3 MiB for an array with shape (1862, 3058, 3) and data type uint8
+Crop Error 1885: Unable to allocate 16.3 MiB for an array with shape (1862, 3058, 3) and data type uint8
+Crop Error 1893: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1886: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1892: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1888: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1889: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1887: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1891: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1895: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1896: Unable to allocate 16.3 MiB for an array with shape (1862, 3058, 3) and data type uint8
+Crop Error 1867: Unable to allocate 16.2 MiB for an array with shape (5677318, 3) and data type uint8
+Crop Error 1863: Unable to allocate 16.2 MiB for an array with shape (5677318, 3) and data type uint8
+Crop Error 1874: Unable to allocate 16.2 MiB for an array with shape (5677310, 3) and data type uint8
+Crop Error 1857: Unable to allocate 16.2 MiB for an array with shape (5677306, 3) and data type uint8
+Crop Error 1858: Unable to allocate 16.2 MiB for an array with shape (5677306, 3) and data type uint8
+Crop Error 1852: Unable to allocate 43.3 MiB for an array with shape (5677306,) and data type int64
+Crop Error 1882: Unable to allocate 16.2 MiB for an array with shape (5677353, 3) and data type uint8
+Crop Error 1853: Unable to allocate 43.3 MiB for an array with shape (5677306,) and data type int64
+Crop Error 1864: Unable to allocate 16.2 MiB for an array with shape (5677318, 3) and data type uint8
+Crop Error 1894: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1861: Unable to allocate 16.2 MiB for an array with shape (5677318, 3) and data type uint8
+Crop Error 1905: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1906: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1850: Unable to allocate 43.3 MiB for an array with shape (5677306,) and data type int64
+Crop Error 1877: Unable to allocate 16.2 MiB for an array with shape (5677310, 3) and data type uint8
+Crop Error 1901: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1902: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1898: Unable to allocate 16.2 MiB for an array with shape (5677353, 3) and data type uint8
+Crop Error 1859: Unable to allocate 16.2 MiB for an array with shape (5677306, 3) and data type uint8
+Crop Error 1900: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1903: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1860: Unable to allocate 43.3 MiB for an array with shape (5677318,) and data type int64
+Crop Error 1868: Unable to allocate 43.3 MiB for an array with shape (5677318,) and data type int64
+Crop Error 1876: Unable to allocate 43.3 MiB for an array with shape (5677310,) and data type int64
+Crop Error 1914: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1908: Unable to allocate 16.3 MiB for an array with shape (1862, 3058, 3) and data type uint8
+Crop Error 1904: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1910: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1911: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1862: Unable to allocate 43.3 MiB for an array with shape (5677318,) and data type int64
+Crop Error 1912: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1865: Unable to allocate 16.2 MiB for an array with shape (5677318, 3) and data type uint8
+Crop Error 1869: Unable to allocate 43.3 MiB for an array with shape (5677318,) and data type int64
+Crop Error 1897: Unable to allocate 16.3 MiB for an array with shape (1862, 3058, 3) and data type uint8
+Crop Error 1907: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1909: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+Crop Error 1913: Unable to allocate 43.3 MiB for an array with shape (5677353,) and data type int64
+WARNING:urllib3.connectionpool:Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+WARNING:urllib3.connectionpool:Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+WARNING:urllib3.connectionpool:Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+[ClipVerifier] Client Error: HTTPConnectionPool(host='localhost', port=8003): Max retries exceeded with url: /verify (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused"))
+[Verifier] Vectorized IoU failed: Unable to allocate 5.43 MiB for an array with shape (1862, 3058) and data type bool. Falling back to loop.
+VLM error on sample_11: Unable to allocate 5.43 MiB for an array with shape (1862, 3058) and data type bool
+Traceback (most recent call last):
+  File "/home/aac/RESCue/scripts/../src/verifier.py", line 181, in verify_batch_pointwise
+    m_arr = np.array(m).astype(bool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^
+numpy._core._exceptions._ArrayMemoryError: Unable to allocate 5.43 MiB for an array with shape (1862, 3058) and data type bool
 
-======================================================================
-Pipeline Evaluation | Depth=3 | Mode=comparative | Parallel SAM requests=16
-======================================================================
+During handling of the above exception, another exception occurred:
 
-Processing:   0%|                                                                                                                                                       | 0/2 [00:00<?, ?it/s][Executor] Sample 0: Processing 63 hypotheses
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-[Executor] Sample 0: Got 60 masks
-[Executor] Sample 1: Processing 62 hypotheses
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-ERROR:src.executor:Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-Remote segmentation failed: 503 Server Error: Service Unavailable for url: http://localhost:8001/api/v1/image/segment
-[Executor] Sample 1: Got 0 masks
-Timeout waiting for results
-Processing:   0%|                                                                                                                                                       | 0/2 [05:00<?, ?it/s]
+Traceback (most recent call last):
+  File "/home/aac/RESCue/scripts/precompute_all.py", line 489, in process_sample_by_idx
+    results = local_verifier.verify_batch_pointwise(image, masks, query)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/RESCue/scripts/../src/verifier.py", line 217, in verify_batch_pointwise
+    total_iou += calculate_iou(masks[i], masks[j])
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/RESCue/scripts/../src/utils.py", line 103, in calculate_iou
+    mask2 = mask2 > 0
+            ^^^^^^^^^
+numpy._core._exceptions._ArrayMemoryError: Unable to allocate 5.43 MiB for an array with shape (1862, 3058) and data type bool
+Phase 4: VLM:   0%|                                                                                               | 1/779 [08:21<108:21:57, 501.44s/it]VLM error on sample_32: Unable to allocate 651. KiB for an array with shape (667000,) and data type bool
+Traceback (most recent call last):
+  File "/home/aac/RESCue/scripts/precompute_all.py", line 474, in process_sample_by_idx
+    masks.append(data['mask'])
+                 ~~~~^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/numpy/lib/_npyio_impl.py", line 254, in __getitem__
+    return format.read_array(bytes,
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/numpy/lib/format.py", line 842, in read_array
+    array = numpy.ndarray(count, dtype=dtype)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+numpy._core._exceptions._ArrayMemoryError: Unable to allocate 651. KiB for an array with shape (667000,) and data type bool
+Phase 4: VLM:   0%|▏                                                                                               | 2/779 [08:22<44:44:52, 207.33s/it]VLM error on sample_33: Unable to allocate 7.62 MiB for an array with shape (7990272,) and data type bool
+Traceback (most recent call last):
+  File "/home/aac/RESCue/scripts/precompute_all.py", line 474, in process_sample_by_idx
+    masks.append(data['mask'])
+                 ~~~~^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/numpy/lib/_npyio_impl.py", line 254, in __getitem__
+    return format.read_array(bytes,
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/numpy/lib/format.py", line 842, in read_array
+    array = numpy.ndarray(count, dtype=dtype)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+numpy._core._exceptions._ArrayMemoryError: Unable to allocate 7.62 MiB for an array with shape (7990272,) and data type bool
+Phase 4: VLM:   0%|▎                                                                                               | 3/779 [08:23<24:21:00, 112.97s/it]VLM error on sample_34: Unable to allocate 647. KiB for an array with shape (663000,) and data type bool
+Traceback (most recent call last):
+  File "/home/aac/RESCue/scripts/precompute_all.py", line 474, in process_sample_by_idx
+    masks.append(data['mask'])
+                 ~~~~^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/numpy/lib/_npyio_impl.py", line 254, in __getitem__
+    return format.read_array(bytes,
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/numpy/lib/format.py", line 842, in read_array
+    array = numpy.ndarray(count, dtype=dtype)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+numpy._core._exceptions._ArrayMemoryError: Unable to allocate 647. KiB for an array with shape (663000,) and data type bool
+Phase 4: VLM:   1%|▍                                                                                                | 4/779 [08:24<14:48:35, 68.79s/it]VLM error on sample_35:
+Traceback (most recent call last):
+  File "/home/aac/RESCue/scripts/precompute_all.py", line 474, in process_sample_by_idx
+    masks.append(data['mask'])
+                 ~~~~^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/numpy/lib/_npyio_impl.py", line 254, in __getitem__
+    return format.read_array(bytes,
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/numpy/lib/format.py", line 851, in read_array
+    data = _read_bytes(fp, read_size, "array data")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/numpy/lib/format.py", line 986, in _read_bytes
+    r = fp.read(size - len(data))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/zipfile/__init__.py", line 1011, in read
+    buf += data
+MemoryError
+Phase 4: VLM:   1%|▋                                                                                                 | 5/779 [08:27<9:38:52, 44.87s/it]VLM error on sample_36: Unable to allocate 299. KiB for an array with shape (305920,) and data type bool
+Traceback (most recent call last):
+  File "/home/aac/RESCue/scripts/precompute_all.py", line 474, in process_sample_by_idx
+    masks.append(data['mask'])
+                 ~~~~^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/numpy/lib/_npyio_impl.py", line 254, in __getitem__
+    return format.read_array(bytes,
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/numpy/lib/format.py", line 842, in read_array
+    array = numpy.ndarray(count, dtype=dtype)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+numpy._core._exceptions._ArrayMemoryError: Unable to allocate 299. KiB for an array with shape (305920,) and data type bool
+Phase 4: VLM:   1%|▊                                                                                                 | 6/779 [08:27<6:23:34, 29.77s/it]VLM error on sample_37: Unable to allocate 4.19 MiB for an array with shape (4390309,) and data type bool
+Traceback (most recent call last):
+  File "/home/aac/RESCue/scripts/precompute_all.py", line 474, in process_sample_by_idx
+    masks.append(data['mask'])
+                 ~~~~^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/numpy/lib/_npyio_impl.py", line 254, in __getitem__
+    return format.read_array(bytes,
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/numpy/lib/format.py", line 842, in read_array
+    array = numpy.ndarray(count, dtype=dtype)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+numpy._core._exceptions._ArrayMemoryError: Unable to allocate 4.19 MiB for an array with shape (4390309,) and data type bool
+Phase 4: VLM:   1%|▉                                                                                                 | 7/779 [08:28<4:22:29, 20.40s/it]VLM error on sample_38:
+Traceback (most recent call last):
+  File "/home/aac/RESCue/scripts/precompute_all.py", line 456, in process_sample_by_idx
+    sample = ds[sample_idx]
+             ~~^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/arrow_dataset.py", line 2878, in __getitem__
+    return self._getitem(key)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/arrow_dataset.py", line 2860, in _getitem
+    formatted_output = format_table(
+                       ^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/formatting/formatting.py", line 658, in format_table
+    return formatter(pa_table, query_type=query_type)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/formatting/formatting.py", line 411, in __call__
+    return self.format_row(pa_table)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/formatting/formatting.py", line 459, in format_row
+    row = self.python_arrow_extractor().extract_row(pa_table)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/formatting/formatting.py", line 144, in extract_row
+    return _unnest(pa_table.to_pydict())
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "pyarrow/table.pxi", line 2311, in pyarrow.lib._Tabular.to_pydict
+  File "pyarrow/table.pxi", line 1384, in pyarrow.lib.ChunkedArray.to_pylist
+  File "pyarrow/array.pxi", line 1822, in pyarrow.lib.Array.to_pylist
+  File "pyarrow/scalar.pxi", line 990, in pyarrow.lib.ListScalar.as_py
+  File "pyarrow/array.pxi", line 1822, in pyarrow.lib.Array.to_pylist
+  File "pyarrow/scalar.pxi", line 990, in pyarrow.lib.ListScalar.as_py
+  File "pyarrow/array.pxi", line 1822, in pyarrow.lib.Array.to_pylist
+MemoryError
+VLM error on sample_39:
+Phase 4: VLM:   1%|█                                                                                                 | 8/779 [08:30<3:07:37, 14.60s/it]Traceback (most recent call last):
+  File "/home/aac/RESCue/scripts/precompute_all.py", line 456, in process_sample_by_idx
+    sample = ds[sample_idx]
+             ~~^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/arrow_dataset.py", line 2878, in __getitem__
+    return self._getitem(key)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/arrow_dataset.py", line 2860, in _getitem
+    formatted_output = format_table(
+                       ^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/formatting/formatting.py", line 658, in format_table
+    return formatter(pa_table, query_type=query_type)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/formatting/formatting.py", line 411, in __call__
+    return self.format_row(pa_table)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/formatting/formatting.py", line 459, in format_row
+    row = self.python_arrow_extractor().extract_row(pa_table)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/formatting/formatting.py", line 144, in extract_row
+    return _unnest(pa_table.to_pydict())
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "pyarrow/table.pxi", line 2311, in pyarrow.lib._Tabular.to_pydict
+  File "pyarrow/table.pxi", line 1384, in pyarrow.lib.ChunkedArray.to_pylist
+  File "pyarrow/array.pxi", line 1822, in pyarrow.lib.Array.to_pylist
+  File "pyarrow/scalar.pxi", line 1085, in pyarrow.lib.StructScalar.as_py
+  File "pyarrow/scalar.pxi", line 889, in pyarrow.lib.BinaryScalar.as_py
+  File "pyarrow/io.pxi", line 1553, in pyarrow.lib.Buffer.to_pybytes
+MemoryError
+Phase 4: VLM:   1%|█▏                                                                                                | 9/779 [08:31<2:10:39, 10.18s/it]VLM error on sample_40:
+Traceback (most recent call last):
+  File "/home/aac/RESCue/scripts/precompute_all.py", line 456, in process_sample_by_idx
+    sample = ds[sample_idx]
+             ~~^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/arrow_dataset.py", line 2878, in __getitem__
+    return self._getitem(key)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/arrow_dataset.py", line 2860, in _getitem
+    formatted_output = format_table(
+                       ^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/formatting/formatting.py", line 658, in format_table
+    return formatter(pa_table, query_type=query_type)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/formatting/formatting.py", line 411, in __call__
+    return self.format_row(pa_table)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/formatting/formatting.py", line 460, in format_row
+    row = self.python_features_decoder.decode_row(row)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/formatting/formatting.py", line 224, in decode_row
+    return self.features.decode_example(row, token_per_repo_id=self.token_per_repo_id) if self.features else row
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/features/features.py", line 2111, in decode_example
+    column_name: decode_nested_example(feature, value, token_per_repo_id=token_per_repo_id)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/features/features.py", line 1419, in decode_nested_example
+    return schema.decode_example(obj, token_per_repo_id=token_per_repo_id) if obj is not None else None
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/features/image.py", line 195, in decode_example
+    image = PIL.ImageOps.exif_transpose(image)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/PIL/ImageOps.py", line 745, in exif_transpose
+    return image.copy()
+           ^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/PIL/Image.py", line 1263, in copy
+    return self._new(self.im.copy())
+                     ^^^^^^^^^^^^^^
+MemoryError
+Phase 4: VLM:   1%|█▏                                                                                               | 10/779 [08:32<1:34:05,  7.34s/it]VLM error on sample_41:
+Traceback (most recent call last):
+  File "/home/aac/RESCue/scripts/precompute_all.py", line 456, in process_sample_by_idx
+    sample = ds[sample_idx]
+             ~~^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/arrow_dataset.py", line 2878, in __getitem__
+    return self._getitem(key)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/arrow_dataset.py", line 2860, in _getitem
+    formatted_output = format_table(
+                       ^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/formatting/formatting.py", line 658, in format_table
+    return formatter(pa_table, query_type=query_type)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/formatting/formatting.py", line 411, in __call__
+    return self.format_row(pa_table)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/formatting/formatting.py", line 459, in format_row
+    row = self.python_arrow_extractor().extract_row(pa_table)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/formatting/formatting.py", line 144, in extract_row
+    return _unnest(pa_table.to_pydict())
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "pyarrow/table.pxi", line 2311, in pyarrow.lib._Tabular.to_pydict
+  File "pyarrow/table.pxi", line 1384, in pyarrow.lib.ChunkedArray.to_pylist
+  File "pyarrow/array.pxi", line 1822, in pyarrow.lib.Array.to_pylist
+  File "pyarrow/scalar.pxi", line 990, in pyarrow.lib.ListScalar.as_py
+  File "pyarrow/array.pxi", line 1822, in pyarrow.lib.Array.to_pylist
+  File "pyarrow/scalar.pxi", line 990, in pyarrow.lib.ListScalar.as_py
+  File "pyarrow/array.pxi", line 1822, in pyarrow.lib.Array.to_pylist
+MemoryError
+Phase 4: VLM:   1%|█▎                                                                                               | 11/779 [08:32<1:07:27,  5.27s/it]VLM error on sample_42:
+Traceback (most recent call last):
+  File "/home/aac/RESCue/scripts/precompute_all.py", line 456, in process_sample_by_idx
+    sample = ds[sample_idx]
+             ~~^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/arrow_dataset.py", line 2878, in __getitem__
+    return self._getitem(key)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/arrow_dataset.py", line 2860, in _getitem
+    formatted_output = format_table(
+                       ^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/formatting/formatting.py", line 658, in format_table
+    return formatter(pa_table, query_type=query_type)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/formatting/formatting.py", line 411, in __call__
+    return self.format_row(pa_table)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/formatting/formatting.py", line 459, in format_row
+    row = self.python_arrow_extractor().extract_row(pa_table)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/formatting/formatting.py", line 144, in extract_row
+    return _unnest(pa_table.to_pydict())
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "pyarrow/table.pxi", line 2311, in pyarrow.lib._Tabular.to_pydict
+  File "pyarrow/table.pxi", line 1384, in pyarrow.lib.ChunkedArray.to_pylist
+  File "pyarrow/array.pxi", line 1822, in pyarrow.lib.Array.to_pylist
+  File "pyarrow/scalar.pxi", line 990, in pyarrow.lib.ListScalar.as_py
+  File "pyarrow/array.pxi", line 1822, in pyarrow.lib.Array.to_pylist
+  File "pyarrow/scalar.pxi", line 990, in pyarrow.lib.ListScalar.as_py
+  File "pyarrow/array.pxi", line 1822, in pyarrow.lib.Array.to_pylist
+MemoryError
+VLM error on sample_43:
+Phase 4: VLM:   2%|█▌                                                                                                 | 12/779 [08:34<52:04,  4.07s/it]Traceback (most recent call last):
+  File "/home/aac/RESCue/scripts/precompute_all.py", line 456, in process_sample_by_idx
+    sample = ds[sample_idx]
+             ~~^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/arrow_dataset.py", line 2878, in __getitem__
+    return self._getitem(key)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/arrow_dataset.py", line 2860, in _getitem
+    formatted_output = format_table(
+                       ^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/formatting/formatting.py", line 658, in format_table
+    return formatter(pa_table, query_type=query_type)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/formatting/formatting.py", line 411, in __call__
+    return self.format_row(pa_table)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/formatting/formatting.py", line 459, in format_row
+    row = self.python_arrow_extractor().extract_row(pa_table)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/vllm_test/lib/python3.12/site-packages/datasets/formatting/formatting.py", line 144, in extract_row
+    return _unnest(pa_table.to_pydict())
+                   ^^^^^^^^^^^^^^^^^^^^
+  File "pyarrow/table.pxi", line 2311, in pyarrow.lib._Tabular.to_pydict
+  File "pyarrow/table.pxi", line 1384, in pyarrow.lib.ChunkedArray.to_pylist
+  File "pyarrow/array.pxi", line 1822, in pyarrow.lib.Array.to_pylist
+  File "pyarrow/scalar.pxi", line 990, in pyarrow.lib.ListScalar.as_py
+  File "pyarrow/array.pxi", line 1822, in pyarrow.lib.Array.to_pylist
+  File "pyarrow/scalar.pxi", line 990, in pyarrow.lib.ListScalar.as_py
+  File "pyarrow/array.pxi", line 1822, in pyarrow.lib.Array.to_pylist
+MemoryError
+Phase 4: VLM:   2%|█▋                                                                                                 | 13/779 [08:34<38:52,  3.04s/it][ClipVerifier] Initialized Client pointing to http://localhost:8003/verify
+VLM error on sample_19: can't start new thread
+Traceback (most recent call last):
+  File "/home/aac/RESCue/scripts/precompute_all.py", line 489, in process_sample_by_idx
+    results = local_verifier.verify_batch_pointwise(image, masks, query)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/RESCue/scripts/../src/verifier.py", line 156, in verify_batch_pointwise
+    vlm_results = self._pointwise_score_batch(base64_img, w, h, masks, query, max_workers=max_workers)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/RESCue/scripts/../src/verifier.py", line 463, in _pointwise_score_batch
+    executor.submit(self._score_single_box, base64_img, w, h, mask, query): i
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/thread.py", line 179, in submit
+    self._adjust_thread_count()
+  File "/usr/lib/python3.12/concurrent/futures/thread.py", line 202, in _adjust_thread_count
+    t.start()
+  File "/usr/lib/python3.12/threading.py", line 992, in start
+    _start_new_thread(self._bootstrap, ())
+RuntimeError: can't start new thread
+Phase 4: VLM:   2%|█▋                                                                                               | 14/779 [08:53<1:37:10,  7.62s/it][ClipVerifier] Initialized Client pointing to http://localhost:8003/verify
+WARNING:urllib3.connectionpool:Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+WARNING:urllib3.connectionpool:Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+WARNING:urllib3.connectionpool:Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+[ClipVerifier] Client Error: HTTPConnectionPool(host='localhost', port=8003): Max retries exceeded with url: /verify (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused"))
+[ClipVerifier] Initialized Client pointing to http://localhost:8003/verify
+[ClipVerifier] Initialized Client pointing to http://localhost:8003/verify
+[ClipVerifier] Initialized Client pointing to http://localhost:8003/verify
+[ClipVerifier] Initialized Client pointing to http://localhost:8003/verify
+[ClipVerifier] Initialized Client pointing to http://localhost:8003/verify
+[ClipVerifier] Initialized Client pointing to http://localhost:8003/verify
+WARNING:urllib3.connectionpool:Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+WARNING:urllib3.connectionpool:Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+WARNING:urllib3.connectionpool:Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+[ClipVerifier] Client Error: HTTPConnectionPool(host='localhost', port=8003): Max retries exceeded with url: /verify (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused"))
+WARNING:urllib3.connectionpool:Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+WARNING:urllib3.connectionpool:Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+WARNING:urllib3.connectionpool:Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+[ClipVerifier] Client Error: HTTPConnectionPool(host='localhost', port=8003): Max retries exceeded with url: /verify (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused"))
+WARNING:urllib3.connectionpool:Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+WARNING:urllib3.connectionpool:Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+WARNING:urllib3.connectionpool:Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+WARNING:urllib3.connectionpool:Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+[ClipVerifier] Client Error: HTTPConnectionPool(host='localhost', port=8003): Max retries exceeded with url: /verify (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused"))
+WARNING:urllib3.connectionpool:Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+WARNING:urllib3.connectionpool:Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+[ClipVerifier] Client Error: HTTPConnectionPool(host='localhost', port=8003): Max retries exceeded with url: /verify (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused"))
+WARNING:urllib3.connectionpool:Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+WARNING:urllib3.connectionpool:Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+WARNING:urllib3.connectionpool:Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+WARNING:urllib3.connectionpool:Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+WARNING:urllib3.connectionpool:Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+[ClipVerifier] Client Error: HTTPConnectionPool(host='localhost', port=8003): Max retries exceeded with url: /verify (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused"))
+WARNING:urllib3.connectionpool:Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+[ClipVerifier] Client Error: HTTPConnectionPool(host='localhost', port=8003): Max retries exceeded with url: /verify (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused"))
+WARNING:urllib3.connectionpool:Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+WARNING:urllib3.connectionpool:Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+[ClipVerifier] Initialized Client pointing to http://localhost:8003/verify
+WARNING:urllib3.connectionpool:Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+[ClipVerifier] Client Error: HTTPConnectionPool(host='localhost', port=8003): Max retries exceeded with url: /verify (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused"))
+[ClipVerifier] Initialized Client pointing to http://localhost:8003/verify
+WARNING:urllib3.connectionpool:Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+WARNING:urllib3.connectionpool:Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+WARNING:urllib3.connectionpool:Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused")': /verify
+[ClipVerifier] Client Error: HTTPConnectionPool(host='localhost', port=8003): Max retries exceeded with url: /verify (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8003): Failed to establish a new connection: [Errno 111] Connection refused"))
+Crop Error 2395: Unable to allocate 18.7 MiB for an array with shape (2450746,) and data type int64
+Crop Error 2419: Unable to allocate 18.7 MiB for an array with shape (2450746,) and data type int64
+Crop Error 2428: Unable to allocate 18.7 MiB for an array with shape (2450746,) and data type int64
+Crop Error 2458: Unable to allocate 18.7 MiB for an array with shape (2450121,) and data type int64
+Crop Error 2445: Unable to allocate 18.7 MiB for an array with shape (2450121,) and data type int64
+Crop Error 2456: Unable to allocate 18.7 MiB for an array with shape (2450121,) and data type int64
+Crop Error 2435: Unable to allocate 18.7 MiB for an array with shape (2450121,) and data type int64
+[Verifier] Vectorized IoU failed: Unable to allocate 9.57 MiB for an array with shape (2592, 3872) and data type bool. Falling back to loop.
+Crop Error 2476: Unable to allocate 11.9 MiB for an array with shape (1499, 2771, 3) and data type uint8
+[Verifier] Vectorized IoU failed: Unable to allocate 9.52 MiB for an array with shape (2736, 3648) and data type bool. Falling back to loop.
+Crop Error 2483: Unable to allocate 11.4 MiB for an array with shape (3000, 4000) and data type bool
+Crop Error 2469: Unable to allocate 11.9 MiB for an array with shape (1499, 2771, 3) and data type uint8
+Crop Error 2468: Unable to allocate 18.7 MiB for an array with shape (2450121,) and data type int64
+Crop Error 2489: Unable to allocate 11.4 MiB for an array with shape (3000, 4000) and data type bool
+VLM error on sample_4: Unable to allocate 9.57 MiB for an array with shape (2592, 3872) and data type bool
+Crop Error 2495: Unable to allocate 11.4 MiB for an array with shape (3000, 4000) and data type bool
+Traceback (most recent call last):
+  File "/home/aac/RESCue/scripts/../src/verifier.py", line 181, in verify_batch_pointwise
+    m_arr = np.array(m).astype(bool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^
+numpy._core._exceptions._ArrayMemoryError: Unable to allocate 9.57 MiB for an array with shape (2592, 3872) and data type bool
 
-======================================================================
-RESULTS (COMPARATIVE - Pipeline Parallel)
-======================================================================
+During handling of the above exception, another exception occurred:
 
-   N |     gIoU |   Oracle |  %Oracle |  Time(s) | Samples
-------------------------------------------------------------
-
-Results saved to results_pipeline_comparative_1pct.json
-[Verifier] Sample 0 error: cannot schedule new futures after interpreter shutdown
-(vllm_test) aac@9173127c-7fb4-44ab-ab3a-367b4f90abb3-5bc4dbc986-qb76f:~/RESCue$ 
+Crop Error 2478: Unable to allocate 18.7 MiB for an array with shape (2449772,) and data type int64
+Traceback (most recent call last):
+  File "/home/aac/RESCue/scripts/precompute_all.py", line 489, in process_sample_by_idx
+    results = local_verifier.verify_batch_pointwise(image, masks, query)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/RESCue/scripts/../src/verifier.py", line 217, in verify_batch_pointwise
+    total_iou += calculate_iou(masks[i], masks[j])
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aac/RESCue/scripts/../src/u
