@@ -43,8 +43,8 @@ class Executor:
              # Default to localhost if not provided, since we only support remote now
              self.remote_url = "http://localhost:8001"
              
-        logger.info(f"Executor initialized in REMOTE mode. Target: {self.remote_url}")
-        print(f"Executor initialized in REMOTE mode. Target: {self.remote_url}")
+        # logger.info(f"Executor initialized in REMOTE mode. Target: {self.remote_url}")
+        # print(f"Executor initialized in REMOTE mode. Target: {self.remote_url}")
         self.session = requests.Session()
         adapter = HTTPAdapter(pool_connections=100, pool_maxsize=100)
         self.session.mount("http://", adapter)

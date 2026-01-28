@@ -179,19 +179,27 @@ def run_phase_masks(ds, plans, cache_dir, workers):
             traceback.print_exc()
             return f"sample_{sample_idx}", 0
 
+    import threading
+    thread_local = threading.local()
+
     def _process_sample_unsafe(sample_idx):
         sample_key = f"sample_{sample_idx}"
         
         # Route to specific server (0-7)
-        # 8 workers -> 8 servers. Ideally matched 1-to-1 if workers process in order.
         worker_id = sample_idx % 8 
         target_port = base_port + worker_id
         target_url = f"http://localhost:{target_port}"
         
-        # Instantiate local executor for this worker/task
-        # Timeout increased to 600s for large batches
-        # Force CPU device to avoid initializing CUDA context in threads on client side
-        local_executor = Executor(remote_url=target_url, timeout=600, device="cpu")
+        # Get or create thread-local executor for this specific target URL
+        if not hasattr(thread_local, "executors"):
+            thread_local.executors = {}
+        
+        if target_url not in thread_local.executors:
+            # First time this thread talks to this port (or first time init)
+            # Force CPU device to avoid initializing CUDA context in threads on client side
+            thread_local.executors[target_url] = Executor(remote_url=target_url, timeout=600, device="cpu")
+            
+        local_executor = thread_local.executors[target_url]
         
         if sample_key not in plans:
             return sample_key, 0
