@@ -107,7 +107,7 @@ class ClipVerifier:
             }
             
             # Use session for connection pooling
-            response = self.session.post(self.server_url, json=payload, timeout=30)
+            response = self.session.post(self.server_url, json=payload, timeout=300)
             if response.status_code == 200:
                 server_scores = response.json()['scores']
                 

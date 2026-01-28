@@ -38,6 +38,12 @@ async def load_model():
         print(f"Failed to load model: {e}")
         raise RuntimeError(f"Model load failed: {e}")
 
+@app.get("/health")
+def health_check():
+    if MODEL is None or PROCESSOR is None:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+    return {"status": "healthy", "gpu_available": torch.cuda.is_available()}
+
 @app.post("/verify", response_model=VerifyResponse)
 async def verify(request: VerifyRequest):
     if not MODEL or not PROCESSOR:
