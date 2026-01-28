@@ -31,6 +31,15 @@ def get_verifier_client():
 
 def encode_pil_image(image):
     import io
+    # OPTIMIZATION: Resize large images to reduce VLM token count (Speedup)
+    max_dim = 1024
+    w, h = image.size
+    if w > max_dim or h > max_dim:
+        scale = max_dim / max(w, h)
+        new_w = int(w * scale)
+        new_h = int(h * scale)
+        image = image.resize((new_w, new_h), Image.Resampling.LANCZOS)
+        
     buffer = io.BytesIO()
     # JPEG is much faster to encode/decode than alternatives and good enough for vision
     image.save(buffer, format="JPEG", quality=90)
