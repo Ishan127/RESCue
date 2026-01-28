@@ -459,13 +459,15 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
                 for ver in range(10):
                     mask_path = os.path.join(sample_masks_dir, f"mask_{hyp_idx}_v{ver}.npz")
                     if os.path.exists(mask_path):
-                        masks.append(np.load(mask_path)['mask'])
+                        with np.load(mask_path) as data:
+                            masks.append(data['mask'])
                         mask_meta.append((hyp_idx, ver))
                     elif ver == 0:
                          # Fallback
                         old_path = os.path.join(sample_masks_dir, f"mask_{hyp_idx}.npz")
                         if os.path.exists(old_path):
-                             masks.append(np.load(old_path)['mask'])
+                             with np.load(old_path) as data:
+                                 masks.append(data['mask'])
                              mask_meta.append((hyp_idx, 0))
             
             if not masks:
