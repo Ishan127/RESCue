@@ -209,7 +209,7 @@ class Executor:
             data = response.json()
 
             masks = [self._base64_to_mask(m) for m in data.get("masks", [])]
-            logger.info(f"Remote segmentation: {len(masks)} masks, {data.get('inference_time_ms', 0):.1f}ms")
+            # logger.info(f"Remote segmentation: {len(masks)} masks, {data.get('inference_time_ms', 0):.1f}ms")
             return masks
 
         except Exception as e:

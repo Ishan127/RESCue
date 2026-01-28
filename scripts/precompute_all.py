@@ -173,8 +173,6 @@ def run_phase_masks(ds, plans, cache_dir, workers):
                 break
         
         if all_exist and len(hypotheses) > 0:
-            # Calculate hypothetical count to match return value expectation
-            # (though strictly we just need to know it's done)
             return sample_key, len(hypotheses) * 10
         
         # Load sample only if needed
@@ -187,32 +185,43 @@ def run_phase_masks(ds, plans, cache_dir, workers):
             os.makedirs(sample_dir, exist_ok=True)
             masks_generated = 0
             
-            for hyp_idx, hyp in enumerate(hypotheses):
-                bbox = hyp.get('box') or hyp.get('bbox')
+            # Loop 10 times for the 10 versions
+            for ver in range(10):
+                # Identify which hypotheses need this version generated
+                prompts_list = []
+                hyp_indices_to_process = []
                 
-                # Generate 10 versions
-                for ver in range(10):
+                for hyp_idx, hyp in enumerate(hypotheses):
                     mask_path = os.path.join(sample_dir, f"mask_{hyp_idx}_v{ver}.npz")
-                    
                     if os.path.exists(mask_path):
-                        masks_generated += 1
                         continue
-                    
-                    try:
-                        # Use prompts_list format like original pipeline
-                        prompts_list = [{
-                            "type": "box",
-                            "box": bbox,
-                            "label": True
-                        }]
-                        # User claims model is non-deterministic, so repeated calls -> different masks
-                        masks = executor.segment(image, prompts_list=prompts_list)
                         
-                        if masks and len(masks) > 0:
-                            np.savez_compressed(mask_path, mask=masks[0])
-                            masks_generated += 1
-                    except Exception as e:
-                        pass
+                    bbox = hyp.get('box') or hyp.get('bbox')
+                    prompts_list.append({
+                        "type": "box",
+                        "box": bbox,
+                        "label": True
+                    })
+                    hyp_indices_to_process.append(hyp_idx)
+                
+                if not prompts_list:
+                    masks_generated += len(hypotheses) # Count as done
+                    continue
+                
+                try:
+                    # Single batched call for ALL hypotheses for this version
+                    masks = executor.segment(image, prompts_list=prompts_list)
+                    
+                    if masks:
+                        # Save results mapping back to hypothesis index
+                        for local_idx, mask in enumerate(masks):
+                            if local_idx < len(hyp_indices_to_process):
+                                true_hyp_idx = hyp_indices_to_process[local_idx]
+                                mask_path = os.path.join(sample_dir, f"mask_{true_hyp_idx}_v{ver}.npz")
+                                np.savez_compressed(mask_path, mask=mask)
+                                masks_generated += 1
+                except Exception:
+                    pass
             
             return sample_key, masks_generated
         except Exception:
@@ -221,8 +230,6 @@ def run_phase_masks(ds, plans, cache_dir, workers):
     num_samples = len(ds)
     all_indices = list(range(num_samples))
     total_masks = 0
-    
-    print(f"Starting Phase 2 with {workers} workers for {num_samples} items...", flush=True)
 
     with ThreadPoolExecutor(max_workers=workers) as executor_pool:
         futures = {executor_pool.submit(process_sample_by_idx, idx): idx for idx in all_indices}
@@ -425,6 +432,12 @@ def main():
     if os.path.exists(plans_path):
         with open(plans_path, 'r') as f:
             plans = json.load(f)
+            print(f"DEBUG: Loaded {len(plans)} plans from {plans_path}")
+            if len(plans) > 0:
+                first_key = list(plans.keys())[0]
+                print(f"DEBUG: First plan key example: '{first_key}'")
+    else:
+        print(f"DEBUG: Plans file not found at {plans_path}")
     
     if args.phase in ["all", "plans"]:
         print("\n" + "="*60)
@@ -436,6 +449,7 @@ def main():
         print("\n" + "="*60)
         print("PHASE 2: GENERATING MASKS")
         print("="*60)
+        print(f"DEBUG: Starting Phase 2 with {len(plans)} plans available.")
         run_phase_masks(ds, plans, args.cache_dir, min(16, args.workers))
     
     if args.phase in ["all", "clip"]:
