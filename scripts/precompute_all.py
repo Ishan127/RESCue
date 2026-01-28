@@ -83,28 +83,29 @@ def run_phase_plans(ds, cache_dir, max_n, workers):
     
     planner = Planner(api_base=args.planner_url)
     
-    def process_sample(item):
-        sample_idx, sample = item
+    def process_sample_by_idx(sample_idx):
         sample_key = f"sample_{sample_idx}"
         
-        # Check if already have enough hypotheses
+        # Check if already have enough hypotheses -> SKIP loading image
         if sample_key in existing_plans:
             existing_hyps = existing_plans[sample_key].get('hypotheses', [])
             if len(existing_hyps) >= max_n:
                 return sample_key, existing_plans[sample_key]
         
-        image = sample.get('image')
-        query = sample.get('text') or sample.get('query') or sample.get('sentence')
-        
-        if image is None or query is None:
-            return sample_key, None
-        
+        # Load sample only if needed
         try:
+            sample = ds[sample_idx]
+            image = sample.get('image')
+            query = sample.get('text') or sample.get('query') or sample.get('sentence')
+            
+            if image is None or query is None:
+                return sample_key, None
+            
             hypotheses = planner.generate_hypotheses(image, query, N=max_n, strategy_filter=args.planner_strategy)
             
             # FALLBACK: If not enough, retry with higher temperature
             retry_count = 0
-            while len(hypotheses) < max_n and retry_count < 3:
+            while len(hypotheses) < max_n and retry_count < 1:
                 retry_count += 1
                 print(f"[Retry {retry_count}] Sample {sample_idx}: {len(hypotheses)}/{max_n}")
                 more = planner.generate_hypotheses(image, query, N=max_n - len(hypotheses), 
@@ -116,23 +117,14 @@ def run_phase_plans(ds, cache_dir, max_n, workers):
             print(f"Error on sample {sample_idx}: {e}")
             return sample_key, None
     
-    print("DEBUG: Enumerating dataset...", flush=True)
-    work_items = list(enumerate(ds))
-    print(f"DEBUG: Dataset enumerated (size={len(work_items)})", flush=True)
+    # Use indices list instead of loading full dataset
+    num_samples = len(ds)
+    all_indices = list(range(num_samples))
     results = dict(existing_plans)
     
-    print(f"Starting execution with {workers} workers for {len(work_items)} items...", flush=True)
-    
-    # Process sequentially for the first item to warm up/debug
-    first_item = work_items[0]
-    print("Running warmup on sample 0 sequentiallly...", flush=True)
-    process_sample(first_item)
-    print("Warmup complete.", flush=True)
-
     with ThreadPoolExecutor(max_workers=workers) as executor:
-        print("Submitting futures...")
-        futures = {executor.submit(process_sample, item): item[0] for item in work_items[1:]}
-        print(f"Submitted {len(futures)} futures.")
+        # Submit indices
+        futures = {executor.submit(process_sample_by_idx, idx): idx for idx in all_indices}
         
         for future in tqdm(as_completed(futures), total=len(futures), desc="Phase 1: Plans"):
             key, result = future.result()
@@ -150,6 +142,9 @@ def run_phase_plans(ds, cache_dir, max_n, workers):
 # ============================================================================
 # PHASE 2: GENERATE MASKS
 # ============================================================================
+# ============================================================================
+# PHASE 2: GENERATE MASKS
+# ============================================================================
 def run_phase_masks(ds, plans, cache_dir, workers):
     """Generate masks for all hypotheses using SAM."""
     from src.executor import Executor
@@ -159,54 +154,78 @@ def run_phase_masks(ds, plans, cache_dir, workers):
     
     executor = Executor(remote_url=args.sam_url, timeout=300)
     
-    def process_sample(item):
-        sample_idx, sample = item
+    def process_sample_by_idx(sample_idx):
         sample_key = f"sample_{sample_idx}"
         
         if sample_key not in plans:
             return sample_key, 0
-        
-        image = sample.get('image')
-        if image is None:
-            return sample_key, 0
-        
+            
+        # Optimization: Check if all mask versions exist BEFORE loading image
         sample_dir = os.path.join(masks_dir, sample_key)
-        os.makedirs(sample_dir, exist_ok=True)
-        
+        all_exist = True
         hypotheses = plans[sample_key].get('hypotheses', [])
-        masks_generated = 0
+        for hyp_idx in range(len(hypotheses)):
+            for ver in range(10):
+                if not os.path.exists(os.path.join(sample_dir, f"mask_{hyp_idx}_v{ver}.npz")):
+                    all_exist = False
+                    break
+            if not all_exist:
+                break
         
-        for hyp_idx, hyp in enumerate(hypotheses):
-            mask_path = os.path.join(sample_dir, f"mask_{hyp_idx}.npz")
+        if all_exist and len(hypotheses) > 0:
+            # Calculate hypothetical count to match return value expectation
+            # (though strictly we just need to know it's done)
+            return sample_key, len(hypotheses) * 10
+        
+        # Load sample only if needed
+        try:
+            sample = ds[sample_idx]
+            image = sample.get('image')
+            if image is None:
+                return sample_key, 0
+                
+            os.makedirs(sample_dir, exist_ok=True)
+            masks_generated = 0
             
-            if os.path.exists(mask_path):
-                masks_generated += 1
-                continue
-            
-            try:
+            for hyp_idx, hyp in enumerate(hypotheses):
                 bbox = hyp.get('box') or hyp.get('bbox')
                 
-                # Use prompts_list format like original pipeline
-                prompts_list = [{
-                    "type": "box",
-                    "box": bbox,
-                    "label": True
-                }]
-                masks = executor.segment(image, prompts_list=prompts_list)
-                
-                if masks and len(masks) > 0:
-                    np.savez_compressed(mask_path, mask=masks[0])
-                    masks_generated += 1
-            except Exception as e:
-                pass
-        
-        return sample_key, masks_generated
+                # Generate 10 versions
+                for ver in range(10):
+                    mask_path = os.path.join(sample_dir, f"mask_{hyp_idx}_v{ver}.npz")
+                    
+                    if os.path.exists(mask_path):
+                        masks_generated += 1
+                        continue
+                    
+                    try:
+                        # Use prompts_list format like original pipeline
+                        prompts_list = [{
+                            "type": "box",
+                            "box": bbox,
+                            "label": True
+                        }]
+                        # User claims model is non-deterministic, so repeated calls -> different masks
+                        masks = executor.segment(image, prompts_list=prompts_list)
+                        
+                        if masks and len(masks) > 0:
+                            np.savez_compressed(mask_path, mask=masks[0])
+                            masks_generated += 1
+                    except Exception as e:
+                        pass
+            
+            return sample_key, masks_generated
+        except Exception:
+            return sample_key, 0
     
-    work_items = list(enumerate(ds))
+    num_samples = len(ds)
+    all_indices = list(range(num_samples))
     total_masks = 0
     
+    print(f"Starting Phase 2 with {workers} workers for {num_samples} items...", flush=True)
+
     with ThreadPoolExecutor(max_workers=workers) as executor_pool:
-        futures = {executor_pool.submit(process_sample, item): item[0] for item in work_items}
+        futures = {executor_pool.submit(process_sample_by_idx, idx): idx for idx in all_indices}
         
         for future in tqdm(as_completed(futures), total=len(futures), desc="Phase 2: Masks"):
             key, count = future.result()
@@ -226,8 +245,7 @@ def run_phase_clip(ds, plans, cache_dir, workers):
     masks_dir = os.path.join(cache_dir, "masks")
     clip_verifier = ClipVerifier(server_url=args.clip_url)
     
-    def process_sample(item):
-        sample_idx, sample = item
+    def process_sample_by_idx(sample_idx):
         sample_key = f"sample_{sample_idx}"
         
         if sample_key not in plans:
@@ -236,42 +254,48 @@ def run_phase_clip(ds, plans, cache_dir, workers):
         sample_masks_dir = os.path.join(masks_dir, sample_key)
         clip_path = os.path.join(sample_masks_dir, "clip_scores.json")
         
-        # Skip if already computed
+        # Skip if already computed -> Check file ON DISK, no image load logic
         if os.path.exists(clip_path):
             return sample_key, "cached"
-        
-        image = sample.get('image')
-        query = plans[sample_key].get('query', '')
-        hypotheses = plans[sample_key].get('hypotheses', [])
-        
-        if image is None:
-            return sample_key, None
-        
-        # Load masks
-        masks = []
-        for hyp_idx in range(len(hypotheses)):
-            mask_path = os.path.join(sample_masks_dir, f"mask_{hyp_idx}.npz")
-            if os.path.exists(mask_path):
-                masks.append(np.load(mask_path)['mask'])
-            else:
-                masks.append(None)
-        
-        valid_masks = [m for m in masks if m is not None]
-        if not valid_masks:
-            return sample_key, None
-        
-        try:
-            scores = clip_verifier.verify_batch(image, valid_masks, query)
             
-            # Map scores back to hypothesis indices
+        try:
+            sample = ds[sample_idx]
+            image = sample.get('image')
+            query = plans[sample_key].get('query', '')
+            hypotheses = plans[sample_key].get('hypotheses', [])
+            
+            if image is None:
+                return sample_key, None
+            
+            # Load masks (all versions)
+            masks = []
+            mask_meta = [] # (hyp_idx, version)
+            
+            for hyp_idx in range(len(hypotheses)):
+                # Look for versions
+                for ver in range(10):
+                    mask_path = os.path.join(sample_masks_dir, f"mask_{hyp_idx}_v{ver}.npz")
+                    if os.path.exists(mask_path):
+                        masks.append(np.load(mask_path)['mask'])
+                        mask_meta.append((hyp_idx, ver))
+                    elif ver == 0:
+                        # Fallback for old single-version style
+                        old_path = os.path.join(sample_masks_dir, f"mask_{hyp_idx}.npz")
+                        if os.path.exists(old_path):
+                             masks.append(np.load(old_path)['mask'])
+                             mask_meta.append((hyp_idx, 0))
+            
+            if not masks:
+                return sample_key, None
+            
+            scores = clip_verifier.verify_batch(image, masks, query)
+            
+            # Map scores back to hypothesis indices structure
             clip_scores = {}
-            valid_idx = 0
-            for hyp_idx, mask in enumerate(masks):
-                if mask is not None:
-                    clip_scores[hyp_idx] = scores[valid_idx]
-                    valid_idx += 1
-                else:
-                    clip_scores[hyp_idx] = 0.0
+            for i, (hyp_idx, ver) in enumerate(mask_meta):
+                if str(hyp_idx) not in clip_scores:
+                    clip_scores[str(hyp_idx)] = {}
+                clip_scores[str(hyp_idx)][f"v{ver}"] = scores[i]
             
             with open(clip_path, 'w') as f:
                 json.dump(clip_scores, f)
@@ -281,10 +305,13 @@ def run_phase_clip(ds, plans, cache_dir, workers):
             print(f"CLIP error on {sample_key}: {e}")
             return sample_key, None
     
-    work_items = list(enumerate(ds))
+    num_samples = len(ds)
+    all_indices = list(range(num_samples))
+    
+    print(f"Starting Phase 3 with {workers} workers...", flush=True)
     
     with ThreadPoolExecutor(max_workers=workers) as executor:
-        futures = {executor.submit(process_sample, item): item[0] for item in work_items}
+        futures = {executor.submit(process_sample_by_idx, idx): idx for idx in all_indices}
         
         for future in tqdm(as_completed(futures), total=len(futures), desc="Phase 3: CLIP"):
             future.result()
@@ -302,8 +329,7 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
     masks_dir = os.path.join(cache_dir, "masks")
     verifier = Verifier()
     
-    def process_sample(item):
-        sample_idx, sample = item
+    def process_sample_by_idx(sample_idx):
         sample_key = f"sample_{sample_idx}"
         
         if sample_key not in plans:
@@ -315,40 +341,54 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
         # Skip if already computed
         if os.path.exists(vlm_path):
             return sample_key, "cached"
-        
-        image = sample.get('image')
-        query = plans[sample_key].get('query', '')
-        hypotheses = plans[sample_key].get('hypotheses', [])
-        
-        if image is None:
-            return sample_key, None
-        
-        # Load masks
-        masks = []
-        valid_indices = []
-        for hyp_idx in range(len(hypotheses)):
-            mask_path = os.path.join(sample_masks_dir, f"mask_{hyp_idx}.npz")
-            if os.path.exists(mask_path):
-                masks.append(np.load(mask_path)['mask'])
-                valid_indices.append(hyp_idx)
-        
-        if not masks:
-            return sample_key, None
-        
-        try:
             
+        try:
+            sample = ds[sample_idx]
+            image = sample.get('image')
+            query = plans[sample_key].get('query', '')
+            hypotheses = plans[sample_key].get('hypotheses', [])
+            
+            if image is None:
+                return sample_key, None
+            
+            # Load masks
+            masks = []
+            mask_meta = []
+            
+            for hyp_idx in range(len(hypotheses)):
+                # Look for versions
+                for ver in range(10):
+                    mask_path = os.path.join(sample_masks_dir, f"mask_{hyp_idx}_v{ver}.npz")
+                    if os.path.exists(mask_path):
+                        masks.append(np.load(mask_path)['mask'])
+                        mask_meta.append((hyp_idx, ver))
+                    elif ver == 0:
+                         # Fallback
+                        old_path = os.path.join(sample_masks_dir, f"mask_{hyp_idx}.npz")
+                        if os.path.exists(old_path):
+                             masks.append(np.load(old_path)['mask'])
+                             mask_meta.append((hyp_idx, 0))
+            
+            if not masks:
+                return sample_key, None
+        
             # Run pointwise scoring
             results = verifier.verify_batch_pointwise(image, masks, query)
             
             # Map scores back
             vlm_scores = {}
-            for res in results:
-                mask_idx = res.get('mask_idx', 0)
-                hyp_idx = valid_indices[mask_idx]
-                vlm_scores[hyp_idx] = {
-                    'total_score': res.get('score', 0),
-                    'breakdown': res.get('pointwise_details', {})
-                }
+            for i, res in enumerate(results):
+                mask_idx = res.get('mask_idx', i)
+                if mask_idx < len(mask_meta):
+                    hyp_idx, ver = mask_meta[mask_idx]
+                    
+                    if str(hyp_idx) not in vlm_scores:
+                        vlm_scores[str(hyp_idx)] = {}
+                        
+                    vlm_scores[str(hyp_idx)][f"v{ver}"] = {
+                        'total_score': res.get('score', 0),
+                        'breakdown': res.get('pointwise_details', {})
+                    }
             
             with open(vlm_path, 'w') as f:
                 json.dump(vlm_scores, f)
@@ -358,10 +398,13 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
             print(f"VLM error on {sample_key}: {e}")
             return sample_key, None
     
-    work_items = list(enumerate(ds))
+    num_samples = len(ds)
+    all_indices = list(range(num_samples))
     
+    print(f"Starting Phase 4 with {workers} workers...", flush=True)
+
     with ThreadPoolExecutor(max_workers=workers) as executor:
-        futures = {executor.submit(process_sample, item): item[0] for item in work_items}
+        futures = {executor.submit(process_sample_by_idx, idx): idx for idx in all_indices}
         
         for future in tqdm(as_completed(futures), total=len(futures), desc="Phase 4: VLM"):
             future.result()
