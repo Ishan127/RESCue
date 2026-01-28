@@ -81,6 +81,7 @@ echo "Step 3: Computing VLM pointwise scores (Split Load)..."
 # Increase file limit for high concurrency
 ulimit -n 65536 2>/dev/null || true
 
+python scripts/precompute_all.py \
     --phase vlm \
     --cache_dir cache \
     --workers 32 \
