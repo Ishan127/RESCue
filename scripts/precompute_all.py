@@ -169,7 +169,17 @@ def run_phase_masks(ds, plans, cache_dir, workers):
     except:
         pass
 
+    import traceback
+    
     def process_sample_by_idx(sample_idx):
+        try:
+            return _process_sample_unsafe(sample_idx)
+        except Exception as e:
+            print(f"CRASH on sample {sample_idx}: {e}")
+            traceback.print_exc()
+            return f"sample_{sample_idx}", 0
+
+    def _process_sample_unsafe(sample_idx):
         sample_key = f"sample_{sample_idx}"
         
         # Route to specific server (0-7)
@@ -180,7 +190,8 @@ def run_phase_masks(ds, plans, cache_dir, workers):
         
         # Instantiate local executor for this worker/task
         # Timeout increased to 600s for large batches
-        local_executor = Executor(remote_url=target_url, timeout=600)
+        # Force CPU device to avoid initializing CUDA context in threads on client side
+        local_executor = Executor(remote_url=target_url, timeout=600, device="cpu")
         
         if sample_key not in plans:
             return sample_key, 0
@@ -246,10 +257,12 @@ def run_phase_masks(ds, plans, cache_dir, workers):
                                 np.savez_compressed(mask_path, mask=mask)
                                 masks_generated += 1
                 except Exception:
+                    # traceback.print_exc() # detailed remote error 
                     pass
             
             return sample_key, masks_generated
         except Exception:
+            # traceback.print_exc()
             return sample_key, 0
     
     num_samples = len(ds)

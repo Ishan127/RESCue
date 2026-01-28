@@ -61,7 +61,7 @@ fi
 # Step 3: Run mask generation
 echo ""
 echo "Step 3: Generating masks (Batch Mode: 10 calls/image, Distributed)..."
-python scripts/precompute_all.py \
+py scripts/precompute_all.py \
     --phase masks \
     --cache_dir cache \
     --workers 8 \
