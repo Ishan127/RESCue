@@ -2,6 +2,7 @@ import base64
 import os
 import logging
 from openai import OpenAI
+from PIL import Image
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("openai").setLevel(logging.WARNING)
