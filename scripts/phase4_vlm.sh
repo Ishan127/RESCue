@@ -57,7 +57,7 @@ echo "Step 3: Computing VLM pointwise scores..."
 python scripts/precompute_all.py \
     --phase vlm \
     --cache_dir cache \
-    --workers 64 \
+    --workers 16 \
     --verifier_url http://localhost:8000/v1
 
 # Step 4: Shutdown Verifier

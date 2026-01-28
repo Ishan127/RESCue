@@ -19,7 +19,17 @@ class Verifier:
     def __init__(self, client=None, model_path=None, 
                  api_base=None, verbose=None):
         self.model_path = model_path or VERIFIER_MODEL
-        self.client = client if client else get_verifier_client()
+        if client:
+            self.client = client
+        else:
+            from .api_utils import get_openai_client
+            # Use api_base if provided, else use default VERIFIER_API_BASE
+            url = api_base if api_base else None
+            if url:
+                 self.client = get_openai_client(base_url=url)
+            else:
+                 self.client = get_verifier_client()
+                 
         self.is_thinking_model = "thinking" in self.model_path.lower()
         self.verbose = verbose if verbose is not None else VERIFIER_VERBOSE
 

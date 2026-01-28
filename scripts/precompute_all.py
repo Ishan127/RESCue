@@ -425,7 +425,7 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
         if not hasattr(thread_local, "verifier"):
             # Initialize with single global URL
             thread_local.verifier = Verifier(
-                model_name="Qwen/Qwen3-VL-30B-A3B-Thinking",
+                model_path="Qwen/Qwen3-VL-30B-A3B-Thinking",
                 api_base=verifier_url 
             )
             
