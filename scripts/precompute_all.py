@@ -519,29 +519,8 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
                 
                 if not chunk_masks: continue
                 
-                # Pruning Logic
-                unique_masks = []
-                unique_indices = []
-                duplicate_map = {} 
-                
-                for m_idx in range(len(chunk_masks)):
-                    current_mask = chunk_masks[m_idx]
-                    current_h_idx, current_ver = chunk_meta[m_idx]
-                    
-                    is_duplicate = False
-                    
-                    if m_idx > 0:
-                        prev_h_idx, prev_ver = chunk_meta[m_idx-1]
-                        # Only prune if it's the SAME hypothesis (different version/jitter)
-                        if prev_h_idx == current_h_idx:
-                            iou = calculate_iou(current_mask, chunk_masks[m_idx-1])
-                            if iou > 0.97:
-                                is_duplicate = True
-                                duplicate_map[m_idx] = m_idx - 1
-                    
-                    if not is_duplicate:
-                        unique_masks.append(current_mask)
-                        unique_indices.append(m_idx)
+                # No Pruning - Verify ALL masks
+                unique_masks = chunk_masks
                 
                 if unique_masks:
                     results = local_verifier.verify_batch_pointwise(
@@ -555,29 +534,24 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
                 else:
                     results = []
                 
-                unique_results_map = {} 
+                # Map results directly 1-to-1
                 for r_idx, res in enumerate(results):
-                     u_original_idx = unique_indices[res.get('mask_idx', r_idx)]
-                     unique_results_map[u_original_idx] = res
-
-                for m_idx in range(len(chunk_masks)):
-                    source_idx = m_idx
-                    while source_idx in duplicate_map:
-                        source_idx = duplicate_map[source_idx]
+                    # res['mask_idx'] maps 1:1 since we sent all masks
+                    mask_idx = res.get('mask_idx', r_idx)
                     
-                    if source_idx in unique_results_map:
-                        res = unique_results_map[source_idx]
-                        hyp_idx, ver = chunk_meta[m_idx]
-                        if str(hyp_idx) not in vlm_scores:
-                            vlm_scores[str(hyp_idx)] = {}
+                    if mask_idx < len(chunk_meta):
+                        hyp_idx, ver = chunk_meta[mask_idx]
+                        
+                        hyp_str = str(hyp_idx)
+                        if hyp_str not in vlm_scores:
+                            vlm_scores[hyp_str] = {}
                             
-                        vlm_scores[str(hyp_idx)][f"v{ver}"] = {
+                        vlm_scores[hyp_str][f"v{ver}"] = {
                             'total_score': res.get('score', 0),
                             'breakdown': res.get('pointwise_details', {})
                         }
                 
                 del chunk_masks
-                del unique_masks
             
             with open(vlm_path, 'w') as f:
                 json.dump(vlm_scores, f)
