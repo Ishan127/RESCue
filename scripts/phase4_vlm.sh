@@ -30,7 +30,7 @@ else
         --trust-remote-code \
         --tensor-parallel-size 4 \
         --gpu-memory-utilization 0.9 \
-        --max-model-len 8192 \
+        --max-model-len 32768 \
         --max-num-seqs 4096 \
         --dtype bfloat16 \
         --enable-prefix-caching \
@@ -48,7 +48,7 @@ else
         --trust-remote-code \
         --tensor-parallel-size 4 \
         --gpu-memory-utilization 0.9 \
-        --max-model-len 8192 \
+        --max-model-len 32768 \
         --max-num-seqs 4096 \
         --dtype bfloat16 \
         --enable-prefix-caching \
