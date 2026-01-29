@@ -143,18 +143,35 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
              max_workers = min(128, n) 
         
         # Pre-encode image for Prefix Caching efficiency
+        # RESIZE to 768x768 for speedup (User Request)
         from .api_utils import encode_pil_image, encode_image
+        from PIL import Image as PILImage
         base64_img = None
-        w, h = 0, 0
+        w_orig, h_orig = 0, 0
+        img_to_encode = None
+        
         if isinstance(image_input, str):
-            base64_img = encode_image(image_input)
-            with Image.open(image_input) as img:
-                w, h = img.size
+            with PILImage.open(image_input) as img:
+                w_orig, h_orig = img.size
+                img_to_encode = img.copy()
         else:
-            base64_img = encode_pil_image(image_input)
-            w, h = image_input.size
+            w_orig, h_orig = image_input.size
+            img_to_encode = image_input.copy()
             
-        vlm_results = self._pointwise_score_batch(base64_img, w, h, masks, query, max_workers=max_workers)
+        # Resize logic
+        if max(w_orig, h_orig) > 768:
+            ratio = 768 / max(w_orig, h_orig)
+            new_size = (int(w_orig * ratio), int(h_orig * ratio))
+            img_to_encode = img_to_encode.resize(new_size, PILImage.LANCZOS)
+            
+        base64_img = encode_pil_image(img_to_encode)
+        w_enc, h_enc = img_to_encode.size
+        
+        # NOTE: We pass ORIGINAL (w, h) to _pointwise_score_batch because masks are based on original size.
+        # Inside _score_single_box, the box coordinates are normalized (x/w * 1000). 
+        # So passing original w/h is correct for normalization against original masks.
+        # The VLM sees the resized image, but normalized coords map correctly.
+        vlm_results = self._pointwise_score_batch(base64_img, w_orig, h_orig, masks, query, max_workers=max_workers)
         
         # 2. Run CLIP Scoring in PARALLEL with VLM (they use different GPUs)
         clip_scores = [0.0] * n

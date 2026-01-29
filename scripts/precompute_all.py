@@ -484,12 +484,24 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
             chunk_size = 64 
             vlm_scores = {}
             
+            # 2. Process in Chunks
+            # OPTIMIZATION: IoU Pruning + Chunking
+            # We must load masks to compute IoU.
+            # But we can do it incrementally.
+            # Strategy: Load chunk, Prune inside chunk?
+            # Issue: Pruning requires previous version. Metadata `valid_mask_entries` is sorted by hyp, then ver.
+            # So `v{i}` and `v{i-1}` are adjacent.
+            
+            chunk_size = 64
+            vlm_scores = {}
+            from src.utils import calculate_iou # Ensure imported
+            
             for i in range(0, len(valid_mask_entries), chunk_size):
                 chunk_entries = valid_mask_entries[i : i + chunk_size]
                 chunk_masks = []
                 chunk_meta = []
                 
-                # Load only this chunk into RAM
+                # Load Chunk
                 for path, h_idx, v in chunk_entries:
                     try:
                         with np.load(path) as data:
@@ -498,36 +510,90 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
                     except Exception as e:
                         print(f"Error loading {path}: {e}")
                 
-                if not chunk_masks:
-                    continue
+                if not chunk_masks: continue
+                
+                # Pruning Logic
+                unique_masks = []
+                unique_indices = [] # Index in chunk_masks
+                duplicate_map = {} # chunk_idx -> prev_chunk_idx (which is unique)
+                
+                # We need to track the "previous valid mask" for each hypothesis locally?
+                # Actually, within the chunk, we can check.
+                # If chunk boundaries split v2 and v3, we can't easily prune v3 based on v2 if v2 is unloaded.
+                # Compromise: Prune ONLY within chunk. (Most refinements are grouped).
+                
+                for m_idx in range(len(chunk_masks)):
+                    current_mask = chunk_masks[m_idx]
+                    current_h_idx, current_ver = chunk_meta[m_idx]
                     
-                # Verify Chunk (Parallel Threads)
-                # max_workers=32: Thread parallelism for this chunk
-                results = local_verifier.verify_batch_pointwise(
-                    image, 
-                    chunk_masks, 
-                    query,
-                    skip_clip=True,
-                    skip_consistency=True,
-                    max_workers=32 
-                )
+                    is_duplicate = False
+                    
+                    # Check against previous in THIS chunk
+                    if m_idx > 0:
+                        prev_h_idx, prev_ver = chunk_meta[m_idx-1]
+                        if prev_h_idx == current_h_idx and current_ver > 0:
+                            # Compare with immediate predecessor
+                            # prev_mask is chunk_masks[m_idx-1]
+                            # BUT wait, m_idx-1 might be a duplicate of m_idx-2.
+                            # We should compare with the *last unique* mask for this hyp?
+                            # Simpler: Compare with `chunk_masks[m_idx-1]` (raw).
+                            # If `mask[i] == mask[i-1]`, then result[i] = result[i-1].
+                            
+                            iou = calculate_iou(current_mask, chunk_masks[m_idx-1])
+                            if iou > 0.97:
+                                is_duplicate = True
+                                duplicate_map[m_idx] = m_idx - 1
+                    
+                    if not is_duplicate:
+                        unique_masks.append(current_mask)
+                        unique_indices.append(m_idx)
                 
-                # Free RAM immediately
-                del chunk_masks
+                # Verify ONLY unique
+                if unique_masks:
+                    results = local_verifier.verify_batch_pointwise(
+                        image, 
+                        unique_masks, 
+                        query,
+                        skip_clip=True,
+                        skip_consistency=True,
+                        max_workers=32 
+                    )
+                else:
+                    results = []
                 
-                # Map scores
-                for res_idx, res in enumerate(results):
-                    # res['mask_idx'] corresponds to index within chunk_masks
-                    local_idx = res.get('mask_idx', res_idx)
-                    if local_idx < len(chunk_meta):
-                        hyp_idx, ver = chunk_meta[local_idx]
+                # Map results
+                # results correspond to unique_indices
+                
+                # Create a lookup for unique results
+                unique_results_map = {} # m_idx -> result
+                for r_idx, res in enumerate(results):
+                     # res['mask_idx'] is index in unique_masks list (0..k)
+                     # Map back to chunk_masks index
+                     u_original_idx = unique_indices[res.get('mask_idx', r_idx)]
+                     unique_results_map[u_original_idx] = res
+
+                # Resolve all scores (including duplicates)
+                for m_idx in range(len(chunk_masks)):
+                    # Trace back to unique source
+                    source_idx = m_idx
+                    while source_idx in duplicate_map:
+                        source_idx = duplicate_map[source_idx]
+                    
+                    # Get result
+                    if source_idx in unique_results_map:
+                        res = unique_results_map[source_idx]
+                        
+                        hyp_idx, ver = chunk_meta[m_idx]
                         if str(hyp_idx) not in vlm_scores:
                             vlm_scores[str(hyp_idx)] = {}
-                        
+                            
                         vlm_scores[str(hyp_idx)][f"v{ver}"] = {
                             'total_score': res.get('score', 0),
                             'breakdown': res.get('pointwise_details', {})
                         }
+                
+                del chunk_masks
+                del unique_masks
             
             # Save ALL results
             with open(vlm_path, 'w') as f:
