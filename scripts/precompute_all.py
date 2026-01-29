@@ -423,14 +423,14 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
     import threading
     thread_local = threading.local()
 
-    def process_sample_version(sample_idx, target_ver):
+    def process_sample_by_idx(sample_idx):
         sample_key = f"sample_{sample_idx}"
         
         # Round Robin Load Balancing
         target_url_idx = sample_idx % len(verifier_urls)
         target_url = verifier_urls[target_url_idx]
         
-        # Get or create thread-local verifier
+        # Get or create thread-local verifier for THIS url
         if not hasattr(thread_local, "verifiers"):
              thread_local.verifiers = {}
              
@@ -448,7 +448,6 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
         sample_masks_dir = os.path.join(masks_dir, sample_key)
         vlm_path = os.path.join(sample_masks_dir, "vlm_scores.json")
         
-        # Skip if already computed
         if os.path.exists(vlm_path):
             return sample_key, "cached"
             
@@ -461,40 +460,33 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
             if image is None:
                 return sample_key, None
             
-            # 1. Collect Valid Mask Paths first (Metadata only)
+            # 1. Collect Valid Mask Paths
             valid_mask_entries = [] # (path, hyp_idx, ver)
             
             for hyp_idx in range(len(hypotheses)):
-                # Look for versions
+                # check versions 0..9
                 for ver in range(10):
                     mask_path = os.path.join(sample_masks_dir, f"mask_{hyp_idx}_v{ver}.npz")
                     if os.path.exists(mask_path):
                         valid_mask_entries.append((mask_path, hyp_idx, ver))
-                    elif ver == 0:
-                         # Fallback
-                        old_path = os.path.join(sample_masks_dir, f"mask_{hyp_idx}.npz")
-                        if os.path.exists(old_path):
-                             valid_mask_entries.append((old_path, hyp_idx, 0))
+                        
+                # Fallback check for old non-versioned masks (v0)
+                # Only if we didn't find specific versions? Or just check if exists?
+                # The generation phase now produces versions. 
+                # If old masks exist (mask_0.npz), treat as v0.
+                old_path = os.path.join(sample_masks_dir, f"mask_{hyp_idx}.npz")
+                if os.path.exists(old_path):
+                     # Avoid duplicate if mask_0_v0.npz also exists? 
+                     # For safety, let's assume if v-files exist, we prefer them.
+                     pass
             
             if not valid_mask_entries:
                 return sample_key, None
 
-            # 2. Process in Chunks to save RAM and enable connection pooling
-            # Chunk size 64: Safe RAM usage, High throughput
-            chunk_size = 64 
-            vlm_scores = {}
-            
             # 2. Process in Chunks
-            # OPTIMIZATION: IoU Pruning + Chunking
-            # We must load masks to compute IoU.
-            # But we can do it incrementally.
-            # Strategy: Load chunk, Prune inside chunk?
-            # Issue: Pruning requires previous version. Metadata `valid_mask_entries` is sorted by hyp, then ver.
-            # So `v{i}` and `v{i-1}` are adjacent.
-            
             chunk_size = 64
             vlm_scores = {}
-            from src.utils import calculate_iou # Ensure imported
+            from src.utils import calculate_iou 
             
             for i in range(0, len(valid_mask_entries), chunk_size):
                 chunk_entries = valid_mask_entries[i : i + chunk_size]
@@ -514,13 +506,8 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
                 
                 # Pruning Logic
                 unique_masks = []
-                unique_indices = [] # Index in chunk_masks
-                duplicate_map = {} # chunk_idx -> prev_chunk_idx (which is unique)
-                
-                # We need to track the "previous valid mask" for each hypothesis locally?
-                # Actually, within the chunk, we can check.
-                # If chunk boundaries split v2 and v3, we can't easily prune v3 based on v2 if v2 is unloaded.
-                # Compromise: Prune ONLY within chunk. (Most refinements are grouped).
+                unique_indices = []
+                duplicate_map = {} 
                 
                 for m_idx in range(len(chunk_masks)):
                     current_mask = chunk_masks[m_idx]
@@ -528,17 +515,10 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
                     
                     is_duplicate = False
                     
-                    # Check against previous in THIS chunk
                     if m_idx > 0:
                         prev_h_idx, prev_ver = chunk_meta[m_idx-1]
-                        if prev_h_idx == current_h_idx and current_ver > 0:
-                            # Compare with immediate predecessor
-                            # prev_mask is chunk_masks[m_idx-1]
-                            # BUT wait, m_idx-1 might be a duplicate of m_idx-2.
-                            # We should compare with the *last unique* mask for this hyp?
-                            # Simpler: Compare with `chunk_masks[m_idx-1]` (raw).
-                            # If `mask[i] == mask[i-1]`, then result[i] = result[i-1].
-                            
+                        # Only prune if it's the SAME hypothesis (different version/jitter)
+                        if prev_h_idx == current_h_idx:
                             iou = calculate_iou(current_mask, chunk_masks[m_idx-1])
                             if iou > 0.97:
                                 is_duplicate = True
@@ -548,7 +528,6 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
                         unique_masks.append(current_mask)
                         unique_indices.append(m_idx)
                 
-                # Verify ONLY unique
                 if unique_masks:
                     results = local_verifier.verify_batch_pointwise(
                         image, 
@@ -561,28 +540,18 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
                 else:
                     results = []
                 
-                # Map results
-                # results correspond to unique_indices
-                
-                # Create a lookup for unique results
-                unique_results_map = {} # m_idx -> result
+                unique_results_map = {} 
                 for r_idx, res in enumerate(results):
-                     # res['mask_idx'] is index in unique_masks list (0..k)
-                     # Map back to chunk_masks index
                      u_original_idx = unique_indices[res.get('mask_idx', r_idx)]
                      unique_results_map[u_original_idx] = res
 
-                # Resolve all scores (including duplicates)
                 for m_idx in range(len(chunk_masks)):
-                    # Trace back to unique source
                     source_idx = m_idx
                     while source_idx in duplicate_map:
                         source_idx = duplicate_map[source_idx]
                     
-                    # Get result
                     if source_idx in unique_results_map:
                         res = unique_results_map[source_idx]
-                        
                         hyp_idx, ver = chunk_meta[m_idx]
                         if str(hyp_idx) not in vlm_scores:
                             vlm_scores[str(hyp_idx)] = {}
@@ -595,11 +564,9 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
                 del chunk_masks
                 del unique_masks
             
-            # Save ALL results
             with open(vlm_path, 'w') as f:
                 json.dump(vlm_scores, f)
             
-            # Explicit GC
             import gc
             gc.collect()
             
@@ -610,27 +577,21 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
             traceback.print_exc()
             return sample_key, None
     
-    # --- Use ThreadPoolExecutor for IO bound task ---
+    num_samples = len(ds)
+    all_indices = list(range(num_samples))
+    
+    print(f"Starting Phase 4 with {workers} workers (Targeting vLLM at {args.verifier_url})...", flush=True)
+
     from concurrent.futures import ThreadPoolExecutor, as_completed
     from tqdm import tqdm
-    
-    sample_indices = list(range(len(ds)))
-    
-    # 10 Versions
-    for ver in range(10):
-        print(f"\n--- Phase 4: Scoring Version {ver} ---")
-        
-        # Helper for pickling if needed, but ThreadPool handles closures
-        def worker_batch(idx):
-            return process_sample_version(idx, ver)
-        
-        with ThreadPoolExecutor(max_workers=workers) as executor:
-            futures = {executor.submit(worker_batch, idx): idx for idx in sample_indices}
-            
-            for future in tqdm(as_completed(futures), total=len(futures), desc=f"VLM v{ver}"):
-                pass 
 
-    print("Phase 4 VLM complete.")
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {executor.submit(process_sample_by_idx, idx): idx for idx in all_indices}
+        
+        for future in tqdm(as_completed(futures), total=len(futures), desc="Phase 4: VLM"):
+            future.result()
+    
+    print("VLM pointwise scoring complete")
 
 
 # ============================================================================
