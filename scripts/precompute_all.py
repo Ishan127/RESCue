@@ -406,35 +406,35 @@ def run_phase_clip(ds, plans, cache_dir, workers):
 # ============================================================================
 # PHASE 4: VLM POINTWISE SCORING
 # ============================================================================
+# ============================================================================
+# PHASE 4: VLM POINTWISE SCORING
+# ============================================================================
 def run_phase_vlm(ds, plans, cache_dir, workers):
     """Compute VLM pointwise scores using vLLM endpoint."""
     from src.verifier import Verifier
+    from src.utils import calculate_iou # Ensure imported
     
     masks_dir = os.path.join(cache_dir, "masks")
     
     # Single endpoint for vLLM (TP=8) OR Multiple (TP=4x2)
-    # Split by comma if multiple
     verifier_urls = args.verifier_url.split(",")
     verifier_urls = [u.strip() for u in verifier_urls if u.strip()]
     
     import threading
     thread_local = threading.local()
 
-    def process_sample_by_idx(sample_idx):
+    def process_sample_version(sample_idx, target_ver):
         sample_key = f"sample_{sample_idx}"
         
         # Round Robin Load Balancing
-        # If 1 URL: idx % 1 = 0
-        # If 2 URLs: idx % 2 = 0 or 1
         target_url_idx = sample_idx % len(verifier_urls)
         target_url = verifier_urls[target_url_idx]
         
-        # Get or create thread-local verifier for THIS url
+        # Get or create thread-local verifier
         if not hasattr(thread_local, "verifiers"):
              thread_local.verifiers = {}
              
         if target_url not in thread_local.verifiers:
-            # Initialize with specific URL
             thread_local.verifiers[target_url] = Verifier(
                 model_path="Qwen/Qwen3-VL-30B-A3B-Thinking",
                 api_base=target_url 
@@ -610,18 +610,27 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
             traceback.print_exc()
             return sample_key, None
     
-    num_samples = len(ds)
-    all_indices = list(range(num_samples))
+    # --- Use ThreadPoolExecutor for IO bound task ---
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    from tqdm import tqdm
     
-    print(f"Starting Phase 4 with {workers} workers (Targeting vLLM at {args.verifier_url})...", flush=True)
-
-    with ThreadPoolExecutor(max_workers=workers) as executor:
-        futures = {executor.submit(process_sample_by_idx, idx): idx for idx in all_indices}
+    sample_indices = list(range(len(ds)))
+    
+    # 10 Versions
+    for ver in range(10):
+        print(f"\n--- Phase 4: Scoring Version {ver} ---")
         
-        for future in tqdm(as_completed(futures), total=len(futures), desc="Phase 4: VLM"):
-            future.result()
-    
-    print("VLM pointwise scoring complete")
+        # Helper for pickling if needed, but ThreadPool handles closures
+        def worker_batch(idx):
+            return process_sample_version(idx, ver)
+        
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            futures = {executor.submit(worker_batch, idx): idx for idx in sample_indices}
+            
+            for future in tqdm(as_completed(futures), total=len(futures), desc=f"VLM v{ver}"):
+                pass 
+
+    print("Phase 4 VLM complete.")
 
 
 # ============================================================================
