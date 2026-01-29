@@ -161,7 +161,14 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
         # Resize logic
         if max(w_orig, h_orig) > 768:
             ratio = 768 / max(w_orig, h_orig)
-            new_size = (int(w_orig * ratio), int(h_orig * ratio))
+            new_w = int(w_orig * ratio)
+            new_h = int(h_orig * ratio)
+            
+            # Align to multiples of 28 (Patch Size safety)
+            new_w = max(28, (new_w // 28) * 28)
+            new_h = max(28, (new_h // 28) * 28)
+            
+            new_size = (new_w, new_h)
             img_to_encode = img_to_encode.resize(new_size, PILImage.LANCZOS)
             
         base64_img = encode_pil_image(img_to_encode)
