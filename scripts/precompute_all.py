@@ -461,60 +461,83 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
             if image is None:
                 return sample_key, None
             
-            # Load masks (all versions)
-            masks = []
-            mask_meta = [] # (hyp_idx, version)
+            # 1. Collect Valid Mask Paths first (Metadata only)
+            valid_mask_entries = [] # (path, hyp_idx, ver)
             
             for hyp_idx in range(len(hypotheses)):
                 # Look for versions
                 for ver in range(10):
                     mask_path = os.path.join(sample_masks_dir, f"mask_{hyp_idx}_v{ver}.npz")
                     if os.path.exists(mask_path):
-                        with np.load(mask_path) as data:
-                            masks.append(data['mask'])
-                        mask_meta.append((hyp_idx, ver))
+                        valid_mask_entries.append((mask_path, hyp_idx, ver))
                     elif ver == 0:
                          # Fallback
                         old_path = os.path.join(sample_masks_dir, f"mask_{hyp_idx}.npz")
                         if os.path.exists(old_path):
-                             with np.load(old_path) as data:
-                                 masks.append(data['mask'])
-                             mask_meta.append((hyp_idx, 0))
+                             valid_mask_entries.append((old_path, hyp_idx, 0))
             
-            if not masks:
+            if not valid_mask_entries:
                 return sample_key, None
-        
-            # Run pointwise scoring
-            # Assuming verifier.verify_batch_pointwise supports batch of masks
-            # OPTIMIZATION: skip_clip=True, skip_consistency=True, max_workers=1
-            results = local_verifier.verify_batch_pointwise(
-                image, 
-                masks, 
-                query,
-                skip_clip=True,
-                skip_consistency=True,
-                max_workers=1
-            )
-            
-            # Map scores back
+
+            # 2. Process in Chunks to save RAM and enable connection pooling
+            # Chunk size 64: Safe RAM usage, High throughput
+            chunk_size = 64 
             vlm_scores = {}
-            for i, res in enumerate(results):
-                mask_idx = res.get('mask_idx', i)
-                if mask_idx < len(mask_meta):
-                    hyp_idx, ver = mask_meta[mask_idx]
-                    
-                    if str(hyp_idx) not in vlm_scores:
-                        vlm_scores[str(hyp_idx)] = {}
-                        
-                    vlm_scores[str(hyp_idx)][f"v{ver}"] = {
-                        'total_score': res.get('score', 0),
-                        'breakdown': res.get('pointwise_details', {})
-                    }
             
+            for i in range(0, len(valid_mask_entries), chunk_size):
+                chunk_entries = valid_mask_entries[i : i + chunk_size]
+                chunk_masks = []
+                chunk_meta = []
+                
+                # Load only this chunk into RAM
+                for path, h_idx, v in chunk_entries:
+                    try:
+                        with np.load(path) as data:
+                            chunk_masks.append(data['mask'])
+                        chunk_meta.append((h_idx, v))
+                    except Exception as e:
+                        print(f"Error loading {path}: {e}")
+                
+                if not chunk_masks:
+                    continue
+                    
+                # Verify Chunk (Parallel Threads)
+                # max_workers=32: Thread parallelism for this chunk
+                results = local_verifier.verify_batch_pointwise(
+                    image, 
+                    chunk_masks, 
+                    query,
+                    skip_clip=True,
+                    skip_consistency=True,
+                    max_workers=32 
+                )
+                
+                # Free RAM immediately
+                del chunk_masks
+                
+                # Map scores
+                for res_idx, res in enumerate(results):
+                    # res['mask_idx'] corresponds to index within chunk_masks
+                    local_idx = res.get('mask_idx', res_idx)
+                    if local_idx < len(chunk_meta):
+                        hyp_idx, ver = chunk_meta[local_idx]
+                        if str(hyp_idx) not in vlm_scores:
+                            vlm_scores[str(hyp_idx)] = {}
+                        
+                        vlm_scores[str(hyp_idx)][f"v{ver}"] = {
+                            'total_score': res.get('score', 0),
+                            'breakdown': res.get('pointwise_details', {})
+                        }
+            
+            # Save ALL results
             with open(vlm_path, 'w') as f:
                 json.dump(vlm_scores, f)
             
-            return sample_key, len(results)
+            # Explicit GC
+            import gc
+            gc.collect()
+            
+            return sample_key, len(valid_mask_entries)
         except Exception as e:
             print(f"VLM error on {sample_key}: {e}")
             import traceback
