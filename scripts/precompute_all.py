@@ -448,8 +448,14 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
         sample_masks_dir = os.path.join(masks_dir, sample_key)
         vlm_path = os.path.join(sample_masks_dir, "vlm_scores.json")
         
+        # Load existing scores to support partial resumption
+        vlm_scores = {}
         if os.path.exists(vlm_path):
-            return sample_key, "cached"
+            try:
+                with open(vlm_path, 'r') as f:
+                    vlm_scores = json.load(f)
+            except:
+                pass
             
         try:
             sample = ds[sample_idx]
@@ -462,23 +468,32 @@ def run_phase_vlm(ds, plans, cache_dir, workers):
             
             # 1. Collect Valid Mask Paths
             valid_mask_entries = [] # (path, hyp_idx, ver)
+            completed_count = 0
             
             for hyp_idx in range(len(hypotheses)):
+                hyp_str = str(hyp_idx)
                 # check versions 0..9
                 for ver in range(10):
+                    # Check if already done
+                    if hyp_str in vlm_scores and f"v{ver}" in vlm_scores[hyp_str]:
+                        completed_count += 1
+                        continue
+
+                    # Check file existence
                     mask_path = os.path.join(sample_masks_dir, f"mask_{hyp_idx}_v{ver}.npz")
                     if os.path.exists(mask_path):
                         valid_mask_entries.append((mask_path, hyp_idx, ver))
                         
                 # Fallback check for old non-versioned masks (v0)
-                # Only if we didn't find specific versions? Or just check if exists?
-                # The generation phase now produces versions. 
-                # If old masks exist (mask_0.npz), treat as v0.
                 old_path = os.path.join(sample_masks_dir, f"mask_{hyp_idx}.npz")
                 if os.path.exists(old_path):
-                     # Avoid duplicate if mask_0_v0.npz also exists? 
-                     # For safety, let's assume if v-files exist, we prefer them.
-                     pass
+                     # If v0 is somehow missing from VLM scores but v0 file exists (as mask_idx.npz)
+                     if not (hyp_str in vlm_scores and "v0" in vlm_scores[hyp_str]):
+                        valid_mask_entries.append((old_path, hyp_idx, 0))
+
+             # If everything we could possibly score is already scored (or no masks exist to score)
+            if not valid_mask_entries:
+                return sample_key, "cached" if completed_count > 0 else None
             
             if not valid_mask_entries:
                 return sample_key, None
