@@ -99,10 +99,10 @@ def main():
         if not os.path.exists(clip_path):
             issues.append("Missing CLIP scores")
         
-        # Check VLM
-        vlm_path = os.path.join(sample_masks_dir, "vlm_scores.json")
-        if not os.path.exists(vlm_path):
-            issues.append("Missing VLM scores")
+        # Check VLM (Skipped as per user request)
+        # vlm_path = os.path.join(sample_masks_dir, "vlm_scores.json")
+        # if not os.path.exists(vlm_path):
+        #     issues.append("Missing VLM scores")
             
         if args.delete_corrupt and corrupt:
             for p in corrupt:
