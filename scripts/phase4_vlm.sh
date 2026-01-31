@@ -19,8 +19,23 @@ else
     tmux kill-session -t verifier0 2>/dev/null || true
 
     echo "  Launching verifier0 (GPUs 0,1)..."
-    tmux new -s verifier0
-    tmux send-keys -t verifier0 "export CUDA_VISIBLE_DEVICES=0,1 HIP_VISIBLE_DEVICES=0,1 && python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen3-VL-30B-A3B-Thinking --trust-remote-code --tensor-parallel-size 2 --gpu-memory-utilization 0.9 --max-model-len 8192 --max-num-seqs 2048 --dtype bfloat16 --enable-prefix-caching --port 8000 --host 0.0.0.0" Enter
+    
+    # Create tmux session with bash
+    tmux new-session -d -s verifier0 bash
+    sleep 1
+    
+    # Verify session exists
+    if tmux has-session -t verifier0 2>/dev/null; then
+        echo "  Session created successfully"
+    else
+        echo "  ERROR: Failed to create tmux session!"
+        exit 1
+    fi
+    
+    # Send command
+    tmux send-keys -t verifier0 'export CUDA_VISIBLE_DEVICES=0,1' Enter
+    tmux send-keys -t verifier0 'export HIP_VISIBLE_DEVICES=0,1' Enter
+    tmux send-keys -t verifier0 'python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen3-VL-30B-A3B-Thinking --trust-remote-code --tensor-parallel-size 2 --gpu-memory-utilization 0.9 --max-model-len 8192 --max-num-seqs 2048 --dtype bfloat16 --enable-prefix-caching --port 8000 --host 0.0.0.0' Enter
 
     echo "Verifier deployed."
 
