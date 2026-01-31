@@ -11,7 +11,7 @@ echo "PHASE 4: PRE-COMPUTE VLM SCORES (2 GPU)"
 echo "=============================================="
 
 # Step 1: Start 1 Verifier with TP=2 on 2 GPUs
-if curl -s http://localhost:8000/health >/dev/null; then
+if curl -sf http://localhost:8000/health >/dev/null 2>&1; then
     echo "Step 1: Verifier already running. Skipping deployment."
 else
     echo "Step 1: Deploying Verifier on 2 GPUs (TP=2)..."
