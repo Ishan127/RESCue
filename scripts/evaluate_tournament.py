@@ -298,10 +298,25 @@ def main():
     # Load precomputed samples
     print(f"Loading precomputed data (max_n={args.max_n}, strategy={args.strategy})...")
     samples = []
-    for i, sample in enumerate(tqdm(ds, desc="Loading cache")):
-        precomputed = load_precomputed_sample(i, sample, plans, masks_dir, args.max_n, args.strategy)
-        if precomputed:
-            samples.append(precomputed)
+    # Use ThreadPoolExecutor for parallel loading
+    with ThreadPoolExecutor(max_workers=args.workers) as executor:
+        # Create futures for all samples
+        futures = {
+            executor.submit(load_precomputed_sample, i, sample, plans, masks_dir, args.max_n, args.strategy): i 
+            for i, sample in enumerate(ds)
+        }
+        
+        # Collect results as they complete
+        for future in tqdm(as_completed(futures), total=len(futures), desc="Loading cache"):
+            try:
+                precomputed = future.result()
+                if precomputed:
+                    samples.append(precomputed)
+            except Exception as e:
+                print(f"Error loading sample: {e}")
+    
+    # Sort by sample_idx to maintain deterministic order
+    samples.sort(key=lambda x: x.sample_idx)
     
     print(f"Loaded {len(samples)} samples with precomputed scores")
     
