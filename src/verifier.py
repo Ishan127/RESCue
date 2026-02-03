@@ -19,19 +19,34 @@ class Verifier:
     def __init__(self, client=None, model_path=None, 
                  api_base=None, verbose=None):
         self.model_path = model_path or VERIFIER_MODEL
+        
+        # Parse API Bases (Comma separated)
+        # Priority: explicit arg > env var > default
+        if not api_base:
+            api_base = VERIFIER_API_BASE
+            
+        self.api_bases = [url.strip() for url in api_base.split(',') if url.strip()]
+        
+        self.clients = []
         if client:
-            self.client = client
+            self.clients = [client]
         else:
             from .api_utils import get_openai_client
-            # Use api_base if provided, else use default VERIFIER_API_BASE
-            url = api_base if api_base else None
-            if url:
-                 self.client = get_openai_client(base_url=url)
-            else:
-                 self.client = get_verifier_client()
+            for url in self.api_bases:
+                self.clients.append(get_openai_client(base_url=url))
                  
         self.is_thinking_model = "thinking" in self.model_path.lower()
         self.verbose = verbose if verbose is not None else VERIFIER_VERBOSE
+        self._client_idx = 0
+
+    def _get_client(self):
+        """Round-robin load balancing."""
+        if not self.clients:
+            raise ValueError("No VLM clients available")
+        
+        client = self.clients[self._client_idx]
+        self._client_idx = (self._client_idx + 1) % len(self.clients)
+        return client
 
     def _compute_mask_heuristic(self, mask):
         """Quick heuristic score for tie-breaking based on mask coverage."""
@@ -75,7 +90,7 @@ Output JSON: {{"score": X, "reason": "brief explanation"}}"""
         try:
             messages = create_vision_message(prompt, image=overlay_img)
             
-            completion = self.client.chat.completions.create(
+            completion = self._get_client().chat.completions.create(
                 model=self.model_path,
                 messages=messages,
                 temperature=0.1,
@@ -453,7 +468,7 @@ Output JSON: {{ "winner": "A" or "B", "reason": "short explanation" }}"""
                 "required": ["winner"]
             }
             
-            completion = self.client.chat.completions.create(
+            completion = self._get_client().chat.completions.create(
                 model=self.model_path,
                 messages=messages,
                 temperature=0.0,
@@ -574,7 +589,7 @@ Output ONLY the JSON."""
 
             messages = create_vision_message(prompt, base64_image=base64_img, image_first=True)
             
-            completion = self.client.chat.completions.create(
+            completion = self._get_client().chat.completions.create(
                 model=self.model_path,
                 messages=messages,
                 temperature=0.1,

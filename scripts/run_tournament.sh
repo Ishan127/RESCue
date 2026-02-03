@@ -22,4 +22,5 @@ python scripts/evaluate_tournament.py \
     --cache_dir cache \
     --workers $WORKERS \
     --fraction 1.0 \
+    --verifier_url "http://localhost:8000/v1,http://localhost:8001/v1" \
     "${@:2}"
