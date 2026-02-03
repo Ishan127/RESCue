@@ -98,7 +98,15 @@ def load_precomputed_sample(sample_idx: int, sample: Dict, plans: Dict,
     # Filter to those with precomputed scores
     valid_candidates = [] # (orig_idx, best_ver, hyp, vlm_data)
     
+    # Optimization: Shuffle first, then check file existence until we hit max_n
+    # This avoids thousands of os.path.exists checks when we only need a few samples.
+    random.shuffle(all_hypotheses)
+    
     for orig_idx, hyp in all_hypotheses:
+        # Stop early if we have enough
+        if len(valid_candidates) >= max_n:
+            break
+
         hyp_scores = vlm_scores.get(orig_idx, {})
         if not hyp_scores:
             continue
@@ -140,15 +148,10 @@ def load_precomputed_sample(sample_idx: int, sample: Dict, plans: Dict,
                 "path": selected['path'],
                 "vlm_data": selected['data']
             })
-
-    # Sample up to max_n
-    if len(valid_candidates) > max_n:
-        # Optimization: Prefer higher VLM scores instead of random?
-        # A: Yes, tournament should be top-N candidates.
-        # But `max_n` argument usually implies "how many randomly sampled hypotheses to consider" 
-        # to test scaling. If we sort by VLM, we bias the "Max_N" experiment.
-        # Let's keep random sampling of HYPOTHESES to be fair to N-scaling parameter.
-        valid_candidates = random.sample(valid_candidates, max_n)
+    
+    # We already limited by early breaking, no need to sample again
+    # unless (rarely) we didn't get enough and somehow logic changes.
+    # But valid_candidates <= max_n purely by the loop break.
     
     if not valid_candidates:
         return None
