@@ -103,41 +103,43 @@ def load_precomputed_sample(sample_idx: int, sample: Dict, plans: Dict,
         if not hyp_scores:
             continue
             
-        # Find best version
-        best_ver = -1
-        best_ver_score = -1.0
-        best_ver_data = {}
+        # Find valid versions
+        valid_versions = []
         
         # Check versions 0..9
         for ver in range(10):
             v_key = f"v{ver}"
             if v_key in hyp_scores:
-                s = hyp_scores[v_key].get('total_score', 0)
-                if s > best_ver_score:
-                    best_ver_score = s
-                    best_ver = ver
-                    best_ver_data = hyp_scores[v_key]
+                path = os.path.join(sample_masks_dir, f"mask_{orig_idx}_v{ver}.npz")
+                if os.path.exists(path):
+                     valid_versions.append({
+                         "ver": ver, 
+                         "data": hyp_scores[v_key],
+                         "path": path
+                     })
         
-        # Check v0 fallback if no versions found (backward compat)
-        if best_ver == -1 and "total_score" in hyp_scores:
-             best_ver = 0 # Assume v0 mapping
-             best_ver_data = hyp_scores
+        # Check v0 fallback if no versions found
+        if not valid_versions:
+             # Assume v0 mapping
+             path = os.path.join(sample_masks_dir, f"mask_{orig_idx}.npz")
+             if os.path.exists(path) and "total_score" in hyp_scores:
+                 valid_versions.append({
+                     "ver": 0,
+                     "data": hyp_scores,
+                     "path": path
+                 })
 
-        if best_ver != -1:
-            # Verify file exists
-            path = os.path.join(sample_masks_dir, f"mask_{orig_idx}_v{best_ver}.npz")
-            if not os.path.exists(path):
-                # Fallback to old path style
-                path = os.path.join(sample_masks_dir, f"mask_{orig_idx}.npz")
-                
-            if os.path.exists(path):
-                valid_candidates.append({
-                    "orig_idx": orig_idx,
-                    "ver": best_ver,
-                    "hyp": hyp,
-                    "path": path,
-                    "vlm_data": best_ver_data
-                })
+        if valid_versions:
+            # RANDOM SELECTION as per user request
+            selected = random.choice(valid_versions)
+            
+            valid_candidates.append({
+                "orig_idx": orig_idx,
+                "ver": selected['ver'],
+                "hyp": hyp,
+                "path": selected['path'],
+                "vlm_data": selected['data']
+            })
 
     # Sample up to max_n
     if len(valid_candidates) > max_n:
