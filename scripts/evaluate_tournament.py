@@ -96,14 +96,56 @@ def load_precomputed_sample(sample_idx: int, sample: Dict, plans: Dict,
         all_hypotheses = list(enumerate(all_hypotheses))
     
     # Filter to those with precomputed scores
-    valid_candidates = []
-    for orig_idx, hyp in all_hypotheses:
-        mask_path = os.path.join(sample_masks_dir, f"mask_{orig_idx}.npz")
-        if os.path.exists(mask_path) and orig_idx in vlm_scores:
-            valid_candidates.append((orig_idx, hyp))
+    valid_candidates = [] # (orig_idx, best_ver, hyp, vlm_data)
     
+    for orig_idx, hyp in all_hypotheses:
+        hyp_scores = vlm_scores.get(orig_idx, {})
+        if not hyp_scores:
+            continue
+            
+        # Find best version
+        best_ver = -1
+        best_ver_score = -1.0
+        best_ver_data = {}
+        
+        # Check versions 0..9
+        for ver in range(10):
+            v_key = f"v{ver}"
+            if v_key in hyp_scores:
+                s = hyp_scores[v_key].get('total_score', 0)
+                if s > best_ver_score:
+                    best_ver_score = s
+                    best_ver = ver
+                    best_ver_data = hyp_scores[v_key]
+        
+        # Check v0 fallback if no versions found (backward compat)
+        if best_ver == -1 and "total_score" in hyp_scores:
+             best_ver = 0 # Assume v0 mapping
+             best_ver_data = hyp_scores
+
+        if best_ver != -1:
+            # Verify file exists
+            path = os.path.join(sample_masks_dir, f"mask_{orig_idx}_v{best_ver}.npz")
+            if not os.path.exists(path):
+                # Fallback to old path style
+                path = os.path.join(sample_masks_dir, f"mask_{orig_idx}.npz")
+                
+            if os.path.exists(path):
+                valid_candidates.append({
+                    "orig_idx": orig_idx,
+                    "ver": best_ver,
+                    "hyp": hyp,
+                    "path": path,
+                    "vlm_data": best_ver_data
+                })
+
     # Sample up to max_n
     if len(valid_candidates) > max_n:
+        # Optimization: Prefer higher VLM scores instead of random?
+        # A: Yes, tournament should be top-N candidates.
+        # But `max_n` argument usually implies "how many randomly sampled hypotheses to consider" 
+        # to test scaling. If we sort by VLM, we bias the "Max_N" experiment.
+        # Let's keep random sampling of HYPOTHESES to be fair to N-scaling parameter.
         valid_candidates = random.sample(valid_candidates, max_n)
     
     if not valid_candidates:
@@ -115,14 +157,32 @@ def load_precomputed_sample(sample_idx: int, sample: Dict, plans: Dict,
     selected_clip = {}
     selected_vlm = {}
     
-    for new_idx, (orig_idx, hyp) in enumerate(valid_candidates):
-        mask_path = os.path.join(sample_masks_dir, f"mask_{orig_idx}.npz")
-        mask = np.load(mask_path)['mask']
-        
-        hypotheses.append(hyp)
-        masks.append(mask)
-        selected_clip[new_idx] = clip_scores.get(orig_idx, 0.0)
-        selected_vlm[new_idx] = vlm_scores.get(orig_idx, {'total_score': 0})
+    for new_idx, item in enumerate(valid_candidates):
+        try:
+            mask = np.load(item['path'])['mask']
+            
+            hypotheses.append(item['hyp'])
+            masks.append(mask)
+            
+            # CLIP scores might be versioned now too?
+            # Assuming CLIP scores in JSON might be nested or flat.
+            # If flat (old): clip_scores[orig_idx]
+            # If nested (new): clip_scores[orig_idx]["v{ver}"]
+            
+            c_score = 0.0
+            orig_c = clip_scores.get(item['orig_idx'])
+            if isinstance(orig_c, dict):
+                c_score = orig_c.get(f"v{item['ver']}", 0.0)
+            elif isinstance(orig_c, (float, int)):
+                c_score = float(orig_c)
+                
+            selected_clip[new_idx] = c_score
+            selected_vlm[new_idx] = item['vlm_data']
+        except Exception:
+            continue
+            
+    if not hypotheses:
+        return None
     
     return PrecomputedSample(
         sample_idx=sample_idx,
