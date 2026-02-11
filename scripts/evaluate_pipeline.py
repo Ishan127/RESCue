@@ -33,8 +33,8 @@ parser.add_argument("--parallel_requests", type=int, default=4,
 parser.add_argument("--pipeline_depth", type=int, default=3, help="Number of samples to process concurrently")
 parser.add_argument("--mode", choices=["comparative", "heuristic"], default="comparative")
 parser.add_argument("--workers_planner", type=int, default=2)
-parser.add_argument("--workers_executor", type=int, default=2) # Reduced for single server
-parser.add_argument("--workers_verifier", type=int, default=2)
+parser.add_argument("--workers_executor", type=int, default=4) # Increased default
+parser.add_argument("--workers_verifier", type=int, default=4) # Increased default
 parser.add_argument("--planner_strategy", type=str, default=None, help="Filter planner strategy (e.g. 'original', 'spatial')")
 parser.add_argument("--use_cache", action="store_true", help="Use cached results from precompute_all.py")
 parser.add_argument("--cache_dir", type=str, default="cache", help="Directory where cache is stored")
@@ -204,27 +204,36 @@ class ExecutorStage(PipelineStage):
                 loaded_masks = []
                 loaded_vers = []
                 
+                # OPTIMIZATION: List dir once instead of 10 stat calls per hyp
+                try:
+                    all_files = set(os.listdir(masks_dir))
+                except Exception as e:
+                    # print(f"[Executor] Failed to list {masks_dir}: {e}")
+                    all_files = set()
+
                 for i in range(len(task.hypotheses)):
                     # Find available versions
                     available_vers = []
-                    # Check versions 0 to 9
+                    
+                    # Check versions 0 to 9 using set lookup (faster)
                     for v in range(10):
-                        if os.path.exists(os.path.join(masks_dir, f"mask_{i}_v{v}.npz")):
+                        fname = f"mask_{i}_v{v}.npz"
+                        if fname in all_files:
                             available_vers.append(v)
                     
                     if not available_vers:
-                        # Fallback for old style (single mask, no version suffix)
-                        if os.path.exists(os.path.join(masks_dir, f"mask_{i}.npz")):
+                        # Fallback for old style
+                        if f"mask_{i}.npz" in all_files:
                             available_vers.append(0) # Treat as v0
                     
                     if available_vers:
                         # Pick random version
                         chosen_v = random.choice(available_vers)
-                        mask_path = os.path.join(masks_dir, f"mask_{i}_v{chosen_v}.npz")
-                        # Handle old style fallback path manually if needed, but above loop constructs proper path for v0-v9
-                        # If came from fallback:
-                        if chosen_v == 0 and not os.path.exists(mask_path):
-                             mask_path = os.path.join(masks_dir, f"mask_{i}.npz")
+                        mask_filename = f"mask_{i}_v{chosen_v}.npz"
+                        if chosen_v == 0 and mask_filename not in all_files and f"mask_{i}.npz" in all_files:
+                             mask_filename = f"mask_{i}.npz" # Fallback filename
+
+                        mask_path = os.path.join(masks_dir, mask_filename)
 
                         try:
                             # Load lazy to verify it opens
@@ -278,7 +287,7 @@ class VerifierStage(PipelineStage):
     
     def __init__(self, input_queue, output_queue, verifier_url, mode, cache_dir=None, progress_queue=None):
         super().__init__("Verifier", input_queue, output_queue, progress_queue)
-        self.verifier = Verifier()
+        self.verifier = Verifier(api_base=verifier_url) # EXPLICITLY PASS URL
         self.mode = mode
         self.cache_dir = cache_dir
     
@@ -319,14 +328,16 @@ class VerifierStage(PipelineStage):
                                         }
                                     # Fallback if specific version score missing but generic v0 exists? 
                                     elif "v0" in full_scores[str_i]:
-                                         # Maybe just use v0 score if v_random score is missing? 
-                                         # But that mismatches the mask. Better to fail or skip.
-                                         pass
+                                         s_data = full_scores[str_i]["v0"]
+                                         cached_scores[i] = {
+                                            'score': s_data['total_score'],
+                                            'details': s_data.get('breakdown')
+                                         }
                         except Exception as e:
                             print(f"[Verifier] Cache load error: {e}")
 
                 if len(cached_scores) == len(task.candidates):
-                    # Use cached
+                    # Use cached pointwise scores
                     results = []
                     for i in range(len(task.candidates)):
                         results.append({
@@ -334,19 +345,71 @@ class VerifierStage(PipelineStage):
                             'score': cached_scores[i]['score'],
                             'pointwise_details': cached_scores[i]['details']
                         })
+                    
+                    # HYBRID MODE: We have pointwise scores, but we might want to run the tournament LIVE
+                    # The user said: "Only verifier will be available for pyramid tournament"
+                    # So we should use the cached pointwise scores as the base, but then run the tournament.
+                    
+                    # 1. Sort by cached pointwise score to establish initial ranking
+                    sorted_results = sorted(results, key=lambda r: r.get('score', 0), reverse=True)
+                    
+                    # 2. Build initial ranking list format expected by tournament
+                    initial_ranking = []
+                    for rank, res in enumerate(sorted_results):
+                        initial_ranking.append({
+                            "mask_idx": res['mask_idx'],
+                            "rank": rank + 1,
+                            "score": res.get('score', 0),
+                            "reasoning": "Cached Pointwise",
+                            "pointwise_details": res.get('pointwise_details')
+                        })
+                    
+                    # 3. Run Live Tournament if N > 1
+                    if len(initial_ranking) > 1 and self.mode == "comparative":
+                        # We need the masks for the tournament
+                        masks = [c['mask'] for c in task.candidates]
+                        try:
+                           print(f"[Verifier] Running LIVE tournament for Sample {task.sample_idx} on {len(initial_ranking)} candidates")
+                           final_ranking = self.verifier._pyramid_tournament(task.image, masks, task.query, initial_ranking)
+                           
+                           # Re-map results based on tournament outcome
+                           # final_ranking contains the re-ordered results
+                           task.ranking = [r['mask_idx'] for r in final_ranking]
+                           
+                           # Update candidates with final status
+                           for res in final_ranking:
+                               idx = res['mask_idx']
+                               if idx < len(task.candidates):
+                                   task.candidates[idx]['verifier_score'] = res.get('score')
+                                   task.candidates[idx]['verifier_reasoning'] = res.get('reasoning')
+                                   # Pointwise details preserved from cache
+                                   
+                           task.t_verify_done = time.time()
+                           return task
+                           
+                        except Exception as e:
+                           print(f"[Verifier] Live tournament failed: {e}")
+                           # Fallback to pointwise ranking
+                           task.ranking = [r['mask_idx'] for r in sorted_results]
+
+                    else:
+                        # Just Pointwise Ranking
+                        task.ranking = [r['mask_idx'] for r in sorted_results]
+                        
+                        for res in sorted_results:
+                             idx = res['mask_idx']
+                             if idx < len(task.candidates):
+                                 task.candidates[idx]['verifier_score'] = res.get('score')
+                 
                 else:
-                    # Live Inference
+                    # Cache miss - Live Inference (Full)
                     results = self.verifier.verify_batch_pointwise(task.image, masks, task.query)
+                    
+                    # verify_batch_pointwise ALREADY runs the tournament internally if N>1
+                    # So we just parse the results
                 
-                sorted_results = sorted(results, key=lambda r: r.get('score', 0), reverse=True) # RANK BY SCORE DESC
-                
-                # Assign ranks (0 is best)
-                rank_lookup = {r['mask_idx']: rank for rank, r in enumerate(sorted_results)}
-                task.ranking = [0] * len(task.candidates)
-                for i in range(len(task.candidates)):
-                    task.ranking[i] = i # default
-                # Re-order ranking list based on score
-                task.ranking = [r['mask_idx'] for r in sorted_results]
+                    sorted_results = sorted(results, key=lambda r: r.get('rank', 999))
+                    task.ranking = [r['mask_idx'] for r in sorted_results]
 
                 for res in sorted_results:
                      idx = res['mask_idx']
