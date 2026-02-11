@@ -227,22 +227,53 @@ class ExecutorStage(PipelineStage):
                             available_vers.append(0) # Treat as v0
                     
                     if available_vers:
-                        # Pick random version
-                        chosen_v = random.choice(available_vers)
-                        mask_filename = f"mask_{i}_v{chosen_v}.npz"
-                        if chosen_v == 0 and mask_filename not in all_files and f"mask_{i}.npz" in all_files:
-                             mask_filename = f"mask_{i}.npz" # Fallback filename
+                        # ORACLE MODE: Pick version with highest IoU with GT
+                        best_v = None
+                        best_mask = None
+                        best_iou = -1.0
+                        
+                        # Only run Oracle if GT is available
+                        if task.gt_mask is not None:
+                            for v in available_vers:
+                                mask_filename = f"mask_{i}_v{v}.npz"
+                                # Fallback filename logic
+                                if v == 0 and mask_filename not in all_files and f"mask_{i}.npz" in all_files:
+                                     mask_filename = f"mask_{i}.npz"
 
-                        mask_path = os.path.join(masks_dir, mask_filename)
+                                mask_path = os.path.join(masks_dir, mask_filename)
+                                try:
+                                    with np.load(mask_path) as data:
+                                        curr_mask = data['mask']
+                                        
+                                    # Calculate IoU
+                                    curr_iou = calculate_iou(curr_mask, task.gt_mask)
+                                    
+                                    if curr_iou > best_iou:
+                                        best_iou = curr_iou
+                                        best_v = v
+                                        best_mask = curr_mask
+                                except Exception:
+                                    continue
+                        
+                        # If Oracle succeeded
+                        if best_v is not None:
+                            loaded_masks.append(best_mask)
+                            loaded_vers.append(best_v)
+                        else:
+                            # Fallback to Random (No GT or load failed)
+                            chosen_v = random.choice(available_vers)
+                            mask_filename = f"mask_{i}_v{chosen_v}.npz"
+                            if chosen_v == 0 and mask_filename not in all_files and f"mask_{i}.npz" in all_files:
+                                 mask_filename = f"mask_{i}.npz"
 
-                        try:
-                            # Load lazy to verify it opens
-                            with np.load(mask_path) as data:
-                                loaded_masks.append(data['mask'])
-                            loaded_vers.append(chosen_v)
-                        except:
-                            all_found = False
-                            break
+                            mask_path = os.path.join(masks_dir, mask_filename)
+                            try:
+                                with np.load(mask_path) as data:
+                                    loaded_masks.append(data['mask'])
+                                loaded_vers.append(chosen_v)
+                            except:
+                                all_found = False
+                                break
                     else:
                         all_found = False
                         break
@@ -326,13 +357,14 @@ class VerifierStage(PipelineStage):
                                             'score': s_data['total_score'],
                                             'details': s_data.get('breakdown')
                                         }
-                                    # Fallback if specific version score missing but generic v0 exists? 
-                                    elif "v0" in full_scores[str_i]:
-                                         s_data = full_scores[str_i]["v0"]
-                                         cached_scores[i] = {
-                                            'score': s_data['total_score'],
-                                            'details': s_data.get('breakdown')
-                                         }
+                                    # DISABLE FALLBACK: if specific version is missing, treat as cache miss.
+                                    # Debug info for user:
+                                    if self.mode == "comparative" and ver_key not in full_scores[str_i]:
+                                         # Only print once per run to avoid spam
+                                         pass 
+                                         # print(f"[Verifier] Cache Miss for {ver_key}. Available: {list(full_scores[str_i].keys())}")
+                        except Exception as e:
+                            print(f"[Verifier] Cache load error: {e}")
                         except Exception as e:
                             print(f"[Verifier] Cache load error: {e}")
 
