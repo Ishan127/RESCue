@@ -25,7 +25,7 @@ parser = argparse.ArgumentParser(description="Pipeline-Parallel Evaluation")
 parser.add_argument("--fraction", type=float, default=0.1)
 parser.add_argument("--max_n", type=int, default=64)
 parser.add_argument("--planner_url", default="http://localhost:8002/v1")
-parser.add_argument("--verifier_url", default="http://localhost:8000/v1")
+parser.add_argument("--verifier_url", default="http://localhost:8000/v1,http://localhost:8004/v1", help="Comma-separated list of verifier URLs")
 parser.add_argument("--executor_url", default="http://localhost:8001",
                     help="SAM server URL")
 parser.add_argument("--parallel_requests", type=int, default=4,
@@ -420,8 +420,14 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
         executor_workers.append(threading.Thread(target=w.run, name=f"Executor-{i}"))
 
     verifier_workers = []
+    # Parse verifier URLs
+    verifier_urls = [url.strip() for url in args.verifier_url.split(',')]
+    print(f"Distributing verifier workers across {len(verifier_urls)} endpoints: {verifier_urls}")
+    
     for i in range(args.workers_verifier):
-        w = VerifierStage(q_executed, q_output, verifier_url, mode, cache_dir=cache_dir if use_cache else None, progress_queue=q_progress)
+        # Round-robin assignment of URLs
+        worker_url = verifier_urls[i % len(verifier_urls)]
+        w = VerifierStage(q_executed, q_output, worker_url, mode, cache_dir=cache_dir if use_cache else None, progress_queue=q_progress)
         verifier_workers.append(threading.Thread(target=w.run, name=f"Verifier-{i}"))
     
     all_workers = planner_workers + executor_workers + verifier_workers
