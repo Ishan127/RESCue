@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
+import random
 
 # Parse args FIRST
 parser = argparse.ArgumentParser(description="Pipeline-Parallel Evaluation")
@@ -35,6 +36,8 @@ parser.add_argument("--workers_planner", type=int, default=2)
 parser.add_argument("--workers_executor", type=int, default=2) # Reduced for single server
 parser.add_argument("--workers_verifier", type=int, default=2)
 parser.add_argument("--planner_strategy", type=str, default=None, help="Filter planner strategy (e.g. 'original', 'spatial')")
+parser.add_argument("--use_cache", action="store_true", help="Use cached results from precompute_all.py")
+parser.add_argument("--cache_dir", type=str, default="cache", help="Directory where cache is stored")
 args = parser.parse_args()
 
 print(f"Using SAM cluster at {args.executor_url} with {args.parallel_requests} parallel requests")
@@ -125,15 +128,28 @@ class PipelineStage:
 class PlannerStage(PipelineStage):
     """Stage 1: Generate hypotheses from query."""
     
-    def __init__(self, input_queue, output_queue, planner_url, max_n, progress_queue=None):
+    def __init__(self, input_queue, output_queue, planner_url, max_n, plans_cache=None, progress_queue=None):
         super().__init__("Planner", input_queue, output_queue, progress_queue)
         # Each worker needs its own planner instance for thread safety if not handled internally
         self.planner = Planner(api_base=planner_url)
         self.max_n = max_n
+        self.plans_cache = plans_cache
     
     def process(self, task: SampleTask) -> SampleTask:
         task.t_start = time.time()
         
+        # Try Cache First
+        if self.plans_cache:
+            sample_key = f"sample_{task.sample_idx}"
+            if sample_key in self.plans_cache:
+                cached_data = self.plans_cache[sample_key]
+                # Allow for partial matches if needed, but usually we want full set
+                cached_hyps = cached_data.get('hypotheses', [])
+                if cached_hyps:
+                    task.hypotheses = cached_hyps[:self.max_n]
+                    task.t_plan_done = time.time() # Instant
+                    return task
+
         try:
             # Pass PIL image directly
             hypotheses = self.planner.generate_hypotheses(task.image, task.query, N=self.max_n, strategy_filter=args.planner_strategy)
@@ -150,11 +166,12 @@ class PlannerStage(PipelineStage):
 class ExecutorStage(PipelineStage):
     """Stage 2: Generate masks using SAM cluster (load-balanced)."""
     
-    def __init__(self, input_queue, output_queue, executor_url, parallel_requests=16, progress_queue=None):
+    def __init__(self, input_queue, output_queue, executor_url, parallel_requests=16, cache_dir=None, progress_queue=None):
         super().__init__("Executor", input_queue, output_queue, progress_queue)
         # Single executor per worker (requests Session is thread-safe, but safer to have separate instances)
         self.executor = Executor(remote_url=executor_url, timeout=300)
         self.parallel_requests = parallel_requests
+        self.cache_dir = cache_dir
     
     def process(self, task: SampleTask) -> SampleTask:
         if not task.hypotheses:
@@ -174,6 +191,67 @@ class ExecutorStage(PipelineStage):
                 "box": box,
                 "label": True
             })
+
+        # Try Cached Masks First
+        cached_masks = []
+        cached_versions = [] # New list to track versions
+        
+        if self.cache_dir:
+            sample_key = f"sample_{task.sample_idx}"
+            masks_dir = os.path.join(self.cache_dir, "masks", sample_key)
+            if os.path.exists(masks_dir):
+                all_found = True
+                loaded_masks = []
+                loaded_vers = []
+                
+                for i in range(len(task.hypotheses)):
+                    # Find available versions
+                    available_vers = []
+                    # Check versions 0 to 9
+                    for v in range(10):
+                        if os.path.exists(os.path.join(masks_dir, f"mask_{i}_v{v}.npz")):
+                            available_vers.append(v)
+                    
+                    if not available_vers:
+                        # Fallback for old style (single mask, no version suffix)
+                        if os.path.exists(os.path.join(masks_dir, f"mask_{i}.npz")):
+                            available_vers.append(0) # Treat as v0
+                    
+                    if available_vers:
+                        # Pick random version
+                        chosen_v = random.choice(available_vers)
+                        mask_path = os.path.join(masks_dir, f"mask_{i}_v{chosen_v}.npz")
+                        # Handle old style fallback path manually if needed, but above loop constructs proper path for v0-v9
+                        # If came from fallback:
+                        if chosen_v == 0 and not os.path.exists(mask_path):
+                             mask_path = os.path.join(masks_dir, f"mask_{i}.npz")
+
+                        try:
+                            # Load lazy to verify it opens
+                            with np.load(mask_path) as data:
+                                loaded_masks.append(data['mask'])
+                            loaded_vers.append(chosen_v)
+                        except:
+                            all_found = False
+                            break
+                    else:
+                        all_found = False
+                        break
+                
+                if all_found and len(loaded_masks) == len(task.hypotheses):
+                    cached_masks = loaded_masks
+                    cached_versions = loaded_vers
+        
+        if cached_masks:
+             results = []
+             for i, (hyp, mask) in enumerate(zip(task.hypotheses, cached_masks)):
+                 res = {"hypothesis": hyp, "mask": mask, "version": cached_versions[i]}
+                 if task.gt_mask is not None:
+                     res["iou"] = calculate_iou(mask, task.gt_mask)
+                 results.append(res)
+             task.candidates = results
+             task.t_exec_done = time.time()
+             return task
 
         try:
              masks = self.executor.segment(image, prompts_list=prompts_list)
@@ -198,10 +276,11 @@ class ExecutorStage(PipelineStage):
 class VerifierStage(PipelineStage):
     """Stage 3: Rank candidates using tournament."""
     
-    def __init__(self, input_queue, output_queue, verifier_url, mode, progress_queue=None):
+    def __init__(self, input_queue, output_queue, verifier_url, mode, cache_dir=None, progress_queue=None):
         super().__init__("Verifier", input_queue, output_queue, progress_queue)
         self.verifier = Verifier()
         self.mode = mode
+        self.cache_dir = cache_dir
     
     def process(self, task: SampleTask) -> SampleTask:
         if not task.candidates:
@@ -216,15 +295,63 @@ class VerifierStage(PipelineStage):
                 scores = [self._heuristic_score(m) for m in masks]
                 task.ranking = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
             else:
-                results = self.verifier.verify_batch_pointwise(task.image, masks, task.query)
+                # Try Cache First
+                cached_scores = {}
+                if self.cache_dir:
+                    sample_key = f"sample_{task.sample_idx}"
+                    score_path = os.path.join(self.cache_dir, "masks", sample_key, "vlm_scores.json")
+                    if os.path.exists(score_path):
+                        try:
+                            with open(score_path, 'r') as f:
+                                full_scores = json.load(f)
+                            # Parse based on chosen version
+                            for i, cand in enumerate(task.candidates):
+                                str_i = str(i)
+                                chosen_ver = cand.get('version', 0)
+                                ver_key = f"v{chosen_ver}"
+                                
+                                if str_i in full_scores:
+                                    if ver_key in full_scores[str_i]:
+                                        s_data = full_scores[str_i][ver_key]
+                                        cached_scores[i] = {
+                                            'score': s_data['total_score'],
+                                            'details': s_data.get('breakdown')
+                                        }
+                                    # Fallback if specific version score missing but generic v0 exists? 
+                                    elif "v0" in full_scores[str_i]:
+                                         # Maybe just use v0 score if v_random score is missing? 
+                                         # But that mismatches the mask. Better to fail or skip.
+                                         pass
+                        except Exception as e:
+                            print(f"[Verifier] Cache load error: {e}")
+
+                if len(cached_scores) == len(task.candidates):
+                    # Use cached
+                    results = []
+                    for i in range(len(task.candidates)):
+                        results.append({
+                            'mask_idx': i,
+                            'score': cached_scores[i]['score'],
+                            'pointwise_details': cached_scores[i]['details']
+                        })
+                else:
+                    # Live Inference
+                    results = self.verifier.verify_batch_pointwise(task.image, masks, task.query)
                 
-                sorted_results = sorted(results, key=lambda r: r['rank'])
+                sorted_results = sorted(results, key=lambda r: r.get('score', 0), reverse=True) # RANK BY SCORE DESC
+                
+                # Assign ranks (0 is best)
+                rank_lookup = {r['mask_idx']: rank for rank, r in enumerate(sorted_results)}
+                task.ranking = [0] * len(task.candidates)
+                for i in range(len(task.candidates)):
+                    task.ranking[i] = i # default
+                # Re-order ranking list based on score
                 task.ranking = [r['mask_idx'] for r in sorted_results]
-                
+
                 for res in sorted_results:
                      idx = res['mask_idx']
                      if idx < len(task.candidates):
-                         task.candidates[idx]['verifier_score'] = res['score']
+                         task.candidates[idx]['verifier_score'] = res.get('score')
                          task.candidates[idx]['verifier_reasoning'] = res.get('reasoning')
                          if 'pointwise_details' in res:
                              task.candidates[idx]['pointwise_details'] = res['pointwise_details']
@@ -247,7 +374,7 @@ class VerifierStage(PipelineStage):
 
 
 def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor_url, 
-                            parallel_requests, pipeline_depth, mode):
+                            parallel_requests, pipeline_depth, mode, use_cache=False, cache_dir="cache"):
     print(f"Loading ReasonSeg dataset...")
     try:
         ds = load_dataset("Ricky06662/ReasonSeg_test", split="test")
@@ -267,20 +394,34 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
     q_output = queue.Queue()
     q_progress = queue.Queue() # Queue for simple step completion events
     
+    # Load Cache if needed
+    plans_cache = None
+    if use_cache:
+        plans_path = os.path.join(cache_dir, "plans", "plans.json")
+        if os.path.exists(plans_path):
+            print(f"Loading plans from cache: {plans_path}")
+            try:
+                with open(plans_path, 'r') as f:
+                    plans_cache = json.load(f)
+            except Exception as e:
+                print(f"Failed to load plans cache: {e}")
+        else:
+            print(f"Cache enabled but plans file not found at {plans_path}")
+
     # Init workers
     planner_workers = []
     for i in range(args.workers_planner):
-        w = PlannerStage(q_input, q_planned, planner_url, max_n, progress_queue=q_progress)
+        w = PlannerStage(q_input, q_planned, planner_url, max_n, plans_cache=plans_cache, progress_queue=q_progress)
         planner_workers.append(threading.Thread(target=w.run, name=f"Planner-{i}"))
 
     executor_workers = []
     for i in range(args.workers_executor):
-        w = ExecutorStage(q_planned, q_executed, executor_url, parallel_requests, progress_queue=q_progress)
+        w = ExecutorStage(q_planned, q_executed, executor_url, parallel_requests, cache_dir=cache_dir if use_cache else None, progress_queue=q_progress)
         executor_workers.append(threading.Thread(target=w.run, name=f"Executor-{i}"))
 
     verifier_workers = []
     for i in range(args.workers_verifier):
-        w = VerifierStage(q_executed, q_output, verifier_url, mode, progress_queue=q_progress)
+        w = VerifierStage(q_executed, q_output, verifier_url, mode, cache_dir=cache_dir if use_cache else None, progress_queue=q_progress)
         verifier_workers.append(threading.Thread(target=w.run, name=f"Verifier-{i}"))
     
     all_workers = planner_workers + executor_workers + verifier_workers
@@ -536,5 +677,7 @@ if __name__ == "__main__":
         executor_url=args.executor_url,
         parallel_requests=args.parallel_requests,
         pipeline_depth=args.pipeline_depth,
-        mode=args.mode
+        mode=args.mode,
+        use_cache=args.use_cache,
+        cache_dir=args.cache_dir
     )
