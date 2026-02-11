@@ -32,9 +32,9 @@ parser.add_argument("--parallel_requests", type=int, default=4,
                     help="Number of parallel requests to SAM server")
 parser.add_argument("--pipeline_depth", type=int, default=3, help="Number of samples to process concurrently")
 parser.add_argument("--mode", choices=["comparative", "heuristic"], default="comparative")
-parser.add_argument("--workers_planner", type=int, default=2)
-parser.add_argument("--workers_executor", type=int, default=4) # Increased default
-parser.add_argument("--workers_verifier", type=int, default=4) # Increased default
+parser.add_argument("--workers_planner", type=int, default=32)
+parser.add_argument("--workers_executor", type=int, default=32)
+parser.add_argument("--workers_verifier", type=int, default=128) # Scaled for 256-core CPU + 8 GPUs
 parser.add_argument("--planner_strategy", type=str, default=None, help="Filter planner strategy (e.g. 'original', 'spatial')")
 parser.add_argument("--use_cache", action="store_true", help="Use cached results from precompute_all.py")
 parser.add_argument("--cache_dir", type=str, default="cache", help="Directory where cache is stored")
@@ -369,7 +369,7 @@ class VerifierStage(PipelineStage):
                         # We need the masks for the tournament
                         masks = [c['mask'] for c in task.candidates]
                         try:
-                           print(f"[Verifier] Running LIVE tournament for Sample {task.sample_idx} on {len(initial_ranking)} candidates")
+                           # print(f"[Verifier] Running LIVE tournament for Sample {task.sample_idx} on {len(initial_ranking)} candidates")
                            final_ranking = self.verifier._pyramid_tournament(task.image, masks, task.query, initial_ranking)
                            
                            # Re-map results based on tournament outcome
