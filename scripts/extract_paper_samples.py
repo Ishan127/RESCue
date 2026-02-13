@@ -210,15 +210,23 @@ def main():
         gt_overlay.save(os.path.join(sample_out_dir, "gt_overlay.jpg"))
         
         # 3. Retrieve Scores & Plans
-        # Load scores.json specific to this sample
-        scores_file = os.path.join(args.cache_dir, "scores", f"sample_{idx}", "scores.json")
+        # Load scores: cache/masks/sample_{idx}/vlm_scores.json
+        scores_file = os.path.join(args.cache_dir, "masks", f"sample_{idx}", "vlm_scores.json")
         scores_data = {}
         if os.path.exists(scores_file):
             try:
                 with open(scores_file, 'r') as f:
                     scores_data = json.load(f)
-            except:
-                pass
+            except Exception as e:
+                print(f"Error loading {scores_file}: {e}")
+        else:
+            # Fallback for old structure or misnamed file
+             scores_file_old = os.path.join(args.cache_dir, "scores", f"sample_{idx}", "scores.json")
+             if os.path.exists(scores_file_old):
+                 try:
+                    with open(scores_file_old, 'r') as f:
+                        scores_data = json.load(f)
+                 except: pass
 
         summary_info = {
             "sample_idx": idx,
@@ -240,23 +248,29 @@ def main():
             pid = str(cand['planner_id'])
             vlm_score = "N/A"
             vlm_reasoning = "N/A"
+            cand_ver = str(cand['version'])
             
             if pid in scores_data:
-                # Check for versions: v5, v4... or v0 or direct
                 s_entry = scores_data[pid]
                 
-                # Priority: v5 > v4 > v3 > v2 > v1 > v0 > direct
-                keys_to_check = [f'v{i}' for i in range(5, -1, -1)] # v5, v4, ..., v0
+                # Check EXACT version first
+                v_key = f"v{cand_ver}"
                 found_ver_data = None
-                for k in keys_to_check:
-                    if k in s_entry:
-                        found_ver_data = s_entry[k]
-                        break
+                
+                if v_key in s_entry:
+                     found_ver_data = s_entry[v_key]
+                else:
+                    # Fallback: check other versions if exact match missing
+                    keys_to_check = [f'v{i}' for i in range(10)]
+                    for k in keys_to_check:
+                        if k in s_entry:
+                            found_ver_data = s_entry[k]
+                            break
                 
                 if found_ver_data:
                     vlm_score = found_ver_data.get('total_score', 'N/A')
                     vlm_reasoning = found_ver_data.get('breakdown', 'N/A')
-                elif 'total_score' in s_entry: # Direct (old format, no versioning)
+                elif 'total_score' in s_entry: # Direct (old format)
                      vlm_score = s_entry.get('total_score')
                      vlm_reasoning = s_entry.get('breakdown')
 
