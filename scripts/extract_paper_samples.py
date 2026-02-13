@@ -6,6 +6,7 @@ import numpy as np
 import cv2
 from PIL import Image
 from tqdm import tqdm
+import random
 
 def calculate_iou(mask1, mask2):
     mask1 = np.asarray(mask1) > 0
@@ -43,6 +44,17 @@ def main():
     parser.add_argument("--min_iou", type=float, default=0.95, help="Minimum IoU for the 'Best' candidate")
     # parser.add_argument("--split", type=str, default="test") # Hardcoded to test for ReasonSeg
     args = parser.parse_args()
+
+    # Load Plans Data Once
+    plans_file = os.path.join(args.cache_dir, "plans", "plans.json")
+    plans_data = {}
+    if os.path.exists(plans_file):
+        print(f"Loading plans from {plans_file}...")
+        try:
+            with open(plans_file, 'r') as f:
+                plans_data = json.load(f)
+        except Exception as e:
+            print(f"Error loading plans: {e}")
 
     os.makedirs(args.output_dir, exist_ok=True)
 
@@ -112,6 +124,7 @@ def main():
             curr_best_iou = -1.0
             curr_best_mask = None
             curr_best_ver = -1
+            curr_best_mask_path = None # Initialize here
             
             # Check v0-v9
             found_any = False
@@ -133,6 +146,7 @@ def main():
                             curr_best_iou = iou
                             curr_best_mask = mask
                             curr_best_ver = v
+                            curr_best_mask_path = path # Store path
                         found_any = True
                 except:
                     continue
@@ -142,6 +156,7 @@ def main():
                     "id": h_idx,
                     "iou": curr_best_iou,
                     "mask": curr_best_mask,
+                    "mask_path": curr_best_mask_path, # Store the path of the best mask
                     "version": curr_best_ver
                 })
 
@@ -157,19 +172,29 @@ def main():
         if best_cand["iou"] < args.min_iou:
             continue
             
-        # Select Representative Candidates
+        # Select Representative Candidates: Best, Worst, 2 Random
+        candidates_to_save = []
+        
+        # 1. Best
+        best_cand["type"] = "Best"
+        candidates_to_save.append(best_cand)
+        
+        # 2. Worst
         worst_cand = valid_hypotheses[-1]
+        worst_cand["type"] = "Worst"
+        candidates_to_save.append(worst_cand)
         
-        # Median
-        mid_idx = len(valid_hypotheses) // 2
-        avg_cand = valid_hypotheses[mid_idx]
-        
-        # Deduplicate if very few candidates
-        selected = {
-            "Best": best_cand,
-            "Average": avg_cand,
-            "Poor": worst_cand
-        }
+        # 3. Two Random (from the middle range to avoid duplicates of best/worst)
+        middle_candidates = valid_hypotheses[1:-1]
+        if len(middle_candidates) >= 2:
+            random_cands = random.sample(middle_candidates, 2)
+            for i, rc in enumerate(random_cands):
+                rc["type"] = f"Random_{i+1}"
+                candidates_to_save.append(rc)
+        elif len(middle_candidates) == 1:
+             rc = middle_candidates[0]
+             rc["type"] = "Random_1"
+             candidates_to_save.append(rc)
         
         print(f"Found Sample {idx}: Best IoU={best_cand['iou']:.4f}")
         
@@ -184,8 +209,8 @@ def main():
         gt_overlay = apply_red_alpha_overlay(raw_img, gt_mask, alpha=0.6)
         gt_overlay.save(os.path.join(sample_out_dir, "gt_overlay.jpg"))
         
-        # 3. Retrieve Scores (Optional - simplified from cache/scores if exists)
-        # Try to load scores.json
+        # 3. Retrieve Scores & Plans
+        # Load scores.json specific to this sample
         scores_file = os.path.join(args.cache_dir, "scores", f"sample_{idx}", "scores.json")
         scores_data = {}
         if os.path.exists(scores_file):
@@ -194,47 +219,82 @@ def main():
                     scores_data = json.load(f)
             except:
                 pass
-                
+
         summary_info = {
             "sample_idx": idx,
             "query": query,
             "candidates": []
         }
         
-        for name, cand in selected.items():
-            # Generate Overlay
-            overlay = apply_red_alpha_overlay(raw_img, cand["mask"], alpha=0.5)
-            overlay.save(os.path.join(sample_out_dir, f"{name.lower()}_{cand['iou']:.2f}.jpg"))
+        for cand in candidates_to_save:
+            # Load Mask
+            mask_path = cand["mask_path"]
+            mask = np.load(mask_path)['mask']
             
-            # Get Score
-            score_val = "N/A"
-            reasoning = "N/A"
+            # Create Overlay
+            overlay = apply_red_alpha_overlay(raw_img, mask, alpha=0.5)
+            overlay.save(os.path.join(sample_out_dir, f"{cand['type'].lower()}_{cand['iou']:.2f}.jpg"))
             
-            # Lookup in scores data
-            # Key format: indices are strings "0", "1"
-            h_key = str(cand["id"])
-            v_key = f"v{cand['version']}"
+            # Get VLM Score
+            # Key is usually just the index string "0", "1", etc.
+            pid = str(cand['planner_id'])
+            vlm_score = "N/A"
+            vlm_reasoning = "N/A"
             
-            if h_key in scores_data:
-                if v_key in scores_data[h_key]:
-                     s_entry = scores_data[h_key][v_key]
-                     score_val = s_entry.get("total_score", "N/A")
-                     reasoning = s_entry.get("breakdown", {}).get("reasoning", "N/A")
-                elif "v0" in scores_data[h_key]:
-                     # Display fallback info if that's what we have
-                     score_val = f"{scores_data[h_key]['v0'].get('total_score', 'N/A')} (v0 fallback)"
+            if pid in scores_data:
+                # Check for versions: v5, v4... or v0 or direct
+                s_entry = scores_data[pid]
+                
+                # Priority: v5 > v4 > v3 > v2 > v1 > v0 > direct
+                keys_to_check = [f'v{i}' for i in range(5, -1, -1)] # v5, v4, ..., v0
+                found_ver_data = None
+                for k in keys_to_check:
+                    if k in s_entry:
+                        found_ver_data = s_entry[k]
+                        break
+                
+                if found_ver_data:
+                    vlm_score = found_ver_data.get('total_score', 'N/A')
+                    vlm_reasoning = found_ver_data.get('breakdown', 'N/A')
+                elif 'total_score' in s_entry: # Direct (old format, no versioning)
+                     vlm_score = s_entry.get('total_score')
+                     vlm_reasoning = s_entry.get('breakdown')
+
+            # Get Plan Details
+            # We need to lookup the plan in the global plans_data using sample_idx and planner_id
+            # planner_id IS the index in the hypotheses list for that sample.
             
+            plan_details = {
+                "strategy": "Unknown",
+                "reasoning": "Unknown",
+                "concept": "Unknown",
+                "box": None
+            }
+            
+            # Access global plans_data (I will ensure it is loaded)
+            if f"sample_{idx}" in plans_data:
+                 hyps = plans_data[f"sample_{idx}"].get("hypotheses", [])
+                 if 0 <= cand['planner_id'] < len(hyps):
+                     h = hyps[cand['planner_id']]
+                     plan_details = {
+                         "strategy": h.get("strategy", h.get("source_strategy", "Unknown")),
+                         "reasoning": h.get("reasoning", ""),
+                         "concept": h.get("target_concept", h.get("noun_phrase", "")),
+                         "box": h.get("box")
+                     }
+
             cand_info = {
-                "type": name,
-                "iou": float(cand["iou"]),
+                "type": cand["type"],
+                "iou": cand["iou"],
                 "version": cand["version"],
-                "planner_id": cand["id"],
-                "vlm_score": score_val,
-                "vlm_reasoning": reasoning
+                "planner_id": cand['planner_id'],
+                "vlm_score": vlm_score,
+                "vlm_reasoning": vlm_reasoning,
+                "plan": plan_details
             }
             summary_info["candidates"].append(cand_info)
             
-        with open(os.path.join(sample_out_dir, "info.json"), "w") as f:
+        with open(os.path.join(sample_out_dir, "info.json"), 'w') as f:
             json.dump(summary_info, f, indent=2)
             
         extracted_count += 1
