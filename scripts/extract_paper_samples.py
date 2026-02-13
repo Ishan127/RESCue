@@ -153,7 +153,7 @@ def main():
             
             if found_any:
                 valid_hypotheses.append({
-                    "id": h_idx,
+                    "planner_id": h_idx,
                     "iou": curr_best_iou,
                     "mask": curr_best_mask,
                     "mask_path": curr_best_mask_path, # Store the path of the best mask
