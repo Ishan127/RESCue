@@ -17,6 +17,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any
 from concurrent.futures import ThreadPoolExecutor
+from collections import Counter, defaultdict
 import numpy as np
 import random
 
@@ -609,6 +610,11 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
     # Collect results
     N_VALUES = [1, 2, 4, 8, 16, 32, 64, 128] # Added 128
     results_by_n = {n: {'ious': [], 'oracle_ious': [], 'times': []} for n in N_VALUES if n <= max_n}
+    
+    # NEW: Track which strategy provides the Oracle (Max IoU) for each N
+    # Structure: strategy_wins[n][strategy_name] = count
+    strategy_wins = defaultdict(lambda: Counter())
+    
     detailed_samples = []
     
     # Result Collector Function (runs in thread)
@@ -680,11 +686,28 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
                     
                     pred_mask = task.candidates[best_idx]['mask']
                     iou = calculate_iou(pred_mask, task.gt_mask)
-                    oracle_iou = max(c.get('iou', 0) for c in task.candidates[:n])
+                    
+                    # Oracle Calculation and Strategy Win
+                    # oracle_iou = max(c.get('iou', 0) for c in task.candidates[:n])
+                    
+                    # Find candidate with max IoU in top N
+                    best_oracle_cand = None
+                    best_oracle_iou = -1.0
+                    
+                    for cand in task.candidates[:n]:
+                        c_iou = float(cand.get('iou', 0))
+                        if c_iou > best_oracle_iou:
+                            best_oracle_iou = c_iou
+                            best_oracle_cand = cand
                     
                     results_by_n[n]['ious'].append(iou)
-                    results_by_n[n]['oracle_ious'].append(oracle_iou)
+                    results_by_n[n]['oracle_ious'].append(best_oracle_iou)
                     results_by_n[n]['times'].append(total_time)
+                    
+                    # Record Strategy Win
+                    if best_oracle_cand:
+                         strat = best_oracle_cand.get('hypothesis', {}).get('strategy', 'unknown')
+                         strategy_wins[n][strat] += 1
             
             except Exception as e:
                 print(f"Result Collector Error: {e}")
@@ -735,14 +758,14 @@ def run_pipeline_evaluation(fraction, max_n, planner_url, verifier_url, executor
     collector_thread.join()
     
     # Print results
-    print_results(results_by_n, mode)
+    print_results(results_by_n, mode, strategy_wins)
     
     # Save results
     output_file = f"results_pipeline_{mode}_{int(fraction*100)}pct.json"
     save_results(results_by_n, output_file, detailed_samples)
 
 
-def print_results(results_by_n, mode):
+def print_results(results_by_n, mode, strategy_wins=None):
     print(f"\n{'='*70}")
     print(f"RESULTS ({mode.upper()} - Pipeline Parallel)")
     print(f"{'='*70}")
@@ -761,6 +784,37 @@ def print_results(results_by_n, mode):
         mean_time = np.mean(data['times'])
         
         print(f"{n:>4} | {mean_iou:>8.4f} | {mean_oracle:>8.4f} | {pct_oracle:>7.1f}% | {mean_time:>8.2f} | {len(data['ious']):>7}")
+
+    if strategy_wins:
+        print(f"\n{'='*70}")
+        print(f"STRATEGY BREAKDOWN (% of Oracle Wins by Strategy)")
+        print(f"{'='*70}")
+        
+        # Determine strategies present
+        all_strategies = set()
+        for n_wins in strategy_wins.values():
+            all_strategies.update(n_wins.keys())
+        sorted_strats = sorted(list(all_strategies))
+        
+        # Filter N for display (User asked for 8 to 256)
+        n_to_show = [n for n in sorted(results_by_n.keys()) if n >= 8]
+        if not n_to_show:
+            print("No N >= 8 to show strategy breakdown for.")
+            return
+
+        # Header
+        header = f"{'Strategy':<15} |" + " |".join([f" N={n:<3}" for n in n_to_show]) + " |"
+        print(header)
+        print("-" * len(header))
+        
+        for strat in sorted_strats:
+            row = f"{strat:<15} |"
+            for n in n_to_show:
+                total_samples = len(results_by_n[n]['ious'])
+                wins = strategy_wins[n][strat]
+                pct = (wins / total_samples * 100) if total_samples > 0 else 0
+                row += f" {pct:>5.1f}% |"
+            print(row)
 
 
 def save_results(results_by_n, output_file, detailed_samples=None):
