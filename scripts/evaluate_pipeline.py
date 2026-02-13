@@ -146,10 +146,17 @@ class PlannerStage(PipelineStage):
                 # Allow for partial matches if needed, but usually we want full set
                 cached_hyps = cached_data.get('hypotheses', [])
                 
-                # Apply Strategy Filter to Cache
+                # Apply Strategy Filter to Cache (Case Insensitive)
                 if args.planner_strategy:
-                    cached_hyps = [h for h in cached_hyps if h.get('strategy') == args.planner_strategy]
-                
+                    target_strat = args.planner_strategy.lower()
+                    original_len = len(cached_hyps)
+                    cached_hyps = [h for h in cached_hyps if h.get('strategy', '').lower() == target_strat]
+                    
+                    if not cached_hyps and original_len > 0:
+                        # Debug print only once to avoid spam
+                        # print(f"[Planner] Cache Filter: Found 0 '{target_strat}' in {original_len} cached items. Falling back to generation.")
+                        pass
+
                 if cached_hyps:
                     task.hypotheses = cached_hyps[:self.max_n]
                     task.t_plan_done = time.time() # Instant
