@@ -145,6 +145,11 @@ class PlannerStage(PipelineStage):
                 cached_data = self.plans_cache[sample_key]
                 # Allow for partial matches if needed, but usually we want full set
                 cached_hyps = cached_data.get('hypotheses', [])
+                
+                # Apply Strategy Filter to Cache
+                if args.planner_strategy:
+                    cached_hyps = [h for h in cached_hyps if h.get('strategy') == args.planner_strategy]
+                
                 if cached_hyps:
                     task.hypotheses = cached_hyps[:self.max_n]
                     task.t_plan_done = time.time() # Instant

@@ -39,8 +39,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output_dir", type=str, default="paper_samples")
     parser.add_argument("--cache_dir", type=str, default="cache")
-    parser.add_argument("--num_samples", type=int, default=5, help="Number of samples to extract")
-    parser.add_argument("--min_iou", type=float, default=0.85, help="Minimum IoU for the 'Best' candidate")
+    parser.add_argument("--num_samples", type=int, default=25, help="Number of samples to extract")
+    parser.add_argument("--min_iou", type=float, default=0.95, help="Minimum IoU for the 'Best' candidate")
     # parser.add_argument("--split", type=str, default="test") # Hardcoded to test for ReasonSeg
     args = parser.parse_args()
 
